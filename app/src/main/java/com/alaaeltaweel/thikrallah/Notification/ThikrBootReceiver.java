@@ -41,7 +41,7 @@ if (intent.getBooleanExtra("isWatchdog", false)) {
                 || intent.getAction().equalsIgnoreCase(Intent.ACTION_BOOT_COMPLETED)) {
 
                 MyAlarmsManager manager = new MyAlarmsManager(context.getApplicationContext());
-                   manager.UpdateAllApplicableAlarms(); 
+                   
 
                 Intent launch = new Intent(context, com.alaaeltaweel.thikrallah.MainActivity.class);
                 launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
