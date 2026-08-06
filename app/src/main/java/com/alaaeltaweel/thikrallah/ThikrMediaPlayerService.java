@@ -1051,8 +1051,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
             Intent broadcastIntent = new Intent("com.alaaeltaweel.thikrallah.ATHAN_COMPLETE");
 
             sendBroadcast(broadcastIntent);
-            com.alaaeltaweel.thikrallah.Notification.DuaPlayerHelper.playDuaAfterAthan(getApplicationContext()); // تشغيل الدعاء مستقل عن فتح الشاشة
-
+            if (getThikrType() != null && getThikrType().contains(MainActivity.DATA_TYPE_ATHAN)) { com.alaaeltaweel.thikrallah.Notification.DuaPlayerHelper.playDuaAfterAthan(getApplicationContext()); } // تشغيل الدعاء لو ده أذان بس
 
             resetPlayer();
 
