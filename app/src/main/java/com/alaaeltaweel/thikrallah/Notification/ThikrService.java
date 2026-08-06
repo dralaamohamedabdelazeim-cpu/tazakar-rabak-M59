@@ -234,7 +234,7 @@ private PhoneStateListener phoneStateListener;
                 }
 
                 boolean isQuietTime = isTimeNowQuietTime();
-                if (((reminderType == 1 || reminderType == 2) && isQuietTime == false && !AthanScreenActivity.isDuaPlaying() && (thikr.isBuiltIn() == true || thikr.getFile().length() > 2))) {
+                if (((reminderType == 1 || reminderType == 2) && isQuietTime == false && !DuaPlayerHelper.isDuaPlaying() && (thikr.isBuiltIn() == true || thikr.getFile().length() > 2))) {
                     if (!isInCall()) {
                         sharedPrefs.edit().putString("com.alaaeltaweel.thikrallah.datatype", MainActivity.DATA_TYPE_GENERAL_THIKR).apply();
                         data.putInt("ACTION", ThikrMediaPlayerService.MEDIA_PLAYER_PLAY);

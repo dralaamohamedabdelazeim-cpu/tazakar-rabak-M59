@@ -32,52 +32,6 @@ public class AthanScreenActivity extends AppCompatActivity {
     private static final int SLIDESHOW_INTERVAL  = 30 * 1000; // 30 ثانية
     private static final int CALL_DISMISS_DELAY  = 4 * 60 * 1000; // 4 دقايق لو في مكالمة
     private static final String TAG = "AthanScreenActivity";
-    private static android.media.MediaPlayer duaMediaPlayer;
-
-public static void stopDua(Context context) {
-        if (duaMediaPlayer != null) {
-            try { if (duaMediaPlayer.isPlaying()) duaMediaPlayer.stop(); } catch (Exception ignored) {}
-            try { duaMediaPlayer.release(); } catch (Exception ignored) {}
-            duaMediaPlayer = null;
-        }
-        AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
-      if (am != null && duaMediaPlayer != null) am.abandonAudioFocus(null);// ✅ سيب الميكروفون هنا كمان لو المستخدم وقف الدعاء يدوي
-        android.app.NotificationManager nm = (android.app.NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-        if (nm != null) nm.cancel(9911);
-    }
-
-    public static boolean isDuaPlaying() {
-        return duaMediaPlayer != null;
-    }
-
-    private static void showDuaStopNotification(Context context) {
-        String channelId = "dua_stop_channel_v3";
-        android.app.NotificationManager nm = (android.app.NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            android.app.NotificationChannel channel = new android.app.NotificationChannel(
-                channelId, "الدعاء بعد الأذان", android.app.NotificationManager.IMPORTANCE_DEFAULT);
-            channel.setLockscreenVisibility(androidx.core.app.NotificationCompat.VISIBILITY_PUBLIC);
-            nm.createNotificationChannel(channel);
-        }
-        Intent stopIntent = new Intent(context, ThikrAlarmReceiver.class);
-        stopIntent.setAction("com.alaaeltaweel.thikrallah.STOP_DUA");
-        android.app.PendingIntent stopPi = android.app.PendingIntent.getBroadcast(context, 9911, stopIntent,
-            android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
-
-        androidx.core.app.NotificationCompat.Builder builder = new androidx.core.app.NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(R.drawable.ic_launcher)
-            .setContentTitle("الدعاء بعد الأذان")
-            .setContentText("جاري تشغيل الدعاء - اضغط للإيقاف")
-            .setPriority(androidx.core.app.NotificationCompat.PRIORITY_DEFAULT)
-            .setVisibility(androidx.core.app.NotificationCompat.VISIBILITY_PUBLIC)
-            .setOngoing(true)
-            .setAutoCancel(false)
-            .addAction(0, "إيقاف", stopPi)
-            .setContentIntent(stopPi);
-        // ✅ من غير setFullScreenIntent خالص - ده كان سبب توقف الذكر العام قبل كده
-        nm.notify(9911, builder.build());
-    }
-    
     private Handler autoHandler = new Handler();
     private Handler slideshowHandler = new Handler();
     private Handler athanTextHandler = new Handler();
@@ -117,49 +71,11 @@ public static void stopDua(Context context) {
         R.drawable.father_bg7
     };
 
-    private void playDuaAfterAthan(Context context) {
-        boolean isDuaEnabled = androidx.preference.PreferenceManager
-                .getDefaultSharedPreferences(context).getBoolean("isDuaAfterAthan", false);
-        if (!isDuaEnabled) return;
-
-        // وقف أي تشغيل سابق قبل ما نبدأ واحد جديد
-        if (duaMediaPlayer != null) {
-            try {
-                if (duaMediaPlayer.isPlaying()) duaMediaPlayer.stop();
-            } catch (IllegalStateException ignored) {}
-            duaMediaPlayer.release();
-            duaMediaPlayer = null;
-        }
-
-        AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
-        if (am != null) {
-            am.requestAudioFocus(null,
-                AudioManager.STREAM_ALARM,
-                AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
-        }
-   // ✅ ده اللي كان ناقص - إنشاء الـ MediaPlayer وتحديد ملف الدعاء
-     duaMediaPlayer = android.media.MediaPlayer.create(context, R.raw.dua_after_athan);
-    if (duaMediaPlayer == null) {
-    Log.e(TAG, "فشل تحميل ملف الدعاء dua_after_athan.mp3");
-    if (am != null) am.abandonAudioFocus(null);
-    return;
-    }
-        duaMediaPlayer.setOnCompletionListener(mp -> {
-                mp.release();
-                duaMediaPlayer = null;
-                if (am != null) am.abandonAudioFocus(null); // ✅ سيب الميكروفون بعد ما الدعاء يخلص
-                android.app.NotificationManager nmDone = (android.app.NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-                if (nmDone != null) nmDone.cancel(9911);
-            });
-            duaMediaPlayer.start();
-            showDuaStopNotification(context);
-        }
     
 
     private BroadcastReceiver athanCompleteReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            playDuaAfterAthan(context);
             stopAthanAndClose();
         }
     };
@@ -383,7 +299,6 @@ public static void stopDua(Context context) {
         Intent stopMedia = new Intent(this, ThikrMediaPlayerService.class).putExtras(data);
         startService(stopMedia);
         
-        playDuaAfterAthan(this);
         Intent stopThikr = new Intent(this, ThikrService.class);
         stopService(stopThikr);
 

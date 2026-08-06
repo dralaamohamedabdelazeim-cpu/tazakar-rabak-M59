@@ -58,7 +58,7 @@ public class ThikrAlarmReceiver extends BroadcastReceiver {
         wakeLock.acquire(60 * 1000L);
 
 if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
-            AthanScreenActivity.stopDua(context);
+            DuaPlayerHelper.stopDua(context);
             if (wakeLock != null && wakeLock.isHeld()) wakeLock.release();
             return;
 }
