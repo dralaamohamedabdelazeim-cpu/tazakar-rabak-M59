@@ -685,6 +685,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
                 com.alaaeltaweel.thikrallah.Notification.DuaPlayerHelper.playDuaAfterAthan(getApplicationContext()); // على طول كلمه - تشغيل الدعاء لما المستخدم يوقف الأذان يدويا
             }
 
+            { android.app.NotificationManager _nmC = (android.app.NotificationManager) getApplicationContext().getSystemService(Context.NOTIFICATION_SERVICE); if (_nmC != null && incomingDataType != null) _nmC.cancel(8800 + incomingDataType.hashCode()); } // قفل إشعار شاشة الأذان
             this.stopForeground(true);
 
             this.stopSelf();
@@ -1053,6 +1054,8 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
             sendBroadcast(broadcastIntent);
             if (getThikrType() != null && getThikrType().contains(MainActivity.DATA_TYPE_ATHAN)) { com.alaaeltaweel.thikrallah.Notification.DuaPlayerHelper.playDuaAfterAthan(getApplicationContext()); } // تشغيل الدعاء لو ده أذان بس
 
+
+            { android.app.NotificationManager _nmC = (android.app.NotificationManager) getApplicationContext().getSystemService(Context.NOTIFICATION_SERVICE); if (_nmC != null && getThikrType() != null) _nmC.cancel(8800 + getThikrType().hashCode()); } // قفل إشعار شاشة الأذان
             resetPlayer();
 
             stopForeground(true);
@@ -1495,6 +1498,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
             sendBroadcast(duaIntent);
             com.alaaeltaweel.thikrallah.Notification.DuaPlayerHelper.playDuaAfterAthan(getApplicationContext()); // تشغيل الدعاء مستقل عن فتح الشاشة
 
+            { android.app.NotificationManager _nmC = (android.app.NotificationManager) getApplicationContext().getSystemService(Context.NOTIFICATION_SERVICE); if (_nmC != null && this.getThikrType() != null) _nmC.cancel(8800 + this.getThikrType().hashCode()); } // قفل إشعار شاشة الأذان
             this.resetPlayer();
             this.stopForeground(true);
             this.stopSelf();
