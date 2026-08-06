@@ -682,7 +682,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
             // ✅ إرسال broadcast لـ AthanScreenActivity - بس لو ده أذان حقيقي فعلاً
             if (this.getThikrType() != null && this.getThikrType().contains(MainActivity.DATA_TYPE_ATHAN)) {
-                
+                com.alaaeltaweel.thikrallah.Notification.DuaPlayerHelper.playDuaAfterAthan(getApplicationContext()); // على طول كلمه - تشغيل الدعاء لما المستخدم يوقف الأذان يدويا
             }
 
             this.stopForeground(true);
@@ -1051,6 +1051,8 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
             Intent broadcastIntent = new Intent("com.alaaeltaweel.thikrallah.ATHAN_COMPLETE");
 
             sendBroadcast(broadcastIntent);
+            com.alaaeltaweel.thikrallah.Notification.DuaPlayerHelper.playDuaAfterAthan(getApplicationContext()); // تشغيل الدعاء مستقل عن فتح الشاشة
+
 
             resetPlayer();
 
@@ -1492,6 +1494,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
             // ✅ شغل الدعاء بعد الأذان - بس لو ده أذان حقيقي فعلاً
             Intent duaIntent = new Intent("com.alaaeltaweel.thikrallah.ATHAN_COMPLETE");
             sendBroadcast(duaIntent);
+            com.alaaeltaweel.thikrallah.Notification.DuaPlayerHelper.playDuaAfterAthan(getApplicationContext()); // تشغيل الدعاء مستقل عن فتح الشاشة
 
             this.resetPlayer();
             this.stopForeground(true);
