@@ -681,7 +681,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
             }
 
             // ✅ إرسال broadcast لـ AthanScreenActivity - بس لو ده أذان حقيقي فعلاً
-            if (this.getThikrType() != null && this.getThikrType().contains(MainActivity.DATA_TYPE_ATHAN)) {
+            if (incomingDataType != null && incomingDataType.contains(MainActivity.DATA_TYPE_ATHAN)) {
                 com.alaaeltaweel.thikrallah.Notification.DuaPlayerHelper.playDuaAfterAthan(getApplicationContext()); // على طول كلمه - تشغيل الدعاء لما المستخدم يوقف الأذان يدويا
             }
 
