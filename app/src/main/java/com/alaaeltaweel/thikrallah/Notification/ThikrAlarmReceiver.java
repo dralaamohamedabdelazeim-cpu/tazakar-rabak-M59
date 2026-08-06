@@ -179,7 +179,14 @@ if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
                 }
             }
 
-            showAthanScreenNotification(context, data, isInCall);
+            Intent athanIntent = new Intent(context, AthanScreenActivity.class);
+            athanIntent.putExtras(data);
+            athanIntent.putExtra("isCallInProgress", isInCall);
+            athanIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK |
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP |
+                    Intent.FLAG_ACTIVITY_SINGLE_TOP);
+
+            context.startActivity(athanIntent);
             
         } else {
 
@@ -239,43 +246,6 @@ if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
 
         if (wakeLock != null && wakeLock.isHeld()) wakeLock.release();
     }
-    
-private void showAthanScreenNotification(Context context, Bundle data, boolean isInCall) {
-    Intent athanIntent = new Intent(context, AthanScreenActivity.class);
-    athanIntent.putExtras(data);
-    athanIntent.putExtra("isCallInProgress", isInCall);
-    athanIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK |
-            Intent.FLAG_ACTIVITY_CLEAR_TOP |
-            Intent.FLAG_ACTIVITY_SINGLE_TOP);
-
-    String dataType = data.getString("com.alaaeltaweel.thikrallah.datatype", "athan");
-    int notifId = 8800 + dataType.hashCode();
-
-    PendingIntent athanPendingIntent = PendingIntent.getActivity(context, notifId,
-            athanIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-
-    String channelId = "athan_screen_channel_v1";
-    NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        NotificationChannel channel = new NotificationChannel(
-                channelId, "شاشة الأذان", NotificationManager.IMPORTANCE_HIGH);
-        channel.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
-        nm.createNotificationChannel(channel);
-    }
-
-    NotificationCompat.Builder builder = new NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(R.drawable.ic_launcher)
-            .setContentTitle("حان وقت الصلاة")
-            .setContentText("اضغط لفتح شاشة الأذان")
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setCategory(NotificationCompat.CATEGORY_ALARM)
-            .setAutoCancel(true)
-            .setContentIntent(athanPendingIntent)
-            .setFullScreenIntent(athanPendingIntent, true);
-
-    nm.notify(notifId, builder.build());
-}
-
 private void showPreAthanNotification(Context context, String prayerKey) {
     // تحويل الـ key لاسم عربي للعرض
     String prayerNameAr;
