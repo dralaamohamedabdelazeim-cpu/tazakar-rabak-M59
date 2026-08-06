@@ -12,7 +12,7 @@ import androidx.core.app.NotificationCompat;
 
 import com.alaaeltaweel.thikrallah.R;
 
-// ✅ نُقل هنا من AthanScreenActivity عشان الدعاء يشتغل بمعزل تام عن فتح الشاشة
+ // ✅ نُقل هنا من AthanScreenActivity عشان الدعاء يشتغل بمعزل تام عن فتح الشاشة
 public class DuaPlayerHelper {
 
     private static final String TAG = "DuaPlayerHelper";
