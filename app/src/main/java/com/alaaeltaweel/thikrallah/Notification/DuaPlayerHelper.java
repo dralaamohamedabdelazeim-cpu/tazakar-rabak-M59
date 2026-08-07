@@ -16,9 +16,15 @@ import com.alaaeltaweel.thikrallah.R;
 public class DuaPlayerHelper {
 
     private static final String TAG = "DuaPlayerHelper";
-    private static MediaPlayer duaMediaPlayer;
+   private static MediaPlayer duaMediaPlayer;
+    private static long lastPlayStartTime = 0; // ✅ لمنع نداءين متقاربين يشغلوا الدعاء فوق بعض
 
     public static void playDuaAfterAthan(Context context) {
+        long nowMs = System.currentTimeMillis();
+        if (duaMediaPlayer != null && (nowMs - lastPlayStartTime) < 2000) {
+            return; // ✅ نداء مكرر جه في نفس اللحظة تقريبًا - نتجاهله
+        }
+        lastPlayStartTime = nowMs;
         boolean isDuaEnabled = androidx.preference.PreferenceManager
                 .getDefaultSharedPreferences(context).getBoolean("isDuaAfterAthan", false);
         if (!isDuaEnabled) return;
