@@ -273,12 +273,7 @@ public class AthanScreenActivity extends AppCompatActivity {
         }
         soundPrefs.edit().putLong("athan_sound_triggered_" + dataType, System.currentTimeMillis()).commit();
 
-        android.media.AudioManager am = (android.media.AudioManager) getSystemService(Context.AUDIO_SERVICE);
-        if (am != null) {
-            am.requestAudioFocus(null,
-                android.media.AudioManager.STREAM_ALARM,
-                android.media.AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
-        }
+        
         Bundle data = new Bundle();
         data.putInt("ACTION", ThikrMediaPlayerService.MEDIA_PLAYER_PLAY);
         data.putString("com.alaaeltaweel.thikrallah.datatype", dataType);
