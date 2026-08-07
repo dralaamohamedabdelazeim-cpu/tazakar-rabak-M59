@@ -40,6 +40,8 @@ import com.alaaeltaweel.thikrallah.WakeUpActivity;
 import com.alaaeltaweel.thikrallah.R;
 
 import android.media.AudioManager;
+import android.os.Handler;
+import android.os.Looper;
 
 import com.alaaeltaweel.thikrallah.ThikrMediaPlayerService;
 
@@ -316,6 +318,9 @@ PendingIntent pendingIntent = PendingIntent.getBroadcast(context, prayerKey.hash
     PreferenceManager.getDefaultSharedPreferences(context).edit()
                 .putLong("last_pre_athan_play_time", System.currentTimeMillis()).apply();
         notificationManager.notify(prayerKey.hashCode(), builder.build());
+        if (audioManager != null && canPlaySound) {
+            new Handler(Looper.getMainLooper()).postDelayed(() -> audioManager.abandonAudioFocus(null), 5000); // ✅ رجّع الميكروفون بعد ما صوت التنبيه يخلص
+        }
 }
 
     private boolean isAthanType(String dataType) {
@@ -397,5 +402,8 @@ PendingIntent pi = PendingIntent.getBroadcast(context, prayerKey.hashCode() + 22
         PreferenceManager.getDefaultSharedPreferences(context).edit()
                 .putLong("last_iqama_play_time", System.currentTimeMillis()).apply();
     nm.notify(("iqama_" + prayerKey).hashCode(), builder.build());
+        if (audioManager != null && canPlayIqamaSound) {
+            new Handler(Looper.getMainLooper()).postDelayed(() -> audioManager.abandonAudioFocus(null), 5000); // ✅ رجّع الميكروفون بعد ما صوت الإقامة يخلص
+        }
     }
 }
