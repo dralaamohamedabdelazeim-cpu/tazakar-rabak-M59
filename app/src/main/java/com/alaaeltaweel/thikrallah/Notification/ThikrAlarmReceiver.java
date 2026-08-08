@@ -319,7 +319,10 @@ PendingIntent pendingIntent = PendingIntent.getBroadcast(context, prayerKey.hash
                 .putLong("last_pre_athan_play_time", System.currentTimeMillis()).apply();
         notificationManager.notify(prayerKey.hashCode(), builder.build());
         if (audioManager != null && canPlaySound) {
-            new Handler(Looper.getMainLooper()).postDelayed(() -> audioManager.abandonAudioFocus(null), 5000); // ✅ رجّع الميكروفون بعد ما صوت التنبيه يخلص
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                audioManager.abandonAudioFocus(null); // ✅ رجّع الميكروفون بعد ما صوت التنبيه يخلص
+                notificationManager.cancel(prayerKey.hashCode()); // ✅ قفل الإشعار تلقائي بعد ما الصوت يخلص
+            }, 5000);
         }
 }
 
@@ -403,7 +406,10 @@ PendingIntent pi = PendingIntent.getBroadcast(context, prayerKey.hashCode() + 22
                 .putLong("last_iqama_play_time", System.currentTimeMillis()).apply();
     nm.notify(("iqama_" + prayerKey).hashCode(), builder.build());
         if (audioManager != null && canPlayIqamaSound) {
-            new Handler(Looper.getMainLooper()).postDelayed(() -> audioManager.abandonAudioFocus(null), 5000); // ✅ رجّع الميكروفون بعد ما صوت الإقامة يخلص
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                audioManager.abandonAudioFocus(null); // ✅ رجّع الميكروفون بعد ما صوت الإقامة يخلص
+                nm.cancel(("iqama_" + prayerKey).hashCode()); // ✅ قفل الإشعار تلقائي بعد ما الصوت يخلص
+            }, 5000);
         }
     }
 }
