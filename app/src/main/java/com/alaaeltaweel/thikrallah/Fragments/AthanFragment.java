@@ -131,7 +131,7 @@ public class AthanFragment extends Fragment implements SharedPreferences.OnShare
         try {
             digitalFont = Typeface.createFromAsset(
                     getActivity().getAssets(),
-                    "fonts_2/DSEG7Classic-Regular.ttf"
+                    "fonts_2/Orbitron-Bold.ttf"
             );
         } catch (Exception e) {
             Log.e("AthanFragment", "Failed to load digital font: " + e.getMessage());
@@ -598,5 +598,4 @@ if (hijriOffset != 0) {
         });
     }
 }
-
 
