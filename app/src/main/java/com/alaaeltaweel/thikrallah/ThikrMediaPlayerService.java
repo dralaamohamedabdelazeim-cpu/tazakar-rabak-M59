@@ -162,6 +162,8 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
     private MediaPlayer player;
 
+    private static long lastGeneralThikrPlayStartTime = 0; // ✅ لمنع تشغيل الذكر العام فوق نفسه
+
     public int currentThikrCounter = 0;
 
     private boolean isPaused;
@@ -666,6 +668,8 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
             Timber.d("MEDIA_PLAYER_STOP called - stopping athan");
 
+            boolean wasActuallyPlaying = player != null && player.isPlaying(); // ✅ نلتقط الحالة قبل أي إيقاف
+
             if (player != null) {
 
                 if (player.isPlaying()) {
@@ -680,8 +684,8 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
             }
 
-            // ✅ إرسال broadcast لـ AthanScreenActivity - بس لو ده أذان حقيقي فعلاً
-            if (incomingDataType != null && incomingDataType.contains(MainActivity.DATA_TYPE_ATHAN)) {
+            // ✅ إرسال broadcast لـ AthanScreenActivity - بس لو ده أذان حقيقي فعلاً وكان لسه شغال فعليًا
+            if (wasActuallyPlaying && incomingDataType != null && incomingDataType.contains(MainActivity.DATA_TYPE_ATHAN)) {
                 com.alaaeltaweel.thikrallah.Notification.DuaPlayerHelper.playDuaAfterAthan(getApplicationContext()); // على طول كلمه - تشغيل الدعاء لما المستخدم يوقف الأذان يدويا
             }
 
@@ -713,6 +717,16 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
             return Service.START_NOT_STICKY;
 
+        }
+
+        // ✅ حماية إضافية أقوى من التكرار - بتشيك على التوقيت مش بس isPlaying()
+        if (incomingDataType != null && incomingDataType.equalsIgnoreCase(MainActivity.DATA_TYPE_GENERAL_THIKR)) {
+            long nowMsGeneral = System.currentTimeMillis();
+            if (nowMsGeneral - lastGeneralThikrPlayStartTime < 5000) {
+                Timber.d("General thikr play request too close to last one, skipping duplicate");
+                return Service.START_NOT_STICKY;
+            }
+            lastGeneralThikrPlayStartTime = nowMsGeneral;
         }
         this.setThikrType(incomingDataType);
         Timber.d("initNotification called");
