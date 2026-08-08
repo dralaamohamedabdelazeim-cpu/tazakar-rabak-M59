@@ -59,7 +59,7 @@ class RadioActivity : AppCompatActivity() {
         RadioChannelItem(16, "إذاعة نبيل الرفاعي",              "https://backup.qurango.net/radio/nabil_al_rifay"),
         RadioChannelItem(17, "إذاعة هيثم الجدعاني",             "https://backup.qurango.net/radio/hitham_aljadani"),
         RadioChannelItem(18, "إذاعة ياسر الدوسري",              "https://backup.qurango.net/radio/yasser_aldosari"),
-       RadioChannelItem(19, "إذاعة القرآن الكريم من القاهرة",      "https://stream.radiojar.com/8s5u5tpdtwzuv"),
+       RadioChannelItem(19, "ترتيل ونغمات إسلامية",            "https://backup.qurango.net/radio/tarateel"),
         RadioChannelItem(20, "إذاعة السنة النبوية",             "https://radiosunna.radioca.st/stream"),
         RadioChannelItem(21, "إذاعة تلاوات خاشعة",              "https://backup.qurango.net/radio/salma"),
         RadioChannelItem(22, "إذاعة الرقية الشرعية",            "https://backup.qurango.net/radio/roqiah"),
