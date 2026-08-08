@@ -261,6 +261,36 @@ public class AthanFragment extends Fragment implements SharedPreferences.OnShare
 
         PreferenceManager.getDefaultSharedPreferences(this.getContext()).registerOnSharedPreferenceChangeListener(prefListener);
         this.updateprayerTimes();
+
+        // ✅ منطق التابات - إظهار كارد الصلاة المختارة وإخفاء الباقي
+        View tabFajr = view.findViewById(R.id.tab_content_fajr);
+        View tabDhuhr = view.findViewById(R.id.tab_content_dhuhr);
+        View tabAsr = view.findViewById(R.id.tab_content_asr);
+        View tabMaghrib = view.findViewById(R.id.tab_content_maghrib);
+        View tabIshaa = view.findViewById(R.id.tab_content_ishaa);
+
+        TextView tabBtnFajr = view.findViewById(R.id.tab_btn_fajr);
+        TextView tabBtnDhuhr = view.findViewById(R.id.tab_btn_dhuhr);
+        TextView tabBtnAsr = view.findViewById(R.id.tab_btn_asr);
+        TextView tabBtnMaghrib = view.findViewById(R.id.tab_btn_maghrib);
+        TextView tabBtnIshaa = view.findViewById(R.id.tab_btn_ishaa);
+
+        View[] allTabContents = {tabFajr, tabDhuhr, tabAsr, tabMaghrib, tabIshaa};
+        TextView[] allTabButtons = {tabBtnFajr, tabBtnDhuhr, tabBtnAsr, tabBtnMaghrib, tabBtnIshaa};
+
+        View.OnClickListener tabClickListener = clickedView -> {
+            for (int i = 0; i < allTabButtons.length; i++) {
+                boolean isSelected = (clickedView == allTabButtons[i]);
+                allTabContents[i].setVisibility(isSelected ? View.VISIBLE : View.GONE);
+                allTabButtons[i].setBackgroundColor(Color.parseColor(isSelected ? "#4dd0c4" : "#2D3548"));
+                allTabButtons[i].setTextColor(Color.parseColor(isSelected ? "#1B2234" : "#FFFFFF"));
+            }
+        };
+
+        for (TextView btn : allTabButtons) {
+            btn.setOnClickListener(tabClickListener);
+        }
+
         return view;
     }
 
