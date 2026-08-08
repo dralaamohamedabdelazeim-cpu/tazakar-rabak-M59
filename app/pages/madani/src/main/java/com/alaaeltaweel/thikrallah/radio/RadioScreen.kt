@@ -2,6 +2,10 @@ package com.alaaeltaweel.thikrallah.presentation.screen.radio
 
 import android.media.AudioManager
 import android.media.MediaPlayer
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.net.HttpURLConnection
+import java.net.URL
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -41,6 +45,47 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 
+// ✅ زي كروم بالظبط: نفتح الرابط ونشوف هل هو صوت مباشر ولا قايمة تشغيل (m3u/pls) ونستخرج الرابط الحقيقي منها
+private fun resolveDirectStreamUrl(originalUrl: String): String {
+    return try {
+        val connection = URL(originalUrl).openConnection() as HttpURLConnection
+        connection.instanceFollowRedirects = true
+        connection.connectTimeout = 5000
+        connection.readTimeout = 5000
+        connection.connect()
+
+        val contentType = connection.contentType ?: ""
+        val finalUrl = connection.url.toString()
+
+        val isPlaylist = contentType.contains("mpegurl", ignoreCase = true) ||
+                contentType.contains("scpls", ignoreCase = true) ||
+                contentType.contains("x-mpequrl", ignoreCase = true)
+
+        if (!isPlaylist) {
+            connection.disconnect()
+            return finalUrl // صوت مباشر بالفعل - نستخدم الرابط النهائي بعد أي تحويلة
+        }
+
+        val body = connection.inputStream.bufferedReader().use { it.readText() }
+        connection.disconnect()
+
+        val cleanUrl = body.lineSequence()
+            .map { it.trim() }
+            .mapNotNull { line ->
+                when {
+                    line.startsWith("http", ignoreCase = true) -> line
+                    line.contains("=http", ignoreCase = true) -> line.substringAfter("=")
+                    else -> null
+                }
+            }
+            .firstOrNull()
+
+        cleanUrl?.takeIf { it.startsWith("http") } ?: originalUrl
+    } catch (e: Exception) {
+        originalUrl // لو أي خطأ حصل، نرجع للرابط الأصلي زي ما كان
+    }
+}
+
 @Composable
 fun RadioScreen(
     onBackClick: () -> Unit = {},
@@ -57,10 +102,11 @@ fun RadioScreen(
         mediaPlayer?.release()
         mediaPlayer = null
         currentPlayingId = id
+        val resolvedUrl = withContext(Dispatchers.IO) { resolveDirectStreamUrl(url) } // ✅ زي كروم - نستخرج رابط الصوت الحقيقي لو الرابط الأصلي قايمة تشغيل
         val mp = MediaPlayer()
         @Suppress("DEPRECATION")
         mp.setAudioStreamType(AudioManager.STREAM_MUSIC)
-        mp.setDataSource(url)
+        mp.setDataSource(resolvedUrl)
         mp.setOnPreparedListener { it.start(); viewModel.onChannelReady(id) }
         mp.setOnErrorListener { _, _, _ -> viewModel.onPlayerError(); true }
         mp.prepareAsync()
