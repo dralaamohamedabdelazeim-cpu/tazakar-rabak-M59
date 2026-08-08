@@ -42,7 +42,7 @@
             android:id="@+id/prayer_tabs_row"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="10dp"
+            android:layout_marginBottom="16dp"
             android:orientation="horizontal"
             android:weightSum="5">
 
@@ -51,13 +51,14 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:layout_marginEnd="2dp"
-                android:background="#4dd0c4"
+                android:layout_marginEnd="4dp"
+                android:background="@drawable/tab_bg_selected"
                 android:gravity="center"
-                android:padding="8dp"
+                android:paddingTop="14dp"
+                android:paddingBottom="14dp"
                 android:text="@string/prayer1"
                 android:textColor="#1B2234"
-                android:textSize="12sp"
+                android:textSize="14sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -65,51 +66,55 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:layout_marginEnd="2dp"
-                android:background="#2D3548"
+                android:layout_marginEnd="4dp"
+                android:background="@drawable/tab_bg_unselected"
                 android:gravity="center"
-                android:padding="8dp"
+                android:paddingTop="14dp"
+                android:paddingBottom="14dp"
                 android:text="@string/prayer2"
                 android:textColor="#FFFFFF"
-                android:textSize="12sp" />
+                android:textSize="14sp" />
 
             <TextView
                 android:id="@+id/tab_btn_asr"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:layout_marginEnd="2dp"
-                android:background="#2D3548"
+                android:layout_marginEnd="4dp"
+                android:background="@drawable/tab_bg_unselected"
                 android:gravity="center"
-                android:padding="8dp"
+                android:paddingTop="14dp"
+                android:paddingBottom="14dp"
                 android:text="@string/prayer3"
                 android:textColor="#FFFFFF"
-                android:textSize="12sp" />
+                android:textSize="14sp" />
 
             <TextView
                 android:id="@+id/tab_btn_maghrib"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:layout_marginEnd="2dp"
-                android:background="#2D3548"
+                android:layout_marginEnd="4dp"
+                android:background="@drawable/tab_bg_unselected"
                 android:gravity="center"
-                android:padding="8dp"
+                android:paddingTop="14dp"
+                android:paddingBottom="14dp"
                 android:text="@string/prayer4"
                 android:textColor="#FFFFFF"
-                android:textSize="12sp" />
+                android:textSize="14sp" />
 
             <TextView
                 android:id="@+id/tab_btn_ishaa"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:background="#2D3548"
+                android:background="@drawable/tab_bg_unselected"
                 android:gravity="center"
-                android:padding="8dp"
+                android:paddingTop="14dp"
+                android:paddingBottom="14dp"
                 android:text="@string/prayer5"
                 android:textColor="#FFFFFF"
-                android:textSize="12sp" />
+                android:textSize="14sp" />
 
         </LinearLayout>
 
