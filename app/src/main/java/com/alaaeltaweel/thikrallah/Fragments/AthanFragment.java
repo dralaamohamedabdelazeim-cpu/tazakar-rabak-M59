@@ -332,7 +332,7 @@ public class AthanFragment extends Fragment implements SharedPreferences.OnShare
             if (!hasFocus) {
                 try {
                     int minutes = Integer.parseInt(gsSilentDuration.getText().toString());
-                    mPrefs.edit().putInt("silentModeDurationMinutes", minutes).apply();
+                    mPrefs.edit().putString("silentModeDurationMinutes", String.valueOf(minutes)).apply();
                 } catch (NumberFormatException ignored) {}
             }
         });
