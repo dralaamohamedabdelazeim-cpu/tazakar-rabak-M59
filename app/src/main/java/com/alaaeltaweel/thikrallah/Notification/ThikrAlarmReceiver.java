@@ -275,7 +275,7 @@ private void showPreAthanNotification(Context context, String prayerKey) {
     if (audioManager != null) {
         int focusResult = audioManager.requestAudioFocus(null,
             AudioManager.STREAM_ALARM,
-            AudioManager.AUDIOFOCUS_GAIN
+            AudioManager.AUDIOFOCUS_GAIN);
         canPlaySound = (focusResult == AudioManager.AUDIOFOCUS_REQUEST_GRANTED);
     }
     
