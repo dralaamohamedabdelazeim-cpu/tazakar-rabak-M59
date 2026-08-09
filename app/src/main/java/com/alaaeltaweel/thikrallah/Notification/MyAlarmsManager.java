@@ -562,7 +562,7 @@ if (isAthanReminder && isSilentModeEnabled) {
     calendarSilentOnToday.set(Calendar.MINUTE, Integer.parseInt(prayerTimes[prayerPosition].split(":", 3)[1]));
     calendarSilentOnToday.set(Calendar.SECOND, 0);
     calendarSilentOnToday.add(Calendar.MINUTE, iqamaMinutesForSilent);
-    calendarSilentOnToday.add(Calendar.SECOND, 30); // ✅ هامش بسيط عشان صوت الإقامة ياخد فرصته الأول قبل ما الصمت يتفعل
+    calendarSilentOnToday.add(Calendar.SECOND, 60); // ✅ هامش بسيط عشان صوت الإقامة ياخد فرصته الأول قبل ما الصمت يتفعل
 
     Calendar calendarSilentOffToday = (Calendar) calendarSilentOnToday.clone();
     calendarSilentOffToday.add(Calendar.MINUTE, silentDurationMinutes);
