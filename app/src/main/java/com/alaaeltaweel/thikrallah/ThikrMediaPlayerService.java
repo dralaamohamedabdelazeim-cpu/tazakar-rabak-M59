@@ -154,6 +154,10 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
     public static final int MEDIA_PLAYER_STOP = 9;
 
+    // ✅ كتم/إرجاع صوت الأذان بسبب قلب الهاتف (الشاشة تفضل زي ما هي، الصوت بس اللي بيتغير)
+    public static final int MEDIA_PLAYER_MUTE_BY_FLIP = 10;
+    public static final int MEDIA_PLAYER_UNMUTE_BY_FLIP = 11;
+
 
 
     AudioManager am;
@@ -826,6 +830,26 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
                 Timber.d("MEDIA_PLAYER_CHANGE_VOLUME called");
 
                 this.setVolume();
+
+                break;
+
+            case MEDIA_PLAYER_MUTE_BY_FLIP:
+
+                Timber.d("MEDIA_PLAYER_MUTE_BY_FLIP called - muting athan sound only");
+
+                if (player != null) {
+                    try { player.setVolume(0f, 0f); } catch (Exception ignored) {}
+                }
+
+                break;
+
+            case MEDIA_PLAYER_UNMUTE_BY_FLIP:
+
+                Timber.d("MEDIA_PLAYER_UNMUTE_BY_FLIP called - restoring athan sound");
+
+                if (player != null) {
+                    try { player.setVolume(1f, 1f); } catch (Exception ignored) {}
+                }
 
                 break;
 
