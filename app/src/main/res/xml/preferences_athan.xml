@@ -35,6 +35,16 @@
             android:key="foreground_athan_timer"
             android:title="@string/is_foreground_athan_timer" />
 
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="lock_athan_on_flip"
+            android:title="قفل الأذان عند قلب الهاتف" />
+
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="lock_athan_on_volume_buttons"
+            android:title="قفل الأذان عند الضغط على أزرار الصوت" />
+
     <com.alaaeltaweel.thikrallah.Utilities.MyListPreference
         android:defaultValue="9"
         android:entries="@array/athan_notification_types"
