@@ -33,4 +33,27 @@
     <item>0</item>
     <item>1</item>
 </string-array>
+    <string-array name="athan_calculation_method_values">
+    <item>0</item>
+    <item>1</item>
+    <item>2</item>
+    <item>3</item>
+    <item>4</item>
+    <item>5</item>
+    <item>6</item>
+    <item>7</item>
+    <item>8</item>
+    <item>9</item>
+</string-array>
+
+<string-array name="asr_calculation_method_values">
+    <item>0</item>
+    <item>1</item>
+</string-array>
+
+<string-array name="athan_adjustment_methods_values">
+    <item>0</item>
+    <item>1</item>
+    <item>2</item>
+</string-array>
 </resources>
