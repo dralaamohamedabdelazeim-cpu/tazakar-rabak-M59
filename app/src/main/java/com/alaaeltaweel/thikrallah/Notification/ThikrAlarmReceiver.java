@@ -189,6 +189,12 @@ if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
                     Intent.FLAG_ACTIVITY_SINGLE_TOP);
 
             context.startActivity(athanIntent);
+
+      boolean isDuaEnabled = PreferenceManager.getDefaultSharedPreferences(context).getBoolean("isDuaAfterAthan", false);
+        if (isDuaEnabled) {
+    MediaPlayer mp = MediaPlayer.create(context, R.raw.dua_after_athan);
+        if (mp != null) mp.start();
+        }
             
         } else {
 
@@ -269,7 +275,7 @@ private void showPreAthanNotification(Context context, String prayerKey) {
     if (audioManager != null) {
         int focusResult = audioManager.requestAudioFocus(null,
             AudioManager.STREAM_ALARM,
-            AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
+            AudioManager.AUDIOFOCUS_GAIN
         canPlaySound = (focusResult == AudioManager.AUDIOFOCUS_REQUEST_GRANTED);
     }
     
