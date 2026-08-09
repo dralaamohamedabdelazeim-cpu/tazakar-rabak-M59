@@ -25,8 +25,18 @@ import com.alaaeltaweel.thikrallah.R;
 import com.alaaeltaweel.thikrallah.ThikrMediaPlayerService;
 import android.content.SharedPreferences;
 import android.media.AudioManager;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
+import android.view.KeyEvent;
 
-public class AthanScreenActivity extends AppCompatActivity {
+public class AthanScreenActivity extends AppCompatActivity implements SensorEventListener {
+
+    // ✅ متغيرات قفل الأذان بالقلب / أزرار الصوت
+    private SensorManager sensorManager;
+    private Sensor accelerometerSensor;
+    private boolean flipStopAlreadyTriggered = false;
 
     private static final int AUTO_DISMISS_DELAY  = 10 * 60 * 1000;
     private static final int SLIDESHOW_INTERVAL  = 30 * 1000; // 30 ثانية
@@ -137,6 +147,12 @@ public class AthanScreenActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        // ✅ تهيئة حساس القلب
+        sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        if (sensorManager != null) {
+            accelerometerSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        }
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true);
             setTurnScreenOn(true);
@@ -234,6 +250,14 @@ public class AthanScreenActivity extends AppCompatActivity {
         super.onResume();
         registerReceiver(athanCompleteReceiver,
                 new IntentFilter("com.alaaeltaweel.thikrallah.ATHAN_COMPLETE"));
+
+        // ✅ تفعيل حساس القلب لو المستخدم مفعّل الخاصية
+        SharedPreferences prefs = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this);
+        boolean lockOnFlip = prefs.getBoolean("lock_athan_on_flip", false);
+        if (lockOnFlip && sensorManager != null && accelerometerSensor != null) {
+            flipStopAlreadyTriggered = false;
+            sensorManager.registerListener(this, accelerometerSensor, SensorManager.SENSOR_DELAY_NORMAL);
+        }
     }
 
     @Override
@@ -244,6 +268,41 @@ public class AthanScreenActivity extends AppCompatActivity {
         } catch (IllegalArgumentException e) {
             // في حالة مش مسجل أصلاً
         }
+        if (sensorManager != null) {
+            sensorManager.unregisterListener(this);
+        }
+    }
+
+    // ✅ كشف قلب الهاتف (الشاشة لأسفل) لإيقاف الأذان
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if (flipStopAlreadyTriggered) return;
+        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+            float z = event.values[2];
+            if (z < -9.0f) { // الهاتف مقلوب (وشه لتحت)
+                flipStopAlreadyTriggered = true;
+                stopAthanAndClose();
+            }
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+        // مش محتاجين نعمل حاجة هنا
+    }
+
+    // ✅ إيقاف الأذان عند الضغط على أي زرار صوت لو الخاصية مفعّلة
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_VOLUME_UP || keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
+            SharedPreferences prefs = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this);
+            boolean lockOnVolume = prefs.getBoolean("lock_athan_on_volume_buttons", false);
+            if (lockOnVolume) {
+                stopAthanAndClose();
+                return true; // نمنع تغيير الصوت الفعلي، القصد كان الإيقاف بس
+            }
+        }
+        return super.onKeyDown(keyCode, event);
     }
 
     private String getPrayerName(String dataType) {
@@ -273,7 +332,12 @@ public class AthanScreenActivity extends AppCompatActivity {
         }
         soundPrefs.edit().putLong("athan_sound_triggered_" + dataType, System.currentTimeMillis()).commit();
 
-        
+        android.media.AudioManager am = (android.media.AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        if (am != null) {
+            am.requestAudioFocus(null,
+                android.media.AudioManager.STREAM_ALARM,
+                android.media.AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
+        }
         Bundle data = new Bundle();
         data.putInt("ACTION", ThikrMediaPlayerService.MEDIA_PLAYER_PLAY);
         data.putString("com.alaaeltaweel.thikrallah.datatype", dataType);
