@@ -36,7 +36,7 @@ public class AthanScreenActivity extends AppCompatActivity implements SensorEven
     // ✅ متغيرات قفل الأذان بالقلب / أزرار الصوت
     private SensorManager sensorManager;
     private Sensor accelerometerSensor;
-    private boolean flipStopAlreadyTriggered = false;
+    private boolean isMutedByFlip = false;
 
     private static final int AUTO_DISMISS_DELAY  = 10 * 60 * 1000;
     private static final int SLIDESHOW_INTERVAL  = 30 * 1000; // 30 ثانية
@@ -255,7 +255,7 @@ public class AthanScreenActivity extends AppCompatActivity implements SensorEven
         SharedPreferences prefs = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this);
         boolean lockOnFlip = prefs.getBoolean("lock_athan_on_flip", false);
         if (lockOnFlip && sensorManager != null && accelerometerSensor != null) {
-            flipStopAlreadyTriggered = false;
+            isMutedByFlip = false;
             sensorManager.registerListener(this, accelerometerSensor, SensorManager.SENSOR_DELAY_NORMAL);
         }
     }
@@ -271,19 +271,33 @@ public class AthanScreenActivity extends AppCompatActivity implements SensorEven
         if (sensorManager != null) {
             sensorManager.unregisterListener(this);
         }
+        // ✅ لو الشاشة اتقفلت والصوت كان مكتوم بسبب القلب، نرجّعه عادي (الكتم بس مرتبط بشاشة الأذان مفتوحة)
+        if (isMutedByFlip) {
+            sendMuteAction(false);
+            isMutedByFlip = false;
+        }
     }
 
-    // ✅ كشف قلب الهاتف (الشاشة لأسفل) لإيقاف الأذان
+    // ✅ كتم صوت الأذان مرة واحدة بس عند قلب الهاتف (مفيش إرجاع تلقائي)
     @Override
     public void onSensorChanged(SensorEvent event) {
-        if (flipStopAlreadyTriggered) return;
+        if (isMutedByFlip) return; // اتكتم قبل كده، متعملش حاجة تاني
         if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
             float z = event.values[2];
-            if (z < -9.0f) { // الهاتف مقلوب (وشه لتحت)
-                flipStopAlreadyTriggered = true;
-                stopAthanAndClose();
+            boolean isFaceDown = z < -9.0f;
+            if (isFaceDown) {
+                isMutedByFlip = true;
+                sendMuteAction(true);
             }
         }
+    }
+
+    private void sendMuteAction(boolean mute) {
+        Bundle data = new Bundle();
+        data.putInt("ACTION", mute ? ThikrMediaPlayerService.MEDIA_PLAYER_MUTE_BY_FLIP : ThikrMediaPlayerService.MEDIA_PLAYER_UNMUTE_BY_FLIP);
+        data.putString("com.alaaeltaweel.thikrallah.datatype", dataType);
+        Intent muteIntent = new Intent(this, ThikrMediaPlayerService.class).putExtras(data);
+        startService(muteIntent);
     }
 
     @Override
