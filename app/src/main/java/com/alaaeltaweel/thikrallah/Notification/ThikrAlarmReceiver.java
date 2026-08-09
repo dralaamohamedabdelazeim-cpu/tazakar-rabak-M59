@@ -189,12 +189,6 @@ if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
                     Intent.FLAG_ACTIVITY_SINGLE_TOP);
 
             context.startActivity(athanIntent);
-
-      boolean isDuaEnabled = PreferenceManager.getDefaultSharedPreferences(context).getBoolean("isDuaAfterAthan", false);
-        if (isDuaEnabled) {
-    MediaPlayer mp = MediaPlayer.create(context, R.raw.dua_after_athan);
-        if (mp != null) mp.start();
-        }
             
         } else {
 
@@ -275,7 +269,7 @@ private void showPreAthanNotification(Context context, String prayerKey) {
     if (audioManager != null) {
         int focusResult = audioManager.requestAudioFocus(null,
             AudioManager.STREAM_ALARM,
-            AudioManager.AUDIOFOCUS_GAIN);
+            AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
         canPlaySound = (focusResult == AudioManager.AUDIOFOCUS_REQUEST_GRANTED);
     }
     
@@ -328,7 +322,7 @@ PendingIntent pendingIntent = PendingIntent.getBroadcast(context, prayerKey.hash
             new Handler(Looper.getMainLooper()).postDelayed(() -> {
                 audioManager.abandonAudioFocus(null); // ✅ رجّع الميكروفون بعد ما صوت التنبيه يخلص
                 notificationManager.cancel(prayerKey.hashCode()); // ✅ قفل الإشعار تلقائي بعد ما الصوت يخلص
-            }, 5000);
+            }, 30000);
         }
 }
 
@@ -415,7 +409,7 @@ PendingIntent pi = PendingIntent.getBroadcast(context, prayerKey.hashCode() + 22
             new Handler(Looper.getMainLooper()).postDelayed(() -> {
                 audioManager.abandonAudioFocus(null); // ✅ رجّع الميكروفون بعد ما صوت الإقامة يخلص
                 nm.cancel(("iqama_" + prayerKey).hashCode()); // ✅ قفل الإشعار تلقائي بعد ما الصوت يخلص
-            }, 5000);
+            }, 30000);
         }
     }
 }
