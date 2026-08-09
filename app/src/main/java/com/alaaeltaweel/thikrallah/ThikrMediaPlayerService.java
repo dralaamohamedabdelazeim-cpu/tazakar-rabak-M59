@@ -167,6 +167,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
     private MediaPlayer player;
 
     private static long lastGeneralThikrPlayStartTime = 0; // ✅ لمنع تشغيل الذكر العام فوق نفسه
+    private static long lastAthanPlayStartTime = 0; // ✅ لمنع تشغيل الأذان فوق نفسه
 
     public int currentThikrCounter = 0;
 
@@ -731,6 +732,16 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
                 return Service.START_NOT_STICKY;
             }
             lastGeneralThikrPlayStartTime = nowMsGeneral;
+        }
+
+        // ✅ نفس الحماية للأذان - منع تشغيله فوق نفسه
+        if (incomingDataType != null && incomingDataType.contains(MainActivity.DATA_TYPE_ATHAN)) {
+            long nowMsAthan = System.currentTimeMillis();
+            if (nowMsAthan - lastAthanPlayStartTime < 2000) {
+                Timber.d("Athan play request too close to last one, skipping duplicate");
+                return Service.START_NOT_STICKY;
+            }
+            lastAthanPlayStartTime = nowMsAthan;
         }
         this.setThikrType(incomingDataType);
         Timber.d("initNotification called");
