@@ -269,11 +269,6 @@ public class AthanScreenActivity extends AppCompatActivity implements SensorEven
         if (sensorManager != null) {
             sensorManager.unregisterListener(this);
         }
-        // ✅ لو الشاشة اتقفلت والصوت كان مكتوم بسبب القلب، نرجّعه عادي (الكتم بس مرتبط بشاشة الأذان مفتوحة)
-        if (isMutedByFlip) {
-            sendMuteAction(false);
-            isMutedByFlip = false;
-        }
     }
 
     // ✅ كتم صوت الأذان مرة واحدة بس عند قلب الهاتف (مفيش إرجاع تلقائي)
@@ -396,6 +391,15 @@ MainActivity.startAthanTimer(getApplicationContext());
         athanTextHandler.removeCallbacksAndMessages(null);
         autoHandler.removeCallbacksAndMessages(null);
         unregisterPhoneStateListener();
+
+        // ✅ لو الشاشة بتتقفل نهائيًا والصوت كان مكتوم بسبب القلب، نرجّعه عادي
+        if (isMutedByFlip) {
+            sendMuteAction(false);
+            isMutedByFlip = false;
+        }
+
+        super.onDestroy();
+    }
         super.onDestroy();
     }
 }
