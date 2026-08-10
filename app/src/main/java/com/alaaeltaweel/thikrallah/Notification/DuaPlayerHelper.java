@@ -6,11 +6,14 @@ import android.content.Intent;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Build;
+import android.os.Bundle;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 
 import androidx.core.app.NotificationCompat;
 
 import com.alaaeltaweel.thikrallah.R;
+import com.alaaeltaweel.thikrallah.ThikrMediaPlayerService;
 
  // ✅ نُقل هنا من AthanScreenActivity عشان الدعاء يشتغل بمعزل تام عن فتح الشاشة
 public class DuaPlayerHelper {
@@ -28,6 +31,23 @@ public class DuaPlayerHelper {
         boolean isDuaEnabled = androidx.preference.PreferenceManager
                 .getDefaultSharedPreferences(context).getBoolean("isDuaAfterAthan", false);
         if (!isDuaEnabled) return;
+
+        // ✅ منع الدعاء لو في مكالمة شغالة دلوقتي
+        if (isInCallNow(context)) {
+            Log.d(TAG, "مكالمة شغالة - تم تخطي الدعاء بعد الأذان");
+            return;
+        }
+
+        // ✅ منع الدعاء لو الوقت الهادئ مفعّل
+        if (isQuietTimeForDua(context)) {
+            Log.d(TAG, "الوقت الهادئ مفعّل - تم تخطي الدعاء بعد الأذان");
+            return;
+        }
+
+        // ✅ وقف أي ذكر عام شغال دلوقتي - الدعاء له الأولوية
+        Bundle stopThikrData = new Bundle();
+        stopThikrData.putInt("ACTION", ThikrMediaPlayerService.MEDIA_PLAYER_STOP);
+        context.startService(new Intent(context, ThikrMediaPlayerService.class).putExtras(stopThikrData));
 
         // وقف أي تشغيل سابق قبل ما نبدأ واحد جديد
         if (duaMediaPlayer != null) {
@@ -75,6 +95,48 @@ public class DuaPlayerHelper {
 
     public static boolean isDuaPlaying() {
         return duaMediaPlayer != null;
+    }
+
+    // ✅ التحقق من وجود مكالمة هاتفية دلوقتي
+    private static boolean isInCallNow(Context context) {
+        try {
+            TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+            if (tm != null && tm.getCallState() != TelephonyManager.CALL_STATE_IDLE) {
+                return true;
+            }
+            AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+            if (am != null && am.getMode() == AudioManager.MODE_IN_COMMUNICATION) {
+                return true;
+            }
+            return false;
+        } catch (SecurityException e) {
+            return false;
+        }
+    }
+
+    // ✅ التحقق من الوقت الهادئ (من غير فحص "قرب الأذان" لأن الدعاء أصلاً بيشتغل جنب الأذان)
+    private static boolean isQuietTimeForDua(Context context) {
+        android.content.SharedPreferences prefs = androidx.preference.PreferenceManager.getDefaultSharedPreferences(context);
+        if (!prefs.getBoolean("quiet_time_choice", true)) return false;
+
+        try {
+            String[] startParts = prefs.getString("quiet_time_start", "22:00").split(":");
+            String[] endParts = prefs.getString("quiet_time_end", "22:00").split(":");
+            int startMinutes = Integer.parseInt(startParts[0]) * 60 + Integer.parseInt(startParts[1]);
+            int endMinutes = Integer.parseInt(endParts[0]) * 60 + Integer.parseInt(endParts[1]);
+
+            java.util.Calendar now = java.util.Calendar.getInstance();
+            int nowMinutes = now.get(java.util.Calendar.HOUR_OF_DAY) * 60 + now.get(java.util.Calendar.MINUTE);
+
+            if (startMinutes > endMinutes) {
+                // الفترة بتعدي منتصف الليل، زي 22:00 لـ 06:00
+                return nowMinutes >= startMinutes || nowMinutes < endMinutes;
+            } else {
+                return nowMinutes >= startMinutes && nowMinutes < endMinutes;
+            }
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private static void showDuaStopNotification(Context context) {
