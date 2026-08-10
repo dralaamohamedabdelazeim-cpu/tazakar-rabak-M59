@@ -40,7 +40,6 @@ public class AthanScreenActivity extends AppCompatActivity implements SensorEven
 
     private static final int AUTO_DISMISS_DELAY  = 10 * 60 * 1000;
     private static final int SLIDESHOW_INTERVAL  = 30 * 1000; // 30 ثانية
-    private static final int CALL_DISMISS_DELAY  = 4 * 60 * 1000; // 4 دقايق لو في مكالمة
     private static final String TAG = "AthanScreenActivity";
     private Handler autoHandler = new Handler();
     private Handler slideshowHandler = new Handler();
@@ -94,13 +93,10 @@ public class AthanScreenActivity extends AppCompatActivity implements SensorEven
     private PhoneStateListener phoneStateListener = new PhoneStateListener() {
         @Override
         public void onCallStateChanged(int state, String phoneNumber) {
-            if (state == TelephonyManager.CALL_STATE_IDLE && isCallInProgress && !athanPlayed) {
-                Log.d(TAG, "Call ended, playing athan now");
+            if (state == TelephonyManager.CALL_STATE_IDLE && isCallInProgress) {
+                Log.d(TAG, "Call ended, unmuting athan");
                 isCallInProgress = false;
-                athanPlayed = true;
-                autoHandler.removeCallbacksAndMessages(null);
-                playAthan();
-                autoHandler.postDelayed(() -> stopAthanAndClose(), AUTO_DISMISS_DELAY);
+                sendMuteAction(false); // ✅ رجّع صوت الأذان لو لسه شغال (الأذان أصلاً بيشتغل صامت من البداية)
             }
         }
     };
@@ -194,10 +190,14 @@ public class AthanScreenActivity extends AppCompatActivity implements SensorEven
         athanTextHandler.postDelayed(athanTextRunnable, 2000);
 
         if (isCallInProgress) {
-            // ✅ في مكالمة — افتح الشاشة بدون صوت وراقب المكالمة
-            Log.d(TAG, "Call in progress, opening screen silently");
+            // ✅ في مكالمة — شغّل الأذان فعليًا لكن بصوت مكتوم فورًا
+            // بكده هيخلص في نفس توقيته الطبيعي والشاشة هتقفل تلقائي مع الـ ATHAN_COMPLETE
+            Log.d(TAG, "Call in progress, playing athan silently");
             registerPhoneStateListener();
-            autoHandler.postDelayed(() -> stopAthanAndClose(), CALL_DISMISS_DELAY);
+            athanPlayed = true;
+            playAthan();
+            autoHandler.postDelayed(() -> sendMuteAction(true), 300); // نستنى الـ player يتجهز قبل ما نكتمه
+            autoHandler.postDelayed(this::stopAthanAndClose, AUTO_DISMISS_DELAY); // شبكة أمان لو حصل أي خطأ
         } else {
             // ✅ مفيش مكالمة — شغل الأذان عادي
             athanPlayed = true;
