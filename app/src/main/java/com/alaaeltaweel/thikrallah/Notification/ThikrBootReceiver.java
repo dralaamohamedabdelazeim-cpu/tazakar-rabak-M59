@@ -28,6 +28,15 @@ if (intent.getBooleanExtra("isWatchdog", false)) {
             }
             return;
   }
+            // ✅ تسجيل لحظة تغيير وقت الموبايل يدويًا (لاستخدامها في تجاوز منع تكرار الأذان أثناء الاختبار)
+            if (intent.getAction().equalsIgnoreCase(Intent.ACTION_TIME_CHANGED)
+                || intent.getAction().equalsIgnoreCase(Intent.ACTION_TIMEZONE_CHANGED)) {
+                PreferenceManager.getDefaultSharedPreferences(context)
+                        .edit()
+                        .putLong("manual_time_change_at", System.currentTimeMillis())
+                        .apply();
+            }
+
             // إعادة جدولة الـ alarms فقط بدون تشغيل الأذان
             if (intent.getAction().equalsIgnoreCase(AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED)
                 || intent.getAction().equalsIgnoreCase(Intent.ACTION_TIME_CHANGED)
