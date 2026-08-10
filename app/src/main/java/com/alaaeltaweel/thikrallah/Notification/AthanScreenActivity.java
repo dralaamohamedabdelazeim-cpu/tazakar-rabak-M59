@@ -305,19 +305,22 @@ public class AthanScreenActivity extends AppCompatActivity implements SensorEven
         // مش محتاجين نعمل حاجة هنا
     }
 
-    // ✅ إيقاف الأذان عند الضغط على أي زرار صوت لو الخاصية مفعّلة
-    @Override
-    public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (keyCode == KeyEvent.KEYCODE_VOLUME_UP || keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
-            SharedPreferences prefs = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this);
-            boolean lockOnVolume = prefs.getBoolean("lock_athan_on_volume_buttons", false);
-            if (lockOnVolume) {
-                stopAthanAndClose();
-                return true; // نمنع تغيير الصوت الفعلي، القصد كان الإيقاف بس
+// ✅ كتم صوت الأذان بس (زي القلب بالظبط) عند الضغط على زرار الصوت
+@Override
+public boolean onKeyDown(int keyCode, KeyEvent event) {
+    if (keyCode == KeyEvent.KEYCODE_VOLUME_UP || keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
+        SharedPreferences prefs = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this);
+        boolean lockOnVolume = prefs.getBoolean("lock_athan_on_volume_buttons", false);
+        if (lockOnVolume) {
+            if (!isMutedByFlip) {
+                isMutedByFlip = true;
+                sendMuteAction(true);
             }
+            return true; // نمنع تغيير صوت الموبايل الفعلي
         }
-        return super.onKeyDown(keyCode, event);
     }
+    return super.onKeyDown(keyCode, event);
+}
 
     private String getPrayerName(String dataType) {
         if (dataType == null) return "الصلاة";
