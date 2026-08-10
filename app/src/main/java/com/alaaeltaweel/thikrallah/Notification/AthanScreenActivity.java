@@ -400,7 +400,6 @@ MainActivity.startAthanTimer(getApplicationContext());
 
         super.onDestroy();
     }
-        super.onDestroy();
-    }
+        
 }
 
