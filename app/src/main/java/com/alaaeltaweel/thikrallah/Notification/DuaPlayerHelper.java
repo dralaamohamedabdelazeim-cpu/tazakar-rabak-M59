@@ -38,12 +38,6 @@ public class DuaPlayerHelper {
             return;
         }
 
-        // ✅ منع الدعاء لو الوقت الهادئ مفعّل
-        if (isQuietTimeForDua(context)) {
-            Log.d(TAG, "الوقت الهادئ مفعّل - تم تخطي الدعاء بعد الأذان");
-            return;
-        }
-
         // ✅ وقف أي ذكر عام شغال دلوقتي - الدعاء له الأولوية
         Bundle stopThikrData = new Bundle();
         stopThikrData.putInt("ACTION", ThikrMediaPlayerService.MEDIA_PLAYER_STOP);
@@ -110,31 +104,6 @@ public class DuaPlayerHelper {
             }
             return false;
         } catch (SecurityException e) {
-            return false;
-        }
-    }
-
-    // ✅ التحقق من الوقت الهادئ (من غير فحص "قرب الأذان" لأن الدعاء أصلاً بيشتغل جنب الأذان)
-    private static boolean isQuietTimeForDua(Context context) {
-        android.content.SharedPreferences prefs = androidx.preference.PreferenceManager.getDefaultSharedPreferences(context);
-        if (!prefs.getBoolean("quiet_time_choice", true)) return false;
-
-        try {
-            String[] startParts = prefs.getString("quiet_time_start", "22:00").split(":");
-            String[] endParts = prefs.getString("quiet_time_end", "22:00").split(":");
-            int startMinutes = Integer.parseInt(startParts[0]) * 60 + Integer.parseInt(startParts[1]);
-            int endMinutes = Integer.parseInt(endParts[0]) * 60 + Integer.parseInt(endParts[1]);
-
-            java.util.Calendar now = java.util.Calendar.getInstance();
-            int nowMinutes = now.get(java.util.Calendar.HOUR_OF_DAY) * 60 + now.get(java.util.Calendar.MINUTE);
-
-            if (startMinutes > endMinutes) {
-                // الفترة بتعدي منتصف الليل، زي 22:00 لـ 06:00
-                return nowMinutes >= startMinutes || nowMinutes < endMinutes;
-            } else {
-                return nowMinutes >= startMinutes && nowMinutes < endMinutes;
-            }
-        } catch (Exception e) {
             return false;
         }
     }
