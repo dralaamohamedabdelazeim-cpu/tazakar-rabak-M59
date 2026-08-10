@@ -33,7 +33,7 @@ import android.view.KeyEvent;
 
 public class AthanScreenActivity extends AppCompatActivity implements SensorEventListener {
 
-    // ✅ متغيرات قفل الأذان بالقلب / أزرار الصوت
+     // ✅ متغيرات قفل الأذان بالقلب / أزرار الصوت
     private SensorManager sensorManager;
     private Sensor accelerometerSensor;
     private boolean isMutedByFlip = false;
