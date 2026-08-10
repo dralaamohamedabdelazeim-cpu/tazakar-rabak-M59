@@ -144,7 +144,12 @@ if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
             Calendar lastCal = Calendar.getInstance();
             lastCal.setTimeInMillis(lastAthanTime);
             Calendar nowCal = Calendar.getInstance();
-            if (lastAthanTime > 0 &&
+
+            // ✅ لو المستخدم غيّر وقت الموبايل يدويًا بعد آخر أذان، اعتبرها اختبار مقصود وتجاوز المنع مرة واحدة
+            long manualTimeChangeAt = prefs.getLong("manual_time_change_at", 0);
+            boolean userChangedTimeForTesting = manualTimeChangeAt > lastAthanTime;
+
+            if (!userChangedTimeForTesting && lastAthanTime > 0 &&
                 lastCal.get(Calendar.DAY_OF_YEAR) == nowCal.get(Calendar.DAY_OF_YEAR) &&
                 lastCal.get(Calendar.YEAR) == nowCal.get(Calendar.YEAR)) {
                 Log.d(TAG, "Athan already played today, skipping: " + dataType);
@@ -413,3 +418,4 @@ PendingIntent pi = PendingIntent.getBroadcast(context, prayerKey.hashCode() + 22
         }
     }
 }
+
