@@ -30,6 +30,11 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.view.KeyEvent;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import androidx.core.app.NotificationCompat;
 
 public class AthanScreenActivity extends AppCompatActivity implements SensorEventListener {
 
@@ -41,6 +46,8 @@ public class AthanScreenActivity extends AppCompatActivity implements SensorEven
     private static final int AUTO_DISMISS_DELAY  = 10 * 60 * 1000;
     private static final int SLIDESHOW_INTERVAL  = 30 * 1000; // 30 ثانية
     private static final String TAG = "AthanScreenActivity";
+    private static final String NOTIF_CHANNEL_ID = "athan_screen_channel";
+    private static final int NOTIF_ID = 9911;
     private Handler autoHandler = new Handler();
     private Handler slideshowHandler = new Handler();
     private Handler athanTextHandler = new Handler();
@@ -254,6 +261,9 @@ public class AthanScreenActivity extends AppCompatActivity implements SensorEven
     protected void onResume() {
         super.onResume();
 
+        // ✅ رجعنا للشاشة (سواء عادي أو من الإشعار)، اقفل إشعار الرجوع لو ظاهر
+        cancelReturnToAthanNotification();
+
         // ✅ تفعيل حساس القلب لو المستخدم مفعّل الخاصية
         SharedPreferences prefs = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this);
         boolean lockOnFlip = prefs.getBoolean("lock_athan_on_flip", false);
@@ -268,6 +278,10 @@ public class AthanScreenActivity extends AppCompatActivity implements SensorEven
         super.onPause();
         if (sensorManager != null) {
             sensorManager.unregisterListener(this);
+        }
+        // ✅ لو خرجنا من الشاشة من غير إغلاق مقصود (يعني الأذان لسه شغال)، وريه إشعار يرجعنا للشاشة
+        if (!isFinishing()) {
+            showReturnToAthanNotification();
         }
     }
 
@@ -314,6 +328,52 @@ public boolean onKeyDown(int keyCode, KeyEvent event) {
     }
     return super.onKeyDown(keyCode, event);
 }
+
+    // ✅ إشعار يفضل ظاهر لما نخرج من شاشة الأذان والأذان لسه شغال، يرجعنا للشاشة عند الضغط عليه
+    private void showReturnToAthanNotification() {
+        NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (nm == null) return;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = nm.getNotificationChannel(NOTIF_CHANNEL_ID);
+            if (channel == null) {
+                channel = new NotificationChannel(NOTIF_CHANNEL_ID, "شاشة الأذان", NotificationManager.IMPORTANCE_HIGH);
+                nm.createNotificationChannel(channel);
+            }
+        }
+
+        Intent reopenIntent = new Intent(this, AthanScreenActivity.class);
+        reopenIntent.putExtra("com.alaaeltaweel.thikrallah.datatype", dataType);
+        reopenIntent.putExtra("isCallInProgress", isCallInProgress);
+        reopenIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                | Intent.FLAG_ACTIVITY_SINGLE_TOP
+                | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+
+        int piFlags = PendingIntent.FLAG_UPDATE_CURRENT;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            piFlags |= PendingIntent.FLAG_IMMUTABLE;
+        }
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, reopenIntent, piFlags);
+
+        Notification notification = new NotificationCompat.Builder(this, NOTIF_CHANNEL_ID)
+                .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
+                .setContentTitle("الأذان لسه شغال")
+                .setContentText("اضغط للرجوع لشاشة الأذان")
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true)
+                .setOngoing(true)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .build();
+
+        nm.notify(NOTIF_ID, notification);
+    }
+
+    private void cancelReturnToAthanNotification() {
+        NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (nm != null) {
+            nm.cancel(NOTIF_ID);
+        }
+    }
 
     private String getPrayerName(String dataType) {
         if (dataType == null) return "الصلاة";
@@ -391,6 +451,7 @@ MainActivity.startAthanTimer(getApplicationContext());
         athanTextHandler.removeCallbacksAndMessages(null);
         autoHandler.removeCallbacksAndMessages(null);
         unregisterPhoneStateListener();
+        cancelReturnToAthanNotification();
 
         // ✅ لو الشاشة بتتقفل نهائيًا والصوت كان مكتوم بسبب القلب، نرجّعه عادي
         if (isMutedByFlip) {
