@@ -204,6 +204,11 @@ public class AthanScreenActivity extends AppCompatActivity implements SensorEven
             playAthan();
             autoHandler.postDelayed(this::stopAthanAndClose, AUTO_DISMISS_DELAY);
         }
+
+        // ✅ تسجيل الاستقبال مرة واحدة بس طول عمر الشاشة، مش مرتبط بكونها في المقدمة
+        // (عشان الشاشة تتقفل لوحدها لما الأذان يخلص حتى لو المستخدم في تطبيق تاني)
+        registerReceiver(athanCompleteReceiver,
+                new IntentFilter("com.alaaeltaweel.thikrallah.ATHAN_COMPLETE"));
     }
 
     private void registerPhoneStateListener() {
@@ -248,8 +253,6 @@ public class AthanScreenActivity extends AppCompatActivity implements SensorEven
     @Override
     protected void onResume() {
         super.onResume();
-        registerReceiver(athanCompleteReceiver,
-                new IntentFilter("com.alaaeltaweel.thikrallah.ATHAN_COMPLETE"));
 
         // ✅ تفعيل حساس القلب لو المستخدم مفعّل الخاصية
         SharedPreferences prefs = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this);
@@ -263,11 +266,6 @@ public class AthanScreenActivity extends AppCompatActivity implements SensorEven
     @Override
     protected void onPause() {
         super.onPause();
-        try {
-            unregisterReceiver(athanCompleteReceiver);
-        } catch (IllegalArgumentException e) {
-            // في حالة مش مسجل أصلاً
-        }
         if (sensorManager != null) {
             sensorManager.unregisterListener(this);
         }
@@ -389,6 +387,11 @@ MainActivity.startAthanTimer(getApplicationContext());
 
     @Override
     protected void onDestroy() {
+        try {
+            unregisterReceiver(athanCompleteReceiver);
+        } catch (IllegalArgumentException e) {
+            // في حالة مش مسجل أصلاً
+        }
         slideshowHandler.removeCallbacksAndMessages(null);
         athanTextHandler.removeCallbacksAndMessages(null);
         autoHandler.removeCallbacksAndMessages(null);
