@@ -130,9 +130,14 @@ import android.telephony.TelephonyManager;
 
 public class ThikrMediaPlayerService extends Service implements OnCompletionListener,
 
-        AudioManager.OnAudioFocusChangeListener {
+        AudioManager.OnAudioFocusChangeListener, android.hardware.SensorEventListener {
 
     static String TAG = "ThikrMediaPlayerService";
+
+    // ✅ حساس القلب - منقول من AthanScreenActivity عشان يشتغل حتى لو الشاشة مقفولة
+    private android.hardware.SensorManager flipSensorManager;
+    private android.hardware.Sensor flipAccelerometer;
+    private boolean isMutedByFlipService = false;
 
     public static final int MEDIA_PLAYER_PAUSE = 1;
 
@@ -184,9 +189,6 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
     private MediaControllerCompat mController;
 
     private boolean overRideRespectMute = false;
-
-    // ✅ لمنع مؤقت تدرّج الصوت أو استرجاع الـ audio focus من إرجاع الصوت لوحده وقت الكتم بالقلب/زرار الصوت
-    private boolean isMutedByFlip = false;
 
     private boolean isUserAction = true;
 
@@ -851,7 +853,6 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
                 Timber.d("MEDIA_PLAYER_MUTE_BY_FLIP called - muting athan sound only");
 
-                isMutedByFlip = true;
                 if (player != null) {
                     try { player.setVolume(0f, 0f); } catch (Exception ignored) {}
                 }
@@ -862,7 +863,6 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
                 Timber.d("MEDIA_PLAYER_UNMUTE_BY_FLIP called - restoring athan sound");
 
-                isMutedByFlip = false;
                 if (player != null) {
                     try { player.setVolume(1f, 1f); } catch (Exception ignored) {}
                 }
@@ -1082,6 +1082,19 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
                 fadeDuration = 10000;
 
+            }
+
+            // ✅ تفعيل حساس القلب هنا (مش في الشاشة) عشان يشتغل حتى لو الشاشة مقفولة أو التليفون في الجيب
+            boolean lockOnFlip = sharedPrefs.getBoolean("lock_athan_on_flip", false);
+            if (lockOnFlip) {
+                isMutedByFlipService = false;
+                flipSensorManager = (android.hardware.SensorManager) getSystemService(Context.SENSOR_SERVICE);
+                if (flipSensorManager != null) {
+                    flipAccelerometer = flipSensorManager.getDefaultSensor(android.hardware.Sensor.TYPE_ACCELEROMETER);
+                    if (flipAccelerometer != null) {
+                        flipSensorManager.registerListener(this, flipAccelerometer, android.hardware.SensorManager.SENSOR_DELAY_NORMAL);
+                    }
+                }
             }
 
         }
@@ -1454,6 +1467,11 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
         Timber.d("ondestroy called");
 
+        // ✅ تنظيف حساس القلب لو الخدمة اتقفلت خالص
+        if (flipSensorManager != null) {
+            flipSensorManager.unregisterListener(this);
+        }
+
         if (mediaSession != null) {
 
             mediaSession.release();
@@ -1533,6 +1551,28 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
 
     @Override
+
+    // ✅ كتم صوت الأذان مرة واحدة بس عند قلب الهاتف (مفيش إرجاع تلقائي)
+    @Override
+    public void onSensorChanged(android.hardware.SensorEvent event) {
+        if (isMutedByFlipService) return; // اتكتم قبل كده، متعملش حاجة تاني
+        if (event.sensor.getType() == android.hardware.Sensor.TYPE_ACCELEROMETER) {
+            float z = event.values[2];
+            boolean isFaceDown = z < -9.0f;
+            if (isFaceDown && player != null) {
+                isMutedByFlipService = true;
+                try { player.setVolume(0f, 0f); } catch (Exception ignored) {}
+                if (flipSensorManager != null) {
+                    flipSensorManager.unregisterListener(this); // اتكتم، خلاص متحتاجش تراقب تاني
+                }
+            }
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(android.hardware.Sensor sensor, int accuracy) {
+        // مش محتاجين نعمل حاجة هنا
+    }
 
     public void onCompletion(MediaPlayer mp) {
 
@@ -1691,6 +1731,10 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
 
     public void resetPlayer() {
+    // ✅ إيقاف مراقبة حساس القلب لما الصوت يقف/يخلص
+    if (flipSensorManager != null) {
+        flipSensorManager.unregisterListener(this);
+    }
     if (this.player != null) {
         try {
             this.player.stop();
@@ -1838,8 +1882,6 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
 
     private void setVolume() {
-
-        if (isMutedByFlip) return; // ✅ ما ترجعش الصوت لوحده (زي وقت استرجاع الـ audio focus) وإحنا مكتومين
 
         SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this.getApplicationContext());
 
@@ -2082,8 +2124,6 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
 
     private void incrementVolume() {
-
-        if (isMutedByFlip) return; // ✅ ما ترفعش الصوت وإحنا مكتومين بسبب قلب الهاتف/زرار الصوت
 
         Timber.d("incrementVolume called");
 
