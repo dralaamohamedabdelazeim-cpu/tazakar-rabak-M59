@@ -967,6 +967,37 @@
         </androidx.cardview.widget.CardView>
         </LinearLayout><!-- end tab_content_ishaa -->
 
+        <!-- ✅ كتم الأذان تلقائيًا عند قلب الموبايل -->
+        <View
+            style="@style/Divider"
+            android:id="@+id/divider_flip_mute"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layoutDirection="locale"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="كتم صوت الأذان تلقائيًا عند قلب الموبايل"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp" />
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switch_flip_mute"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+        </LinearLayout>
+
         <!-- الموقع -->
         <TextView
             android:id="@+id/current_location"
