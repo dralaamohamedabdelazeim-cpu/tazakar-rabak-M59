@@ -411,7 +411,9 @@ MainActivity.startAthanTimer(getApplicationContext());
         athanTextHandler.removeCallbacksAndMessages(null);
         autoHandler.removeCallbacksAndMessages(null);
         unregisterPhoneStateListener();
+        if (wasExplicitlyStopped) {
         cancelReturnToAthanNotification();
+    }
 
         super.onDestroy();
     }
