@@ -42,6 +42,7 @@ public class AthanScreenActivity extends AppCompatActivity implements SensorEven
     private SensorManager sensorManager;
     private Sensor accelerometerSensor;
     private boolean isMutedByFlip = false;
+    private boolean wasExplicitlyStopped = false; // ✅ true لو المستخدم دوس إيقاف بنفسه
 
     private static final int AUTO_DISMISS_DELAY  = 10 * 60 * 1000;
     private static final int SLIDESHOW_INTERVAL  = 30 * 1000; // 30 ثانية
@@ -279,8 +280,8 @@ public class AthanScreenActivity extends AppCompatActivity implements SensorEven
         if (sensorManager != null) {
             sensorManager.unregisterListener(this);
         }
-        // ✅ لو خرجنا من الشاشة من غير إغلاق مقصود (يعني الأذان لسه شغال)، وريه إشعار يرجعنا للشاشة
-        if (!isFinishing()) {
+        // ✅ نوريه الإشعار طول ما الأذان لسه شغال - سواء طلع برجوع أو هوم - إلا لو هو اللي وقفه بنفسه
+        if (!wasExplicitlyStopped) {
             showReturnToAthanNotification();
         }
     }
@@ -422,6 +423,7 @@ public boolean onKeyDown(int keyCode, KeyEvent event) {
             }
 
     private void stopAthanAndClose() {
+        wasExplicitlyStopped = true; // ✅ ده إيقاف مقصود من المستخدم، مش خروج عادي
         Bundle data = new Bundle();
         data.putInt("ACTION", ThikrMediaPlayerService.MEDIA_PLAYER_STOP);
         data.putString("com.alaaeltaweel.thikrallah.datatype", dataType);
@@ -457,4 +459,5 @@ MainActivity.startAthanTimer(getApplicationContext());
     }
         
 }
+
 
