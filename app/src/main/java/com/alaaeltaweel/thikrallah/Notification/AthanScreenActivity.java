@@ -25,10 +25,6 @@ import com.alaaeltaweel.thikrallah.R;
 import com.alaaeltaweel.thikrallah.ThikrMediaPlayerService;
 import android.content.SharedPreferences;
 import android.media.AudioManager;
-import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
-import android.hardware.SensorManager;
 import android.view.KeyEvent;
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -36,11 +32,9 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import androidx.core.app.NotificationCompat;
 
-public class AthanScreenActivity extends AppCompatActivity implements SensorEventListener {
+public class AthanScreenActivity extends AppCompatActivity {
 
      // ✅ متغيرات قفل الأذان بالقلب / أزرار الصوت
-    private SensorManager sensorManager;
-    private Sensor accelerometerSensor;
     private boolean isMutedByFlip = false;
     private boolean wasExplicitlyStopped = false; // ✅ true لو المستخدم دوس إيقاف بنفسه
 
@@ -151,12 +145,6 @@ public class AthanScreenActivity extends AppCompatActivity implements SensorEven
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // ✅ تهيئة حساس القلب
-        sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        if (sensorManager != null) {
-            accelerometerSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        }
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true);
             setTurnScreenOn(true);
@@ -264,39 +252,14 @@ public class AthanScreenActivity extends AppCompatActivity implements SensorEven
 
         // ✅ رجعنا للشاشة (سواء عادي أو من الإشعار)، اقفل إشعار الرجوع لو ظاهر
         cancelReturnToAthanNotification();
-
-        // ✅ تفعيل حساس القلب لو المستخدم مفعّل الخاصية
-        SharedPreferences prefs = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this);
-        boolean lockOnFlip = prefs.getBoolean("lock_athan_on_flip", false);
-        if (lockOnFlip && sensorManager != null && accelerometerSensor != null) {
-            isMutedByFlip = false;
-            sensorManager.registerListener(this, accelerometerSensor, SensorManager.SENSOR_DELAY_NORMAL);
-        }
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        if (sensorManager != null) {
-            sensorManager.unregisterListener(this);
-        }
         // ✅ نوريه الإشعار طول ما الأذان لسه شغال - سواء طلع برجوع أو هوم - إلا لو هو اللي وقفه بنفسه
         if (!wasExplicitlyStopped) {
             showReturnToAthanNotification();
-        }
-    }
-
-    // ✅ كتم صوت الأذان مرة واحدة بس عند قلب الهاتف (مفيش إرجاع تلقائي)
-    @Override
-    public void onSensorChanged(SensorEvent event) {
-        if (isMutedByFlip) return; // اتكتم قبل كده، متعملش حاجة تاني
-        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
-            float z = event.values[2];
-            boolean isFaceDown = z < -9.0f;
-            if (isFaceDown) {
-                isMutedByFlip = true;
-                sendMuteAction(true);
-            }
         }
     }
 
@@ -306,11 +269,6 @@ public class AthanScreenActivity extends AppCompatActivity implements SensorEven
         data.putString("com.alaaeltaweel.thikrallah.datatype", dataType);
         Intent muteIntent = new Intent(this, ThikrMediaPlayerService.class).putExtras(data);
         startService(muteIntent);
-    }
-
-    @Override
-    public void onAccuracyChanged(Sensor sensor, int accuracy) {
-        // مش محتاجين نعمل حاجة هنا
     }
 
 // ✅ كتم صوت الأذان بس (زي القلب بالظبط) عند الضغط على زرار الصوت
@@ -459,5 +417,4 @@ MainActivity.startAthanTimer(getApplicationContext());
     }
         
 }
-
 
