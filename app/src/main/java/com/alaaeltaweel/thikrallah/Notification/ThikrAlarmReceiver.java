@@ -145,17 +145,19 @@ if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
             lastCal.setTimeInMillis(lastAthanTime);
             Calendar nowCal = Calendar.getInstance();
 
-            // ✅ لو المستخدم غيّر وقت الموبايل يدويًا بعد آخر أذان، اعتبرها اختبار مقصود وتجاوز المنع مرة واحدة
-            long manualTimeChangeAt = prefs.getLong("manual_time_change_at", 0);
-            boolean userChangedTimeForTesting = manualTimeChangeAt > lastAthanTime;
+            // ✅ [مؤقت للاختبار] زرار اختبار الأذان من التطبيق - يتجاوز المنع دايمًا
+            boolean isTestTrigger = data.getBoolean("isTestTrigger", false);
 
-            if (!userChangedTimeForTesting && lastAthanTime > 0 &&
+            if (!isTestTrigger && lastAthanTime > 0 &&
                 lastCal.get(Calendar.DAY_OF_YEAR) == nowCal.get(Calendar.DAY_OF_YEAR) &&
                 lastCal.get(Calendar.YEAR) == nowCal.get(Calendar.YEAR)) {
                 Log.d(TAG, "Athan already played today, skipping: " + dataType);
                 return;
             }
-            prefs.edit().putLong("last_athan_time_" + dataType, nowMs).commit();
+            // ✅ زرار الاختبار ميسجلش نفسه كـ"آخر أذان شغل"، عشان الأذان الحقيقي المجدول لنفس اليوم يفضل يشتغل عادي في معاده
+            if (!isTestTrigger) {
+                prefs.edit().putLong("last_athan_time_" + dataType, nowMs).commit();
+            }
 
             // ✅ تحقق من وجود مكالمة وابعت الحالة للشاشة
             boolean isInCall = false;
@@ -418,4 +420,3 @@ PendingIntent pi = PendingIntent.getBroadcast(context, prayerKey.hashCode() + 22
         }
     }
 }
-
