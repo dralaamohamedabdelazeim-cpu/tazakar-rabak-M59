@@ -21,20 +21,33 @@ public class DuaPlayerHelper {
     private static final String TAG = "DuaPlayerHelper";
    private static MediaPlayer duaMediaPlayer;
     private static long lastPlayStartTime = 0; // ✅ لمنع نداءين متقاربين يشغلوا الدعاء فوق بعض
+    private static Runnable pendingFinishedCallback; // ✅ بيتنفذ لما الدعاء يخلص فعليًا (أو يتلغى)
 
+    // ✅ نسخة قديمة للتوافق - بتنادي النسخة الجديدة من غير أي كول باك
     public static void playDuaAfterAthan(Context context) {
+        playDuaAfterAthan(context, null);
+    }
+
+    // ✅ نسخة جديدة بتاخد كول باك يتنفذ لما الدعاء يخلص فعليًا
+    // عشان اللي بينادي (زي ThikrMediaPlayerService) ميقفلش نفسه (stopSelf) غير بعد ما الدعاء يخلص فعلا
+    public static void playDuaAfterAthan(Context context, Runnable onFinished) {
         long nowMs = System.currentTimeMillis();
         if (duaMediaPlayer != null && (nowMs - lastPlayStartTime) < 2000) {
+            if (onFinished != null) onFinished.run(); // ✅ نداء مكرر - سيب اللي نادى يقفل نفسه عادي
             return; // ✅ نداء مكرر جه في نفس اللحظة تقريبًا - نتجاهله
         }
         lastPlayStartTime = nowMs;
         boolean isDuaEnabled = androidx.preference.PreferenceManager
                 .getDefaultSharedPreferences(context).getBoolean("isDuaAfterAthan", false);
-        if (!isDuaEnabled) return;
+        if (!isDuaEnabled) {
+            if (onFinished != null) onFinished.run();
+            return;
+        }
 
         // ✅ منع الدعاء لو في مكالمة شغالة دلوقتي
         if (isInCallNow(context)) {
             Log.d(TAG, "مكالمة شغالة - تم تخطي الدعاء بعد الأذان");
+            if (onFinished != null) onFinished.run();
             return;
         }
 
@@ -62,17 +75,27 @@ public class DuaPlayerHelper {
         if (duaMediaPlayer == null) {
             Log.e(TAG, "فشل تحميل ملف الدعاء dua_after_athan.mp3");
             if (am != null) am.abandonAudioFocus(null);
+            if (onFinished != null) onFinished.run();
             return;
         }
+        pendingFinishedCallback = onFinished; // ✅ هيتنفذ لما الدعاء يخلص طبيعي أو يتوقف يدويًا
         duaMediaPlayer.setOnCompletionListener(mp -> {
             mp.release();
             duaMediaPlayer = null;
             if (am != null) am.abandonAudioFocus(null); // ✅ سيب الميكروفون بعد ما الدعاء يخلص
             android.app.NotificationManager nmDone = (android.app.NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
             if (nmDone != null) nmDone.cancel(9911);
+            runAndClearPendingCallback(); // ✅ خلص الدعاء فعليًا - نبلغ اللي كان مستني
         });
         duaMediaPlayer.start();
         showDuaStopNotification(context);
+    }
+
+    // ✅ ينفذ الكول باك المعلق مرة واحدة بس، وبعدين يمسحه عشان ميتنفذش تاني بالغلط
+    private static void runAndClearPendingCallback() {
+        Runnable cb = pendingFinishedCallback;
+        pendingFinishedCallback = null;
+        if (cb != null) cb.run();
     }
 
     public static void stopDua(Context context) {
@@ -85,6 +108,7 @@ public class DuaPlayerHelper {
       if (am != null) am.abandonAudioFocus(null);// ✅ سيب الميكروفون هنا كمان لو المستخدم وقف الدعاء يدوي
         android.app.NotificationManager nm = (android.app.NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm != null) nm.cancel(9911);
+        runAndClearPendingCallback(); // ✅ المستخدم وقفه يدوي - برضو نبلغ اللي كان مستني عشان يقفل نفسه
     }
 
     public static boolean isDuaPlaying() {
