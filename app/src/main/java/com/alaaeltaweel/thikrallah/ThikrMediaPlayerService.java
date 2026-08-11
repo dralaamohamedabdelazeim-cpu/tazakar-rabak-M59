@@ -185,6 +185,9 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
     private boolean overRideRespectMute = false;
 
+    // ✅ لمنع مؤقت تدرّج الصوت أو استرجاع الـ audio focus من إرجاع الصوت لوحده وقت الكتم بالقلب/زرار الصوت
+    private boolean isMutedByFlip = false;
+
     private boolean isUserAction = true;
 
     private NotificationCompat.Builder notificationBuilder;
@@ -848,6 +851,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
                 Timber.d("MEDIA_PLAYER_MUTE_BY_FLIP called - muting athan sound only");
 
+                isMutedByFlip = true;
                 if (player != null) {
                     try { player.setVolume(0f, 0f); } catch (Exception ignored) {}
                 }
@@ -858,6 +862,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
                 Timber.d("MEDIA_PLAYER_UNMUTE_BY_FLIP called - restoring athan sound");
 
+                isMutedByFlip = false;
                 if (player != null) {
                     try { player.setVolume(1f, 1f); } catch (Exception ignored) {}
                 }
@@ -1834,6 +1839,8 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
     private void setVolume() {
 
+        if (isMutedByFlip) return; // ✅ ما ترجعش الصوت لوحده (زي وقت استرجاع الـ audio focus) وإحنا مكتومين
+
         SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this.getApplicationContext());
 
         boolean isGradual = sharedPrefs.getBoolean("gradual_volume", true);
@@ -2075,6 +2082,8 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
 
     private void incrementVolume() {
+
+        if (isMutedByFlip) return; // ✅ ما ترفعش الصوت وإحنا مكتومين بسبب قلب الهاتف/زرار الصوت
 
         Timber.d("incrementVolume called");
 
