@@ -163,6 +163,10 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
     public static final int MEDIA_PLAYER_MUTE_BY_FLIP = 10;
     public static final int MEDIA_PLAYER_UNMUTE_BY_FLIP = 11;
 
+    // ✅ حماية الخدمة من القفل طول ما الدعاء شغال (خصوصًا في الأجهزة اللي بتقفل التطبيقات بسرعة)
+    public static final int MEDIA_PLAYER_DUA_STARTED = 12;
+    public static final int MEDIA_PLAYER_DUA_ENDED = 13;
+
 
 
     AudioManager am;
@@ -189,6 +193,9 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
     private MediaControllerCompat mController;
 
     private boolean overRideRespectMute = false;
+
+    // ✅ لمنع مؤقت تدرّج الصوت أو استرجاع الـ audio focus من إرجاع الصوت لوحده وقت الكتم بالقلب/زرار الصوت
+    private boolean isMutedByFlip = false;
 
     private boolean isUserAction = true;
 
@@ -695,13 +702,12 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
             }
 
             // ✅ إرسال broadcast لـ AthanScreenActivity - بس لو ده أذان حقيقي فعلاً وكان لسه شغال فعليًا
+            boolean duaWillPlay1 = false;
             if (wasActuallyPlaying && incomingDataType != null && incomingDataType.contains(MainActivity.DATA_TYPE_ATHAN)) {
-                com.alaaeltaweel.thikrallah.Notification.DuaPlayerHelper.playDuaAfterAthan(getApplicationContext(), () -> {
-                    // ✅ الخدمة متقفلش نفسها غير بعد ما الدعاء يخلص فعليًا (عشان أندرويد ميقفلش الدعاء قبل ما يبان)
-                    ThikrMediaPlayerService.this.stopForeground(true);
-                    ThikrMediaPlayerService.this.stopSelf();
-                }); // على طول كلمه - تشغيل الدعاء لما المستخدم يوقف الأذان يدويا
-            } else {
+                duaWillPlay1 = com.alaaeltaweel.thikrallah.Notification.DuaPlayerHelper.playDuaAfterAthan(getApplicationContext()); // على طول كلمه - تشغيل الدعاء لما المستخدم يوقف الأذان يدويا
+            }
+
+            if (!duaWillPlay1) {
                 this.stopForeground(true);
                 this.stopSelf();
             }
@@ -856,6 +862,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
                 Timber.d("MEDIA_PLAYER_MUTE_BY_FLIP called - muting athan sound only");
 
+                isMutedByFlip = true;
                 if (player != null) {
                     try { player.setVolume(0f, 0f); } catch (Exception ignored) {}
                 }
@@ -866,11 +873,36 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
                 Timber.d("MEDIA_PLAYER_UNMUTE_BY_FLIP called - restoring athan sound");
 
+                isMutedByFlip = false;
                 if (player != null) {
                     try { player.setVolume(1f, 1f); } catch (Exception ignored) {}
                 }
 
                 break;
+
+            case MEDIA_PLAYER_DUA_STARTED:
+
+                Timber.d("MEDIA_PLAYER_DUA_STARTED - keeping service alive in foreground while dua plays");
+
+                try {
+                    android.app.Notification duaNotif = com.alaaeltaweel.thikrallah.Notification.DuaPlayerHelper.buildDuaNotification(this);
+                    if (duaNotif != null) {
+                        startForeground(9911, duaNotif);
+                    }
+                } catch (Exception e) {
+                    Timber.tag(TAG).e(e, "Failed to start foreground for dua");
+                }
+
+                return Service.START_NOT_STICKY;
+
+            case MEDIA_PLAYER_DUA_ENDED:
+
+                Timber.d("MEDIA_PLAYER_DUA_ENDED - dua finished, service can stop now");
+
+                this.stopForeground(true);
+                this.stopSelf();
+
+                return Service.START_NOT_STICKY;
 
             case MEDIA_PLAYER_RESET:
 
@@ -1121,21 +1153,14 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
             Intent broadcastIntent = new Intent("com.alaaeltaweel.thikrallah.ATHAN_COMPLETE");
 
             sendBroadcast(broadcastIntent);
-            boolean isAthanCompletion = getThikrType() != null && getThikrType().contains(MainActivity.DATA_TYPE_ATHAN);
-            if (isAthanCompletion) {
-                com.alaaeltaweel.thikrallah.Notification.DuaPlayerHelper.playDuaAfterAthan(getApplicationContext(), () -> {
-                    // ✅ الخدمة متقفلش نفسها غير بعد ما الدعاء يخلص فعليًا
-                    ThikrMediaPlayerService.this.stopForeground(true);
-                    ThikrMediaPlayerService.this.stopSelf();
-                });
-            } // تشغيل الدعاء لو ده أذان بس
+            boolean duaWillPlay2 = false;
+            if (getThikrType() != null && getThikrType().contains(MainActivity.DATA_TYPE_ATHAN)) { duaWillPlay2 = com.alaaeltaweel.thikrallah.Notification.DuaPlayerHelper.playDuaAfterAthan(getApplicationContext()); } // تشغيل الدعاء لو ده أذان بس
 
 
             resetPlayer();
 
-            if (!isAthanCompletion) {
+            if (!duaWillPlay2) {
                 stopForeground(true);
-
                 stopSelf();
             }
 
@@ -1562,6 +1587,8 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
 
 
+    @Override
+
     // ✅ كتم صوت الأذان مرة واحدة بس عند قلب الهاتف (مفيش إرجاع تلقائي)
     @Override
     public void onSensorChanged(android.hardware.SensorEvent event) {
@@ -1598,13 +1625,13 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
             // ✅ شغل الدعاء بعد الأذان - بس لو ده أذان حقيقي فعلاً
             Intent duaIntent = new Intent("com.alaaeltaweel.thikrallah.ATHAN_COMPLETE");
             sendBroadcast(duaIntent);
-            com.alaaeltaweel.thikrallah.Notification.DuaPlayerHelper.playDuaAfterAthan(getApplicationContext(), () -> {
-                // ✅ الخدمة متقفلش نفسها غير بعد ما الدعاء يخلص فعليًا
-                ThikrMediaPlayerService.this.stopForeground(true);
-                ThikrMediaPlayerService.this.stopSelf();
-            }); // تشغيل الدعاء مستقل عن فتح الشاشة
+            boolean duaWillPlay3 = com.alaaeltaweel.thikrallah.Notification.DuaPlayerHelper.playDuaAfterAthan(getApplicationContext()); // تشغيل الدعاء مستقل عن فتح الشاشة
 
             this.resetPlayer();
+            if (!duaWillPlay3) {
+                this.stopForeground(true);
+                this.stopSelf();
+            }
             return;
         }
 
@@ -1895,6 +1922,8 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
     private void setVolume() {
 
+        if (isMutedByFlip) return; // ✅ ما ترجعش الصوت لوحده (زي وقت استرجاع الـ audio focus) وإحنا مكتومين
+
         SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this.getApplicationContext());
 
         boolean isGradual = sharedPrefs.getBoolean("gradual_volume", true);
@@ -2136,6 +2165,8 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
 
     private void incrementVolume() {
+
+        if (isMutedByFlip) return; // ✅ ما ترفعش الصوت وإحنا مكتومين بسبب قلب الهاتف/زرار الصوت
 
         Timber.d("incrementVolume called");
 
