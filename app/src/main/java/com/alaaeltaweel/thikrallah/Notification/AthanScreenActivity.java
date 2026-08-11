@@ -47,7 +47,7 @@ public class AthanScreenActivity extends AppCompatActivity implements SensorEven
     private static final int SLIDESHOW_INTERVAL  = 30 * 1000; // 30 ثانية
     private static final String TAG = "AthanScreenActivity";
     private static final String NOTIF_CHANNEL_ID = "athan_screen_channel";
-    private static final int NOTIF_ID = 9911;
+    private static final int NOTIF_ID = 774411; // ✅ اتغيّر عشان ميتعارضش مع إشعار الدعاء بعد الأذان (كان بيستخدم نفس الرقم 9911)
     private Handler autoHandler = new Handler();
     private Handler slideshowHandler = new Handler();
     private Handler athanTextHandler = new Handler();
