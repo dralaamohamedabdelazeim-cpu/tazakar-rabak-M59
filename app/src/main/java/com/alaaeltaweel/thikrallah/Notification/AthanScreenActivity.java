@@ -35,7 +35,7 @@ import androidx.core.app.NotificationCompat;
 public class AthanScreenActivity extends AppCompatActivity {
 
      // ✅ متغيرات قفل الأذان بالقلب / أزرار الصوت
-    private boolean isMutedByFlip = false;
+    private boolean isMutedManually = false;
     private boolean wasExplicitlyStopped = false; // ✅ true لو المستخدم دوس إيقاف بنفسه
 
     private static final int AUTO_DISMISS_DELAY  = 10 * 60 * 1000;
@@ -278,8 +278,8 @@ public boolean onKeyDown(int keyCode, KeyEvent event) {
         SharedPreferences prefs = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this);
         boolean lockOnVolume = prefs.getBoolean("lock_athan_on_volume_buttons", false);
         if (lockOnVolume) {
-            if (!isMutedByFlip) {
-                isMutedByFlip = true;
+            if (!isMutedManually) {
+                isMutedManually = true;
                 sendMuteAction(true);
             }
             return true; // نمنع تغيير صوت الموبايل الفعلي
