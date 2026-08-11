@@ -56,6 +56,7 @@ public class AthanFragment extends Fragment implements SharedPreferences.OnShare
     private TextView prayer4_time;
     private TextView prayer5_time;
     private TextView sunrise_time;
+    private SwitchCompat flip_mute_switch;
     private SwitchCompat fajr_switch;
     private SwitchCompat duhr_switch;
     private SwitchCompat asr_switch;
@@ -174,6 +175,12 @@ public class AthanFragment extends Fragment implements SharedPreferences.OnShare
 
         currentLocation.setOnClickListener(this);
         is_Manual_Location.setOnClickListener(this);
+
+        flip_mute_switch = view.findViewById(R.id.switch_flip_mute);
+        flip_mute_switch.setChecked(mPrefs.getBoolean("lock_athan_on_flip", false));
+        flip_mute_switch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            mPrefs.edit().putBoolean("lock_athan_on_flip", isChecked).apply();
+        });
 
         fajr_switch    = view.findViewById(R.id.switch1);
         duhr_switch    = view.findViewById(R.id.switch2);
