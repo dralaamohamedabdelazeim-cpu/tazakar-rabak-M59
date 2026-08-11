@@ -195,8 +195,17 @@ if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
                     Intent.FLAG_ACTIVITY_CLEAR_TOP |
                     Intent.FLAG_ACTIVITY_SINGLE_TOP);
 
-            context.startActivity(athanIntent);
-            
+            // ✅ محاولة فتح الشاشة مباشرة - بتنجح غالبًا لو النظام سامح بالفتح من الخلفية
+            try {
+                context.startActivity(athanIntent);
+            } catch (Exception e) {
+                Log.e(TAG, "Direct startActivity for athan screen failed: " + e.getMessage());
+            }
+
+            // ✅ ضمان فتح الشاشة حتى لو النظام منع الفتح المباشر (قيود Android 10+ على فتح Activity من الخلفية)
+            // ده نفس الأسلوب اللي بيشتغل بثبات مع تنبيه ما قبل الأذان والإقامة
+            showAthanFullScreenNotification(context, athanIntent, dataType);
+
         } else {
 
             // ✅ الأذكار العادية — لا تشتغل أثناء المكالمات (فحص المكالمة الأول)
@@ -332,6 +341,48 @@ PendingIntent pendingIntent = PendingIntent.getBroadcast(context, prayerKey.hash
             }, 30000);
         }
 }
+
+    // ✅ إشعار full-screen بيضمن فتح شاشة الأذان حتى لو منعت قيود الأندرويد فتحها مباشرة من الخلفية
+    // نفس القناة والـ ID اللي بتستخدمهم AthanScreenActivity في "showReturnToAthanNotification"
+    // عشان لو الشاشة فتحت فعلاً (onResume) هيتقفل الإشعار ده تلقائي
+    private void showAthanFullScreenNotification(Context context, Intent athanIntent, String dataType) {
+        String channelId = "athan_screen_channel";
+        int notifId = 774411;
+
+        NotificationManager nm =
+                (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        if (nm == null) return;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = nm.getNotificationChannel(channelId);
+            if (channel == null) {
+                channel = new NotificationChannel(channelId, "شاشة الأذان", NotificationManager.IMPORTANCE_HIGH);
+                channel.setSound(null, null); // ✅ الصوت شغال بالفعل من ThikrMediaPlayerService، الإشعار ده بس لفتح الشاشة
+                nm.createNotificationChannel(channel);
+            }
+        }
+
+        int piFlags = PendingIntent.FLAG_UPDATE_CURRENT;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            piFlags |= PendingIntent.FLAG_IMMUTABLE;
+        }
+        PendingIntent fullScreenPendingIntent = PendingIntent.getActivity(
+                context, dataType.hashCode() + 4444, athanIntent, piFlags);
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, channelId)
+                .setSmallIcon(R.drawable.ic_launcher)
+                .setContentTitle("حان وقت الأذان")
+                .setContentText("اضغط لفتح شاشة الأذان")
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setAutoCancel(true)
+                .setOngoing(true)
+                .setSound(null)
+                .setContentIntent(fullScreenPendingIntent)
+                .setFullScreenIntent(fullScreenPendingIntent, true);
+
+        nm.notify(notifId, builder.build());
+    }
 
     private boolean isAthanType(String dataType) {
         if (dataType == null) return false;
