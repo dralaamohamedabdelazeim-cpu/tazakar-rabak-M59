@@ -138,6 +138,8 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
     private android.hardware.SensorManager flipSensorManager;
     private android.hardware.Sensor flipAccelerometer;
     private boolean isMutedByFlipService = false;
+    // ✅ كتم صوت الأذان بزرار الصوت حتى لو شاشة الأذان مقفولة/التطبيق في الخلفية (زي حساس القلب بالظبط)
+    private VolumeButtonReceiver volumeButtonReceiver;
 
     public static final int MEDIA_PLAYER_PAUSE = 1;
 
@@ -1132,6 +1134,16 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
                 }
             }
 
+            // ✅ تفعيل مراقبة زرار الصوت هنا (مش في الشاشة) عشان يشتغل حتى لو شاشة الأذان مقفولة
+            boolean lockOnVolume = sharedPrefs.getBoolean("lock_athan_on_volume_buttons", false);
+            if (lockOnVolume) {
+                try {
+                    volumeButtonReceiver = new VolumeButtonReceiver();
+                    registerReceiver(volumeButtonReceiver,
+                            new android.content.IntentFilter("android.media.VOLUME_CHANGED_ACTION"));
+                } catch (Exception ignored) {}
+            }
+
         }
 
 
@@ -1508,6 +1520,11 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
         if (flipSensorManager != null) {
             flipSensorManager.unregisterListener(this);
         }
+        // ✅ تنظيف مراقبة زرار الصوت لو الخدمة اتقفلت خالص
+        if (volumeButtonReceiver != null) {
+            try { unregisterReceiver(volumeButtonReceiver); } catch (Exception ignored) {}
+            volumeButtonReceiver = null;
+        }
 
         if (mediaSession != null) {
 
@@ -1587,8 +1604,6 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
 
 
-    
-
     // ✅ كتم صوت الأذان مرة واحدة بس عند قلب الهاتف (مفيش إرجاع تلقائي)
     @Override
     public void onSensorChanged(android.hardware.SensorEvent event) {
@@ -1610,6 +1625,24 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
     @Override
     public void onAccuracyChanged(android.hardware.Sensor sensor, int accuracy) {
         // مش محتاجين نعمل حاجة هنا
+    }
+
+    // ✅ كتم صوت الأذان مرة واحدة بس عند الضغط على زرار الصوت (مفيش إرجاع تلقائي) - شغالة حتى لو شاشة الأذان مقفولة
+    private class VolumeButtonReceiver extends android.content.BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (isMutedByFlip) return; // اتكتم قبل كده، متعملش حاجة تاني
+            int streamType = intent.getIntExtra("android.media.EXTRA_VOLUME_STREAM_TYPE", -1);
+            if (streamType != AudioManager.STREAM_MUSIC) return;
+            if (player == null) return;
+            isMutedByFlipService = true;
+            isMutedByFlip = true;
+            try { player.setVolume(0f, 0f); } catch (Exception ignored) {}
+            if (volumeButtonReceiver != null) {
+                try { unregisterReceiver(volumeButtonReceiver); } catch (Exception ignored) {} // اتكتم، خلاص متحتاجش تراقب تاني
+                volumeButtonReceiver = null;
+            }
+        }
     }
 
     public void onCompletion(MediaPlayer mp) {
@@ -1774,6 +1807,11 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
     // ✅ إيقاف مراقبة حساس القلب لما الصوت يقف/يخلص
     if (flipSensorManager != null) {
         flipSensorManager.unregisterListener(this);
+    }
+    // ✅ إيقاف مراقبة زرار الصوت لما الصوت يقف/يخلص
+    if (volumeButtonReceiver != null) {
+        try { unregisterReceiver(volumeButtonReceiver); } catch (Exception ignored) {}
+        volumeButtonReceiver = null;
     }
     if (this.player != null) {
         try {
