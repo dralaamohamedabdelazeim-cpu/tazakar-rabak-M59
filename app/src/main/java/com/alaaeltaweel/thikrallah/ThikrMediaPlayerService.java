@@ -1598,6 +1598,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
             boolean isFaceDown = z < -9.0f;
             if (isFaceDown && player != null) {
                 isMutedByFlipService = true;
+                isMutedByFlip = true;
                 try { player.setVolume(0f, 0f); } catch (Exception ignored) {}
                 if (flipSensorManager != null) {
                     flipSensorManager.unregisterListener(this); // اتكتم، خلاص متحتاجش تراقب تاني
