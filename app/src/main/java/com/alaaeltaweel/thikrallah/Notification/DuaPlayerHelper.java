@@ -21,34 +21,21 @@ public class DuaPlayerHelper {
     private static final String TAG = "DuaPlayerHelper";
    private static MediaPlayer duaMediaPlayer;
     private static long lastPlayStartTime = 0; // ✅ لمنع نداءين متقاربين يشغلوا الدعاء فوق بعض
-    private static Runnable pendingFinishedCallback; // ✅ بيتنفذ لما الدعاء يخلص فعليًا (أو يتلغى)
 
-    // ✅ نسخة قديمة للتوافق - بتنادي النسخة الجديدة من غير أي كول باك
-    public static void playDuaAfterAthan(Context context) {
-        playDuaAfterAthan(context, null);
-    }
-
-    // ✅ نسخة جديدة بتاخد كول باك يتنفذ لما الدعاء يخلص فعليًا
-    // عشان اللي بينادي (زي ThikrMediaPlayerService) ميقفلش نفسه (stopSelf) غير بعد ما الدعاء يخلص فعلا
-    public static void playDuaAfterAthan(Context context, Runnable onFinished) {
+    public static boolean playDuaAfterAthan(Context context) {
         long nowMs = System.currentTimeMillis();
         if (duaMediaPlayer != null && (nowMs - lastPlayStartTime) < 2000) {
-            if (onFinished != null) onFinished.run(); // ✅ نداء مكرر - سيب اللي نادى يقفل نفسه عادي
-            return; // ✅ نداء مكرر جه في نفس اللحظة تقريبًا - نتجاهله
+            return true; // ✅ نداء مكرر جه في نفس اللحظة تقريبًا - نتجاهله، لكن الدعاء أصلاً شغال فعلاً
         }
         lastPlayStartTime = nowMs;
         boolean isDuaEnabled = androidx.preference.PreferenceManager
                 .getDefaultSharedPreferences(context).getBoolean("isDuaAfterAthan", false);
-        if (!isDuaEnabled) {
-            if (onFinished != null) onFinished.run();
-            return;
-        }
+        if (!isDuaEnabled) return false;
 
         // ✅ منع الدعاء لو في مكالمة شغالة دلوقتي
         if (isInCallNow(context)) {
             Log.d(TAG, "مكالمة شغالة - تم تخطي الدعاء بعد الأذان");
-            if (onFinished != null) onFinished.run();
-            return;
+            return false;
         }
 
         // ✅ وقف أي ذكر عام شغال دلوقتي - الدعاء له الأولوية
@@ -75,27 +62,25 @@ public class DuaPlayerHelper {
         if (duaMediaPlayer == null) {
             Log.e(TAG, "فشل تحميل ملف الدعاء dua_after_athan.mp3");
             if (am != null) am.abandonAudioFocus(null);
-            if (onFinished != null) onFinished.run();
-            return;
+            return false;
         }
-        pendingFinishedCallback = onFinished; // ✅ هيتنفذ لما الدعاء يخلص طبيعي أو يتوقف يدويًا
         duaMediaPlayer.setOnCompletionListener(mp -> {
             mp.release();
             duaMediaPlayer = null;
             if (am != null) am.abandonAudioFocus(null); // ✅ سيب الميكروفون بعد ما الدعاء يخلص
             android.app.NotificationManager nmDone = (android.app.NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
             if (nmDone != null) nmDone.cancel(9911);
-            runAndClearPendingCallback(); // ✅ خلص الدعاء فعليًا - نبلغ اللي كان مستني
+            notifyDuaEnded(context); // ✅ خلاص، الخدمة تقدر تقفل نفسها دلوقتي
         });
         duaMediaPlayer.start();
         showDuaStopNotification(context);
-    }
 
-    // ✅ ينفذ الكول باك المعلق مرة واحدة بس، وبعدين يمسحه عشان ميتنفذش تاني بالغلط
-    private static void runAndClearPendingCallback() {
-        Runnable cb = pendingFinishedCallback;
-        pendingFinishedCallback = null;
-        if (cb != null) cb.run();
+        // ✅ نخلي الخدمة تفضل محمية (foreground) طول ما الدعاء شغال، عشان أندرويد ميقفلهاش قبل ما يخلص
+        Bundle duaStartedData = new Bundle();
+        duaStartedData.putInt("ACTION", ThikrMediaPlayerService.MEDIA_PLAYER_DUA_STARTED);
+        context.startService(new Intent(context, ThikrMediaPlayerService.class).putExtras(duaStartedData));
+
+        return true;
     }
 
     public static void stopDua(Context context) {
@@ -108,7 +93,14 @@ public class DuaPlayerHelper {
       if (am != null) am.abandonAudioFocus(null);// ✅ سيب الميكروفون هنا كمان لو المستخدم وقف الدعاء يدوي
         android.app.NotificationManager nm = (android.app.NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm != null) nm.cancel(9911);
-        runAndClearPendingCallback(); // ✅ المستخدم وقفه يدوي - برضو نبلغ اللي كان مستني عشان يقفل نفسه
+        notifyDuaEnded(context); // ✅ خلاص، الخدمة تقدر تقفل نفسها دلوقتي
+    }
+
+    // ✅ يبعت للخدمة إنها تقدر تقفل نفسها بأمان دلوقتي
+    private static void notifyDuaEnded(Context context) {
+        Bundle duaEndedData = new Bundle();
+        duaEndedData.putInt("ACTION", ThikrMediaPlayerService.MEDIA_PLAYER_DUA_ENDED);
+        context.startService(new Intent(context, ThikrMediaPlayerService.class).putExtras(duaEndedData));
     }
 
     public static boolean isDuaPlaying() {
@@ -133,9 +125,18 @@ public class DuaPlayerHelper {
     }
 
     private static void showDuaStopNotification(Context context) {
+        android.app.NotificationManager nm = (android.app.NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        android.app.Notification notif = buildDuaNotification(context);
+        if (nm != null && notif != null) {
+            nm.notify(9911, notif);
+        }
+    }
+
+    // ✅ نفس إشعار الدعاء، لكن كدالة قابلة لإعادة الاستخدام (مع startForeground برضو)
+    public static android.app.Notification buildDuaNotification(Context context) {
         String channelId = "dua_stop_channel_v3";
         android.app.NotificationManager nm = (android.app.NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && nm != null) {
             android.app.NotificationChannel channel = new android.app.NotificationChannel(
                 channelId, "الدعاء بعد الأذان", android.app.NotificationManager.IMPORTANCE_DEFAULT);
             channel.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
@@ -146,7 +147,7 @@ public class DuaPlayerHelper {
         PendingIntent stopPi = PendingIntent.getBroadcast(context, 9911, stopIntent,
             PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, channelId)
+        return new NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.drawable.ic_launcher)
             .setContentTitle("الدعاء بعد الأذان")
             .setContentText("جاري تشغيل الدعاء - اضغط للإيقاف")
@@ -155,8 +156,8 @@ public class DuaPlayerHelper {
             .setOngoing(true)
             .setAutoCancel(false)
             .addAction(0, "إيقاف", stopPi)
-            .setContentIntent(stopPi);
-        // ✅ من غير setFullScreenIntent خالص - ده كان سبب توقف الذكر العام قبل كده
-        nm.notify(9911, builder.build());
+            .setContentIntent(stopPi)
+            // ✅ من غير setFullScreenIntent خالص - ده كان سبب توقف الذكر العام قبل كده
+            .build();
     }
 }
