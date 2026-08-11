@@ -453,12 +453,6 @@ MainActivity.startAthanTimer(getApplicationContext());
         unregisterPhoneStateListener();
         cancelReturnToAthanNotification();
 
-        // ✅ لو الشاشة بتتقفل نهائيًا والصوت كان مكتوم بسبب القلب، نرجّعه عادي
-        if (isMutedByFlip) {
-            sendMuteAction(false);
-            isMutedByFlip = false;
-        }
-
         super.onDestroy();
     }
         
