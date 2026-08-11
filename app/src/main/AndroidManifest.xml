@@ -35,6 +35,11 @@
     <uses-permission android:name="android.permission.BLUETOOTH" />
 
     <uses-sdk tools:overrideLibrary="timber.log" />
+
+    <permission
+        android:name="com.alaaeltaweel.thikrallah.permission.ALARM_RECEIVER"
+        android:protectionLevel="signature" />
+
     <application
         android:name="com.alaaeltaweel.thikrallah.quran.labs.androidquran.QuranApplication"
         android:allowBackup="false"
@@ -121,7 +126,7 @@
     android:showWhenLocked="true"
     android:turnScreenOn="true"
     android:excludeFromRecents="true"
-    
+    android:noHistory="true"
     android:taskAffinity=""
     android:theme="@style/AppTheme" />
 
@@ -165,7 +170,8 @@
 
         <receiver
             android:name="com.alaaeltaweel.thikrallah.Notification.ThikrAlarmReceiver"
-            android:exported="true" />
+            android:exported="true"
+            android:permission="com.alaaeltaweel.thikrallah.permission.ALARM_RECEIVER" />
         <receiver
             android:name="com.alaaeltaweel.thikrallah.Notification.QuranThikrDownloadNeeds"
             android:exported="false" />
