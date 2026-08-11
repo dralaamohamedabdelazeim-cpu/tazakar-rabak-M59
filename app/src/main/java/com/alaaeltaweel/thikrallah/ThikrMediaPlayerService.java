@@ -1550,7 +1550,6 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
 
 
-    @Override
 
     // ✅ كتم صوت الأذان مرة واحدة بس عند قلب الهاتف (مفيش إرجاع تلقائي)
     @Override
