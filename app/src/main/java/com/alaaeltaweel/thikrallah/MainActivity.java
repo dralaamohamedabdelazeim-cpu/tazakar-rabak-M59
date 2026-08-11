@@ -854,6 +854,10 @@ public class MainActivity extends AppCompatActivity implements MainInterface, Lo
 
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.main, menu);
+
+        // ✅ زرار اختبار مؤقت لتشغيل الأذان فورًا (لأغراض التطوير فقط - يمكن حذفه لاحقًا)
+        menu.add(Menu.NONE, 9911, Menu.NONE, "اختبار الأذان الآن");
+
         return true;
     }
 
@@ -874,7 +878,21 @@ public class MainActivity extends AppCompatActivity implements MainInterface, Lo
             //mCallback.shareToFacebook(DBHelper.getInstance(this.getActivity()).getHadithTextforPageCurlView(v.getHadithsIdList(), v.getmIndex()));
             return true;
         }
+        // ✅ زرار اختبار الأذان المؤقت
+        if (id == 9911) {
+            testTriggerAthanNow();
+            return true;
+        }
         return super.onOptionsItemSelected(item);
+    }
+
+    // ✅ دالة اختبار مؤقتة: تشغّل شاشة وصوت الأذان فورًا بدون انتظار الموعد الحقيقي أو تغيير وقت الموبايل
+    // (يمكن حذف هذه الدالة وزرار القائمة المرتبط بها بعد الانتهاء من الاختبار)
+    private void testTriggerAthanNow() {
+        Intent testIntent = new Intent(this, com.alaaeltaweel.thikrallah.Notification.ThikrAlarmReceiver.class);
+        testIntent.putExtra("com.alaaeltaweel.thikrallah.datatype", DATA_TYPE_ATHAN1);
+        testIntent.putExtra("isTestTrigger", true);
+        sendBroadcast(testIntent);
     }
 
 
