@@ -178,6 +178,9 @@ public class AthanScreenActivity extends AppCompatActivity implements SensorEven
 
         dataType = getIntent().getStringExtra("com.alaaeltaweel.thikrallah.datatype");
         isCallInProgress = getIntent().getBooleanExtra("isCallInProgress", false);
+        // ✅ لو ده رجوع لشاشة أذان شغالة بالفعل (جاي من إشعار "الأذان لسه شغال")،
+        // متشغلش الأذان تاني من الأول - سيبه يكمل زي ما هو
+        boolean isResume = getIntent().getBooleanExtra("isResume", false);
 
         fatherBgView = findViewById(R.id.father_bg);
         athanLinesText = findViewById(R.id.allahu_akbar_text);
@@ -197,7 +200,15 @@ public class AthanScreenActivity extends AppCompatActivity implements SensorEven
         // ابدأ animation كلمات الأذان بعد ثانيتين
         athanTextHandler.postDelayed(athanTextRunnable, 2000);
 
-        if (isCallInProgress) {
+        if (isResume) {
+            // ✅ رجعنا لشاشة أذان شغالة بالفعل من إشعار "الأذان لسه شغال" -
+            // الصوت شغال أصلاً في الخدمة، متشغلوش تاني، بس اعرض الشاشة واستنى
+            // إشعار ATHAN_COMPLETE العادي يقفلها لما الأذان يخلص فعليًا
+            Log.d(TAG, "Resuming already-playing athan screen, not replaying sound");
+            athanPlayed = true;
+            if (isCallInProgress) registerPhoneStateListener();
+            autoHandler.postDelayed(this::stopAthanAndClose, AUTO_DISMISS_DELAY); // شبكة أمان لو الـ broadcast ماوصلش
+        } else if (isCallInProgress) {
             // ✅ في مكالمة — شغّل الأذان فعليًا لكن بصوت مكتوم فورًا
             // بكده هيخلص في نفس توقيته الطبيعي والشاشة هتقفل تلقائي مع الـ ATHAN_COMPLETE
             Log.d(TAG, "Call in progress, playing athan silently");
@@ -345,6 +356,7 @@ public boolean onKeyDown(int keyCode, KeyEvent event) {
         Intent reopenIntent = new Intent(this, AthanScreenActivity.class);
         reopenIntent.putExtra("com.alaaeltaweel.thikrallah.datatype", dataType);
         reopenIntent.putExtra("isCallInProgress", isCallInProgress);
+        reopenIntent.putExtra("isResume", true); // ✅ الأذان شغال بالفعل - متشغلوش تاني من الأول
         reopenIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK
                 | Intent.FLAG_ACTIVITY_SINGLE_TOP
                 | Intent.FLAG_ACTIVITY_CLEAR_TOP);
