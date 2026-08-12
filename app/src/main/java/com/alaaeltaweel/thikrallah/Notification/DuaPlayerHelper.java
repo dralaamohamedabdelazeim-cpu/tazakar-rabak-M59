@@ -22,9 +22,9 @@ public class DuaPlayerHelper {
    private static MediaPlayer duaMediaPlayer;
     private static long lastPlayStartTime = 0; // ✅ لمنع نداءين متقاربين يشغلوا الدعاء فوق بعض
 
-    public static boolean playDuaAfterAthan(Context context) {
+    public static synchronized boolean playDuaAfterAthan(Context context) {
         long nowMs = System.currentTimeMillis();
-        if (duaMediaPlayer != null && (nowMs - lastPlayStartTime) < 2000) {
+        if ((nowMs - lastPlayStartTime) < 2000) {
             return true; // ✅ نداء مكرر جه في نفس اللحظة تقريبًا - نتجاهله، لكن الدعاء أصلاً شغال فعلاً
         }
         lastPlayStartTime = nowMs;
