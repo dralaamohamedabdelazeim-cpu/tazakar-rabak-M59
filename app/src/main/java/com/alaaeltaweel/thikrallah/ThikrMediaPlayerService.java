@@ -753,7 +753,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
         }
 
         // ✅ نفس الحماية للأذان - منع تشغيله فوق نفسه
-        if (incomingDataType != null && incomingDataType.contains(MainActivity.DATA_TYPE_ATHAN)) {
+        if (incomingDataType != null && incomingDataType.contains(MainActivity.DATA_TYPE_ATHAN) && !this.isUserAction) { // متطبقش على تجربة الصوت اليدوية من الإعدادات
             long nowMsAthan = System.currentTimeMillis();
             if (nowMsAthan - lastAthanPlayStartTime < 2000) {
                 Timber.d("Athan play request too close to last one, skipping duplicate");
@@ -1107,6 +1107,9 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
     public void play(int fileNumber) {
 
+        final boolean isUserActionForThisPlay = this.isUserAction; // ✅ نثبت قيمة isUserAction وقت بداية التشغيل عشان نستخدمها صح لما الصوت يخلص
+
+
         int fadeDuration = 0;
 
         SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this.getApplicationContext());
@@ -1174,7 +1177,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
             sendBroadcast(broadcastIntent);
             boolean duaWillPlay2 = false;
-            if (getThikrType() != null && getThikrType().contains(MainActivity.DATA_TYPE_ATHAN)) { duaWillPlay2 = com.alaaeltaweel.thikrallah.Notification.DuaPlayerHelper.playDuaAfterAthan(getApplicationContext()); } // تشغيل الدعاء لو ده أذان بس
+            if (getThikrType() != null && getThikrType().contains(MainActivity.DATA_TYPE_ATHAN) && !isUserActionForThisPlay) { duaWillPlay2 = com.alaaeltaweel.thikrallah.Notification.DuaPlayerHelper.playDuaAfterAthan(getApplicationContext()); } // متشغلش الدعاء لو ده كان مجرد تجربة صوت في الإعدادات مش أذان حقيقي // تشغيل الدعاء لو ده أذان بس
 
 
             resetPlayer();
