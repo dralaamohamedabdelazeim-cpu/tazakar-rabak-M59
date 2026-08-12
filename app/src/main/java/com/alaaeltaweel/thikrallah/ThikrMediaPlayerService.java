@@ -198,6 +198,8 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
     // ✅ لمنع مؤقت تدرّج الصوت أو استرجاع الـ audio focus من إرجاع الصوت لوحده وقت الكتم بالقلب/زرار الصوت
     private boolean isMutedByFlip = false;
+    // ✅ نسخة static عشان DuaPlayerHelper يقدر يعرف هل الأذان كان مكتوم، ويورّث نفس الحالة للدعاء
+    public static volatile boolean lastAthanWasMuted = false;
 
     private boolean isUserAction = true;
 
@@ -865,6 +867,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
                 Timber.d("MEDIA_PLAYER_MUTE_BY_FLIP called - muting athan sound only");
 
                 isMutedByFlip = true;
+                lastAthanWasMuted = true;
                 if (player != null) {
                     try { player.setVolume(0f, 0f); } catch (Exception ignored) {}
                 }
@@ -876,6 +879,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
                 Timber.d("MEDIA_PLAYER_UNMUTE_BY_FLIP called - restoring athan sound");
 
                 isMutedByFlip = false;
+                lastAthanWasMuted = false;
                 if (player != null) {
                     try { player.setVolume(1f, 1f); } catch (Exception ignored) {}
                 }
@@ -1111,6 +1115,9 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
         if (getThikrType().contains(MainActivity.DATA_TYPE_ATHAN)) {
 
+            // ✅ أذان جديد بيبدأ - نصفّر حالة الكتم القديمة (لو فاضلة من أذان سابق)
+            lastAthanWasMuted = false;
+
             am.setStreamVolume(AudioManager.STREAM_MUSIC,
 
                     am.getStreamMaxVolume(AudioManager.STREAM_MUSIC), 0);
@@ -1125,6 +1132,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
             boolean lockOnFlip = sharedPrefs.getBoolean("lock_athan_on_flip", false);
             if (lockOnFlip) {
                 isMutedByFlipService = false;
+                isMutedByFlip = false;
                 flipSensorManager = (android.hardware.SensorManager) getSystemService(Context.SENSOR_SERVICE);
                 if (flipSensorManager != null) {
                     flipAccelerometer = flipSensorManager.getDefaultSensor(android.hardware.Sensor.TYPE_ACCELEROMETER);
@@ -1614,6 +1622,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
             if (isFaceDown && player != null) {
                 isMutedByFlipService = true;
                 isMutedByFlip = true;
+                lastAthanWasMuted = true;
                 try { player.setVolume(0f, 0f); } catch (Exception ignored) {}
                 if (flipSensorManager != null) {
                     flipSensorManager.unregisterListener(this); // اتكتم، خلاص متحتاجش تراقب تاني
@@ -1637,6 +1646,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
             if (player == null) return;
             isMutedByFlipService = true;
             isMutedByFlip = true;
+            lastAthanWasMuted = true;
             try { player.setVolume(0f, 0f); } catch (Exception ignored) {}
             if (volumeButtonReceiver != null) {
                 try { unregisterReceiver(volumeButtonReceiver); } catch (Exception ignored) {} // اتكتم، خلاص متحتاجش تراقب تاني
