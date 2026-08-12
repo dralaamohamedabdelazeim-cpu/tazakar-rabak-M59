@@ -252,7 +252,7 @@ public class AthanScreenActivity extends AppCompatActivity implements SensorEven
     }
 
     private void changePhotoWithAnimation(final int newPhotoRes) {
-        AlphaAnimation fadeOut = new AlphaAnimation(0.18f, 0f);
+        AlphaAnimation fadeOut = new AlphaAnimation(0.35f, 0f);
         fadeOut.setDuration(1000);
         fadeOut.setAnimationListener(new Animation.AnimationListener() {
             @Override public void onAnimationStart(Animation a) {}
@@ -260,10 +260,10 @@ public class AthanScreenActivity extends AppCompatActivity implements SensorEven
             @Override
             public void onAnimationEnd(Animation a) {
                 fatherBgView.setImageResource(newPhotoRes);
-                AlphaAnimation fadeIn = new AlphaAnimation(0f, 0.18f);
+                AlphaAnimation fadeIn = new AlphaAnimation(0f, 0.35f);
                 fadeIn.setDuration(1000);
                 fatherBgView.startAnimation(fadeIn);
-                fatherBgView.setAlpha(0.18f);
+                fatherBgView.setAlpha(0.35f);
             }
         });
         fatherBgView.startAnimation(fadeOut);
