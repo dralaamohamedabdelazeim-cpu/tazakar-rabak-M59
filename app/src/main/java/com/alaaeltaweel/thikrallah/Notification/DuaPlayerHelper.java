@@ -64,6 +64,10 @@ public class DuaPlayerHelper {
             if (am != null) am.abandonAudioFocus(null);
             return false;
         }
+        // ✅ لو الأذان كان مكتوم (بالقلب أو زرار الصوت)، الدعاء يفضل مكتوم كمان بدل ما يرجع عالي فجأة
+        if (ThikrMediaPlayerService.lastAthanWasMuted) {
+            try { duaMediaPlayer.setVolume(0f, 0f); } catch (Exception ignored) {}
+        }
         duaMediaPlayer.setOnCompletionListener(mp -> {
             mp.release();
             duaMediaPlayer = null;
