@@ -400,7 +400,7 @@
                         android:layout_height="wrap_content"
                         android:checked="true" />
                 </LinearLayout>
-                                <LinearLayout
+                 <LinearLayout
                     android:id="@+id/iqama_row2"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
