@@ -693,6 +693,10 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
             if (player != null) {
 
+                // ✅ نفصل مستمع الاكتمال الأول قبل الإيقاف - عشان أي حدث "اكتمال" متأخر
+                // يكون لسه في الطابور ميشغلش الدعاء تاني من مساره الطبيعي بعد ما شغلناه إحنا يدويًا تحت
+                try { player.setOnCompletionListener(null); } catch (Exception ignored) {}
+
                 if (player.isPlaying()) {
 
                     player.stop();
