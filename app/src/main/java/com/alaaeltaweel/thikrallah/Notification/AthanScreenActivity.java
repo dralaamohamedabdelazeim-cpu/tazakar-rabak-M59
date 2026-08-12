@@ -25,24 +25,22 @@ import com.alaaeltaweel.thikrallah.R;
 import com.alaaeltaweel.thikrallah.ThikrMediaPlayerService;
 import android.content.SharedPreferences;
 import android.media.AudioManager;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.view.KeyEvent;
-import android.app.Notification;
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
-import androidx.core.app.NotificationCompat;
 
-public class AthanScreenActivity extends AppCompatActivity {
+public class AthanScreenActivity extends AppCompatActivity implements SensorEventListener {
 
      // ✅ متغيرات قفل الأذان بالقلب / أزرار الصوت
+    private SensorManager sensorManager;
+    private Sensor accelerometerSensor;
     private boolean isMutedByFlip = false;
-    private boolean wasExplicitlyStopped = false; // ✅ true لو المستخدم دوس إيقاف بنفسه
 
     private static final int AUTO_DISMISS_DELAY  = 10 * 60 * 1000;
     private static final int SLIDESHOW_INTERVAL  = 30 * 1000; // 30 ثانية
     private static final String TAG = "AthanScreenActivity";
-    private static final String NOTIF_CHANNEL_ID = "athan_screen_channel";
-    private static final int NOTIF_ID = 774411; // ✅ اتغيّر عشان ميتعارضش مع إشعار الدعاء بعد الأذان (كان بيستخدم نفس الرقم 9911)
     private Handler autoHandler = new Handler();
     private Handler slideshowHandler = new Handler();
     private Handler athanTextHandler = new Handler();
@@ -144,6 +142,12 @@ public class AthanScreenActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // ✅ تهيئة حساس القلب
+        sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        if (sensorManager != null) {
+            accelerometerSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true);
@@ -250,16 +254,34 @@ public class AthanScreenActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 
-        // ✅ رجعنا للشاشة (سواء عادي أو من الإشعار)، اقفل إشعار الرجوع لو ظاهر
-        cancelReturnToAthanNotification();
+        // ✅ تفعيل حساس القلب لو المستخدم مفعّل الخاصية
+        SharedPreferences prefs = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this);
+        boolean lockOnFlip = prefs.getBoolean("lock_athan_on_flip", false);
+        if (lockOnFlip && sensorManager != null && accelerometerSensor != null) {
+            isMutedByFlip = false;
+            sensorManager.registerListener(this, accelerometerSensor, SensorManager.SENSOR_DELAY_NORMAL);
+        }
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        // ✅ نوريه الإشعار طول ما الأذان لسه شغال - سواء طلع برجوع أو هوم - إلا لو هو اللي وقفه بنفسه
-        if (!wasExplicitlyStopped) {
-            showReturnToAthanNotification();
+        if (sensorManager != null) {
+            sensorManager.unregisterListener(this);
+        }
+    }
+
+    // ✅ كتم صوت الأذان مرة واحدة بس عند قلب الهاتف (مفيش إرجاع تلقائي)
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if (isMutedByFlip) return; // اتكتم قبل كده، متعملش حاجة تاني
+        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+            float z = event.values[2];
+            boolean isFaceDown = z < -9.0f;
+            if (isFaceDown) {
+                isMutedByFlip = true;
+                sendMuteAction(true);
+            }
         }
     }
 
@@ -269,6 +291,11 @@ public class AthanScreenActivity extends AppCompatActivity {
         data.putString("com.alaaeltaweel.thikrallah.datatype", dataType);
         Intent muteIntent = new Intent(this, ThikrMediaPlayerService.class).putExtras(data);
         startService(muteIntent);
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+        // مش محتاجين نعمل حاجة هنا
     }
 
 // ✅ كتم صوت الأذان بس (زي القلب بالظبط) عند الضغط على زرار الصوت
@@ -287,52 +314,6 @@ public boolean onKeyDown(int keyCode, KeyEvent event) {
     }
     return super.onKeyDown(keyCode, event);
 }
-
-    // ✅ إشعار يفضل ظاهر لما نخرج من شاشة الأذان والأذان لسه شغال، يرجعنا للشاشة عند الضغط عليه
-    private void showReturnToAthanNotification() {
-        NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        if (nm == null) return;
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = nm.getNotificationChannel(NOTIF_CHANNEL_ID);
-            if (channel == null) {
-                channel = new NotificationChannel(NOTIF_CHANNEL_ID, "شاشة الأذان", NotificationManager.IMPORTANCE_HIGH);
-                nm.createNotificationChannel(channel);
-            }
-        }
-
-        Intent reopenIntent = new Intent(this, AthanScreenActivity.class);
-        reopenIntent.putExtra("com.alaaeltaweel.thikrallah.datatype", dataType);
-        reopenIntent.putExtra("isCallInProgress", isCallInProgress);
-        reopenIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK
-                | Intent.FLAG_ACTIVITY_SINGLE_TOP
-                | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-
-        int piFlags = PendingIntent.FLAG_UPDATE_CURRENT;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            piFlags |= PendingIntent.FLAG_IMMUTABLE;
-        }
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, reopenIntent, piFlags);
-
-        Notification notification = new NotificationCompat.Builder(this, NOTIF_CHANNEL_ID)
-                .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
-                .setContentTitle("الأذان لسه شغال")
-                .setContentText("اضغط للرجوع لشاشة الأذان")
-                .setContentIntent(pendingIntent)
-                .setAutoCancel(true)
-                .setOngoing(true)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .build();
-
-        nm.notify(NOTIF_ID, notification);
-    }
-
-    private void cancelReturnToAthanNotification() {
-        NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        if (nm != null) {
-            nm.cancel(NOTIF_ID);
-        }
-    }
 
     private String getPrayerName(String dataType) {
         if (dataType == null) return "الصلاة";
@@ -381,7 +362,6 @@ public boolean onKeyDown(int keyCode, KeyEvent event) {
             }
 
     private void stopAthanAndClose() {
-        wasExplicitlyStopped = true; // ✅ ده إيقاف مقصود من المستخدم، مش خروج عادي
         Bundle data = new Bundle();
         data.putInt("ACTION", ThikrMediaPlayerService.MEDIA_PLAYER_STOP);
         data.putString("com.alaaeltaweel.thikrallah.datatype", dataType);
@@ -411,12 +391,11 @@ MainActivity.startAthanTimer(getApplicationContext());
         athanTextHandler.removeCallbacksAndMessages(null);
         autoHandler.removeCallbacksAndMessages(null);
         unregisterPhoneStateListener();
-        if (wasExplicitlyStopped) {
-        cancelReturnToAthanNotification();
-    }
+
 
         super.onDestroy();
     }
         
 }
+
 
