@@ -1125,9 +1125,8 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
             // ✅ أذان جديد بيبدأ - نصفّر حالة الكتم القديمة (لو فاضلة من أذان سابق)
             lastAthanWasMuted = false;
 
-            am.setStreamVolume(AudioManager.STREAM_MUSIC,
-
-                    am.getStreamMaxVolume(AudioManager.STREAM_MUSIC), 0);
+            // ✅ منتدخلش في مستوى الصوت خالص - يشتغل بالظبط على المستوى اللي المستخدم حاطه،
+            // حتى لو صفر. اختياره هو الأساس.
 
             if (isGradual) {
 
@@ -1144,8 +1143,13 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
                 if (flipSensorManager != null) {
                     flipAccelerometer = flipSensorManager.getDefaultSensor(android.hardware.Sensor.TYPE_ACCELEROMETER);
                     if (flipAccelerometer != null) {
-                        flipSensorManager.registerListener(this, flipAccelerometer, android.hardware.SensorManager.SENSOR_DELAY_NORMAL);
+                        boolean registered = flipSensorManager.registerListener(this, flipAccelerometer, android.hardware.SensorManager.SENSOR_DELAY_NORMAL);
+                        Timber.d("flipSensorManager registerListener result: %s", registered);
+                    } else {
+                        Timber.e("flipAccelerometer sensor is NULL on this device");
                     }
+                } else {
+                    Timber.e("flipSensorManager service is NULL");
                 }
             }
 
@@ -1154,9 +1158,18 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
             if (lockOnVolume) {
                 try {
                     volumeButtonReceiver = new VolumeButtonReceiver();
-                    registerReceiver(volumeButtonReceiver,
-                            new android.content.IntentFilter("android.media.VOLUME_CHANGED_ACTION"));
-                } catch (Exception ignored) {}
+                    android.content.IntentFilter volumeFilter =
+                            new android.content.IntentFilter("android.media.VOLUME_CHANGED_ACTION");
+                    // ✅ من أندرويد 13 (API 33) لازم نحدد صراحة إنه مش exported، وإلا التسجيل ممكن يفشل بصمت
+                    if (Build.VERSION.SDK_INT >= 33) {
+                        registerReceiver(volumeButtonReceiver, volumeFilter, Context.RECEIVER_NOT_EXPORTED);
+                    } else {
+                        registerReceiver(volumeButtonReceiver, volumeFilter);
+                    }
+                    Timber.d("volumeButtonReceiver registered successfully");
+                } catch (Exception e) {
+                    Timber.e(e, "FAILED to register volumeButtonReceiver");
+                }
             }
 
         }
@@ -1626,6 +1639,9 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
         if (event.sensor.getType() == android.hardware.Sensor.TYPE_ACCELEROMETER) {
             float z = event.values[2];
             boolean isFaceDown = z < -9.0f;
+            if (isFaceDown) {
+                Timber.d("Service flip detected (z=%s), player=%s", z, (player == null ? "null" : "not-null"));
+            }
             if (isFaceDown && player != null) {
                 isMutedByFlipService = true;
                 isMutedByFlip = true;
@@ -1647,8 +1663,9 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
     private class VolumeButtonReceiver extends android.content.BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
-            if (isMutedByFlip) return; // اتكتم قبل كده، متعملش حاجة تاني
             int streamType = intent.getIntExtra("android.media.EXTRA_VOLUME_STREAM_TYPE", -1);
+            Timber.d("VolumeButtonReceiver fired - streamType=%s, isMutedByFlip=%s, player=%s", streamType, isMutedByFlip, (player == null ? "null" : "not-null"));
+            if (isMutedByFlip) return; // اتكتم قبل كده، متعملش حاجة تاني
             if (streamType != AudioManager.STREAM_MUSIC) return;
             if (player == null) return;
             isMutedByFlipService = true;
