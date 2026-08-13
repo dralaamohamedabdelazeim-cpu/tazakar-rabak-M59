@@ -457,7 +457,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
         resultIntent.putExtra("DataType", this.getThikrType());
 
-        resultIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        resultIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
 
         PendingIntent launchAppPendingIntent = PendingIntent.getActivity(this,
 
@@ -717,6 +717,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
             if (!duaWillPlay1) {
                 this.stopForeground(true);
+                if (mediaSession != null) { try { mediaSession.setActive(false); } catch (Exception ignored) {} } // ✅ نقفل كارت التحكم من الشاشة المقفولة/المكالمة عشان ميفضلش عالق
                 this.stopSelf();
             }
 
@@ -737,6 +738,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
                 this.resetPlayer();
 
                 this.stopForeground(true);
+                if (mediaSession != null) { try { mediaSession.setActive(false); } catch (Exception ignored) {} } // ✅ نقفل كارت التحكم من الشاشة المقفولة/المكالمة عشان ميفضلش عالق
 
                 this.stopSelf();
 
@@ -779,6 +781,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
             this.updateAllAlarms();
 
             this.stopForeground(true);
+            if (mediaSession != null) { try { mediaSession.setActive(false); } catch (Exception ignored) {} } // ✅ نقفل كارت التحكم من الشاشة المقفولة/المكالمة عشان ميفضلش عالق
 
             this.stopSelf();
 
@@ -809,6 +812,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
                     Timber.d("stopping self");
 
                     this.stopForeground(true);
+                    if (mediaSession != null) { try { mediaSession.setActive(false); } catch (Exception ignored) {} } // ✅ نقفل كارت التحكم من الشاشة المقفولة/المكالمة عشان ميفضلش عالق
 
                     this.stopSelf();
 
@@ -910,6 +914,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
                 Timber.d("MEDIA_PLAYER_DUA_ENDED - dua finished, service can stop now");
 
                 this.stopForeground(true);
+                if (mediaSession != null) { try { mediaSession.setActive(false); } catch (Exception ignored) {} } // ✅ نقفل كارت التحكم من الشاشة المقفولة/المكالمة عشان ميفضلش عالق
                 this.stopSelf();
 
                 return Service.START_NOT_STICKY;
@@ -921,6 +926,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
                 this.resetPlayer();
 
                 this.stopForeground(true);
+                if (mediaSession != null) { try { mediaSession.setActive(false); } catch (Exception ignored) {} } // ✅ نقفل كارت التحكم من الشاشة المقفولة/المكالمة عشان ميفضلش عالق
 
                 this.stopSelf();
 
@@ -1201,6 +1207,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
             if (!duaWillPlay2) {
                 stopForeground(true);
+                if (mediaSession != null) { try { mediaSession.setActive(false); } catch (Exception ignored) {} } // ✅ نقفل كارت التحكم من الشاشة المقفولة/المكالمة عشان ميفضلش عالق
                 stopSelf();
             }
 
@@ -1561,6 +1568,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
         }
 
         this.stopForeground(true);
+        if (mediaSession != null) { try { mediaSession.setActive(false); } catch (Exception ignored) {} } // ✅ نقفل كارت التحكم من الشاشة المقفولة/المكالمة عشان ميفضلش عالق
 
         if (player != null) {
 
@@ -1698,6 +1706,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
             this.resetPlayer();
             if (!duaWillPlay3) {
                 this.stopForeground(true);
+                if (mediaSession != null) { try { mediaSession.setActive(false); } catch (Exception ignored) {} } // ✅ نقفل كارت التحكم من الشاشة المقفولة/المكالمة عشان ميفضلش عالق
                 this.stopSelf();
             }
             return;
@@ -1707,6 +1716,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
             // ✅ تنظيف عادي فقط - من غير ما نطلق حدث "الأذان خلص"
             this.resetPlayer();
             this.stopForeground(true);
+            if (mediaSession != null) { try { mediaSession.setActive(false); } catch (Exception ignored) {} } // ✅ نقفل كارت التحكم من الشاشة المقفولة/المكالمة عشان ميفضلش عالق
             this.stopSelf();
             return;
         }
@@ -1720,6 +1730,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
             this.resetPlayer();
 
             this.stopForeground(true);
+            if (mediaSession != null) { try { mediaSession.setActive(false); } catch (Exception ignored) {} } // ✅ نقفل كارت التحكم من الشاشة المقفولة/المكالمة عشان ميفضلش عالق
 
             this.stopSelf();
 
@@ -1960,6 +1971,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
                 this.resetPlayer();
 
                 this.stopForeground(true);
+                if (mediaSession != null) { try { mediaSession.setActive(false); } catch (Exception ignored) {} } // ✅ نقفل كارت التحكم من الشاشة المقفولة/المكالمة عشان ميفضلش عالق
 
                 this.stopSelf();
 
