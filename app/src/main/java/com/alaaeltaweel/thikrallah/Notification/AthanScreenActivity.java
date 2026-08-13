@@ -297,9 +297,13 @@ public class AthanScreenActivity extends AppCompatActivity implements SensorEven
     }
 
     // ✅ كتم صوت الأذان مرة واحدة بس عند قلب الهاتف (مفيش إرجاع تلقائي)
+    // ✅ بيتشيك دلوقتي على إعداد "قفل الأذان عند قلب الهاتف" عشان يتوافق مع سلوك الخدمة برة الشاشة
     @Override
     public void onSensorChanged(SensorEvent event) {
         if (isMutedByFlip) return; // اتكتم قبل كده، متعملش حاجة تاني
+        SharedPreferences prefs = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this);
+        boolean lockOnFlip = prefs.getBoolean("lock_athan_on_flip", false);
+        if (!lockOnFlip) return; // الإعداد مقفول - متكتمش
         if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
             float z = event.values[2];
             boolean isFaceDown = z < -9.0f;
