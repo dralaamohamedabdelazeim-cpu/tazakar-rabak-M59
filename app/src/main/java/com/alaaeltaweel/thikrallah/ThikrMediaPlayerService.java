@@ -2059,9 +2059,28 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
             sendMessageToUI(MSG_CURRENT_PLAYING, currentPlaying);
 
+            // ✅ لو الشاشة نايمة (الجهاز كان في نوم عميق ومحدش صحصحه غيرنا)،
+            // ناخد نص ثانية زيادة عشان نديله وقت "يفوق" كويس قبل ما نبدأ الصوت - ده بيمنع تقطيع أول كلمة
+            PowerManager screenCheckPm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+            boolean isScreenOff = screenCheckPm != null && !screenCheckPm.isInteractive();
+            if (isScreenOff) {
+                Timber.d("Screen is off - delaying playback start slightly to let device wake up fully");
+                new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                    if (player != null) {
+                        try {
+                            player.start();
+                            Timber.d("player started after wake-up delay");
+                        } catch (Exception e) {
+                            Timber.e(e, "delayed player.start failed");
+                        }
+                    }
+                }, 400);
+            } else {
+
             player.start();
 
             Timber.d("player started");
+            }
 
             this.updateActions();
 
