@@ -1,6 +1,6 @@
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
-    app:iconSpaceReserved="false"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
     <PreferenceCategory
         android:title="استقرار الأذان والتذكيرات"
         android:layout="@layout/preference_catagory">
@@ -9,7 +9,8 @@
             android:title="@string/device_optimization_button_title"
             android:summary="@string/device_optimization_button_summary" />
     </PreferenceCategory>
-            <PreferenceCategory
+
+    <PreferenceCategory
         android:title="إهداء"
         android:layout="@layout/preference_catagory">
         <Preference
@@ -25,6 +26,6 @@
             android:entryValues="@array/languagelistValues"
             android:key="language"
             android:title="@string/language" />
-</PreferenceCategory>
+    </PreferenceCategory>
 
 </PreferenceScreen>
