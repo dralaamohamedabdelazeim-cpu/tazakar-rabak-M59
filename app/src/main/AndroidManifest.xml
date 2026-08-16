@@ -156,6 +156,19 @@
         </service>
 
         <service
+            android:name="com.alaaeltaweel.thikrallah.Notification.AthanOverlayService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="One of the app's functionality is to trigger exact alarms at pre-set times.
+                                Those exact alarms are core part of app functionality. They provide timely reminder
+                                of prayer times for muslims 5 times a day. This service shows a full-screen overlay
+                                window with the athan screen when the device screen is already on, so the user can
+                                see the prayer time alert and turn it off as needed even while using another app."/>
+        </service>
+
+        <service
             android:name="com.alaaeltaweel.thikrallah.Notification.AthanTimerService"
             android:enabled="true"
             android:exported="false"
