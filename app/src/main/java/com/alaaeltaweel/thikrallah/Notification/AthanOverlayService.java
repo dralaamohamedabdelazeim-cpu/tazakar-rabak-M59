@@ -35,6 +35,7 @@ import com.alaaeltaweel.thikrallah.ThikrMediaPlayerService;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
 
+
 /**
  * ✅ خط دفاع إضافي مستقل عن AthanScreenActivity.
  * بعض الأجهزة (زي أوبو/ColorOS) بتمنع فتح شاشة كاملة (Activity) من الخلفية
