@@ -33,6 +33,8 @@
     <string name="autostart_message">الرجاء السماح لبرنامجنا بالعمل بالخلفية حتى لو كان البرنامج مغلقا حتى يشتغل البرنامج بشكل صحيح.</string>
     <string name="battery_manual_title">مهم لضمان عمل الأذان في وقته</string>
     <string name="battery_manual_message">على بعض الأجهزة (مثل Infinix و Tecno)، يحتاج التطبيق إذن إضافي يدوي حتى يعمل الأذان والتذكيرات في وقتها بدون تأخير. الرجاء الدخول إلى صفحة إعدادات التطبيق التي ستفتح الآن، ثم: 1) اختر Battery واختر No restrictions أو Unrestricted، 2) اختر Permissions وفعّل Background activity إن وجد. هذه الخطوة مهمة جدًا وتُطلب مرة واحدة فقط.</string>
+    <string name="device_optimization_button_title">تحسين إعدادات الجهاز</string>
+    <string name="device_optimization_button_summary">لو الأذان أو التذكيرات مش بتشتغل في وقتها، دوس هنا لمراجعة إعدادات جهازك من جديد</string>
     <string name="pre_athan_reminder">تنبيه قبل الصلاة</string>
     <string name="pre_athan_fajr_enabled">تنبيه قبل الفجر</string>
     <string name="pre_athan_duhr_enabled">تنبيه قبل الظهر</string>
