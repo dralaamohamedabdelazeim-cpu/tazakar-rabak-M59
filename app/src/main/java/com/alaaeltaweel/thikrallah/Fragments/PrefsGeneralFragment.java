@@ -229,3 +229,4 @@ public class PrefsGeneralFragment extends PreferenceFragmentCompat implements On
         }
     }
 }
+
