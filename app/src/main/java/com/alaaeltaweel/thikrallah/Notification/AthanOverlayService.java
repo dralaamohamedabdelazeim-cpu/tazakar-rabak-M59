@@ -104,6 +104,11 @@ public class AthanOverlayService extends Service {
         }
     };
 
+    // ✅ نستنى شوية قبل ما نظهر النافذة العائمة - لو الشاشة العادية نجحت في الفترة دي، منظهرش خالص
+    private static final long SHOW_DELAY = 700;
+    private volatile boolean dismissedBeforeShowing = false;
+    private final Handler showDelayHandler = new Handler(Looper.getMainLooper());
+
     @Override
     public IBinder onBind(Intent intent) {
         return null;
@@ -118,10 +123,16 @@ public class AthanOverlayService extends Service {
             return START_NOT_STICKY;
         }
 
-        // ✅ لو الشاشة العادية نجحت تفتح، هتنادي على هذا نفسه لقفل النافذة العائمة
+        // ✅ لو الشاشة العادية نجحت تفتح، نلغي أي ظهور متأخر لسه ماحصلش، أو نقفل النافذة لو ظاهرة فعلاً
         if ("com.alaaeltaweel.thikrallah.DISMISS_OVERLAY".equals(intent.getAction())) {
             Log.d(TAG, "Dismiss requested (real screen opened successfully)");
-            stopSelf();
+            dismissedBeforeShowing = true;
+            showDelayHandler.removeCallbacksAndMessages(null);
+            if (overlayView != null) {
+                stopSelf();
+            } else {
+                stopForeground(true);
+            }
             return START_NOT_STICKY;
         }
 
@@ -134,19 +145,32 @@ public class AthanOverlayService extends Service {
         dataType = intent.getStringExtra("com.alaaeltaweel.thikrallah.datatype");
         String prayerName = getPrayerName(dataType);
 
-        showOverlay(prayerName);
+        dismissedBeforeShowing = false;
+        showDelayHandler.removeCallbacksAndMessages(null);
+        showDelayHandler.postDelayed(() -> {
+            if (dismissedBeforeShowing) {
+                Log.d(TAG, "Real screen already opened during delay - skipping overlay entirely");
+                stopSelf();
+                return;
+            }
 
-        registerReceiver(athanCompleteReceiver, new IntentFilter("com.alaaeltaweel.thikrallah.ATHAN_COMPLETE"),
-                Build.VERSION.SDK_INT >= 33 ? Context.RECEIVER_NOT_EXPORTED : 0);
+            showOverlay(prayerName);
 
-        autoHandler.removeCallbacksAndMessages(null);
-        autoHandler.postDelayed(this::stopSelf, AUTO_DISMISS_DELAY);
+            try {
+                registerReceiver(athanCompleteReceiver, new IntentFilter("com.alaaeltaweel.thikrallah.ATHAN_COMPLETE"),
+                        Build.VERSION.SDK_INT >= 33 ? Context.RECEIVER_NOT_EXPORTED : 0);
+            } catch (Exception ignored) {}
 
-        slideshowHandler.removeCallbacksAndMessages(null);
-        slideshowHandler.postDelayed(slideshowRunnable, PHOTO_CHANGE_INTERVAL);
+            autoHandler.removeCallbacksAndMessages(null);
+            autoHandler.postDelayed(this::stopSelf, AUTO_DISMISS_DELAY);
 
-        clockHandler.removeCallbacksAndMessages(null);
-        clockHandler.post(clockRunnable);
+            slideshowHandler.removeCallbacksAndMessages(null);
+            slideshowHandler.postDelayed(slideshowRunnable, PHOTO_CHANGE_INTERVAL);
+
+            clockHandler.removeCallbacksAndMessages(null);
+            clockHandler.post(clockRunnable);
+        }, SHOW_DELAY);
+
 
         return START_NOT_STICKY;
     }
@@ -334,3 +358,4 @@ public class AthanOverlayService extends Service {
         super.onDestroy();
     }
 }
+
