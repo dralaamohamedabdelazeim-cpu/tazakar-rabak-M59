@@ -30,6 +30,17 @@ public class PrefsGeneralFragment extends PreferenceFragmentCompat implements On
         addPreferencesFromResource(R.xml.preferences_general);
         initSummary(getPreferenceScreen());
         mContext = this.getContext();
+
+        // ✅ زرار "تحسين إعدادات الجهاز" - بيفتح نفس حوار التشغيل التلقائي/البطارية في أي وقت
+        Preference deviceOptimizationPref = findPreference("device_optimization_button");
+        if (deviceOptimizationPref != null) {
+            deviceOptimizationPref.setOnPreferenceClickListener(preference -> {
+                if (getActivity() instanceof MainActivity) {
+                    ((MainActivity) getActivity()).showDeviceOptimizationDialog(true);
+                }
+                return true;
+            });
+        }
     }
 
     @Override
