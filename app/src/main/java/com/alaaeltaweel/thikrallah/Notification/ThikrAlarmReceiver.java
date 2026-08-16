@@ -206,6 +206,20 @@ if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
             // ده نفس الأسلوب اللي بيشتغل بثبات مع تنبيه ما قبل الأذان والإقامة
             showAthanFullScreenNotification(context, athanIntent, dataType);
 
+            // ✅ خط دفاع إضافي مستقل - نافذة عائمة بتشتغل حتى لو الشاشة العادية اتمنعت بالكامل
+            // (بعض الأجهزة زي أوبو/ColorOS بتمنع فتح Activity من الخلفية حتى مع كل الصلاحيات مفعّلة)
+            Intent overlayIntent = new Intent(context, com.alaaeltaweel.thikrallah.Notification.AthanOverlayService.class);
+            overlayIntent.putExtras(data);
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(overlayIntent);
+                } else {
+                    context.startService(overlayIntent);
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to start athan overlay fallback: " + e.getMessage());
+            }
+
         } else {
 
             // ✅ الأذكار العادية — لا تشتغل أثناء المكالمات (فحص المكالمة الأول)

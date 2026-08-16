@@ -31,18 +31,13 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import androidx.core.app.NotificationCompat;
-import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
-import android.hardware.SensorManager;
 
-public class AthanScreenActivity extends AppCompatActivity implements SensorEventListener {
+public class AthanScreenActivity extends AppCompatActivity {
 
      // ✅ متغيرات قفل الأذان بالقلب / أزرار الصوت
     private boolean isMutedByFlip = false;
     private boolean wasExplicitlyStopped = false; // ✅ true لو المستخدم دوس إيقاف بنفسه
-    private SensorManager sensorManager;
-    private Sensor accelerometerSensor;
+    private Runnable showReturnNotifRunnable; // ✅ لتأجيل إشعار الرجوع ومنع الفلاش السريع
 
     private static final int AUTO_DISMISS_DELAY  = 10 * 60 * 1000;
     private static final int SLIDESHOW_INTERVAL  = 30 * 1000; // 30 ثانية
@@ -151,12 +146,6 @@ public class AthanScreenActivity extends AppCompatActivity implements SensorEven
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // ✅ تهيئة حساس القلب
-        sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        if (sensorManager != null) {
-            accelerometerSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        }
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true);
             setTurnScreenOn(true);
@@ -178,9 +167,6 @@ public class AthanScreenActivity extends AppCompatActivity implements SensorEven
 
         dataType = getIntent().getStringExtra("com.alaaeltaweel.thikrallah.datatype");
         isCallInProgress = getIntent().getBooleanExtra("isCallInProgress", false);
-        // ✅ لو ده رجوع لشاشة أذان شغالة بالفعل (جاي من إشعار "الأذان لسه شغال")،
-        // متشغلش الأذان تاني من الأول - سيبه يكمل زي ما هو
-        boolean isResume = getIntent().getBooleanExtra("isResume", false);
 
         fatherBgView = findViewById(R.id.father_bg);
         athanLinesText = findViewById(R.id.allahu_akbar_text);
@@ -200,15 +186,7 @@ public class AthanScreenActivity extends AppCompatActivity implements SensorEven
         // ابدأ animation كلمات الأذان بعد ثانيتين
         athanTextHandler.postDelayed(athanTextRunnable, 2000);
 
-        if (isResume) {
-            // ✅ رجعنا لشاشة أذان شغالة بالفعل من إشعار "الأذان لسه شغال" -
-            // الصوت شغال أصلاً في الخدمة، متشغلوش تاني، بس اعرض الشاشة واستنى
-            // إشعار ATHAN_COMPLETE العادي يقفلها لما الأذان يخلص فعليًا
-            Log.d(TAG, "Resuming already-playing athan screen, not replaying sound");
-            athanPlayed = true;
-            if (isCallInProgress) registerPhoneStateListener();
-            autoHandler.postDelayed(this::stopAthanAndClose, AUTO_DISMISS_DELAY); // شبكة أمان لو الـ broadcast ماوصلش
-        } else if (isCallInProgress) {
+        if (isCallInProgress) {
             // ✅ في مكالمة — شغّل الأذان فعليًا لكن بصوت مكتوم فورًا
             // بكده هيخلص في نفس توقيته الطبيعي والشاشة هتقفل تلقائي مع الـ ATHAN_COMPLETE
             Log.d(TAG, "Call in progress, playing athan silently");
@@ -252,7 +230,7 @@ public class AthanScreenActivity extends AppCompatActivity implements SensorEven
     }
 
     private void changePhotoWithAnimation(final int newPhotoRes) {
-        AlphaAnimation fadeOut = new AlphaAnimation(0.35f, 0f);
+        AlphaAnimation fadeOut = new AlphaAnimation(0.18f, 0f);
         fadeOut.setDuration(1000);
         fadeOut.setAnimationListener(new Animation.AnimationListener() {
             @Override public void onAnimationStart(Animation a) {}
@@ -260,10 +238,10 @@ public class AthanScreenActivity extends AppCompatActivity implements SensorEven
             @Override
             public void onAnimationEnd(Animation a) {
                 fatherBgView.setImageResource(newPhotoRes);
-                AlphaAnimation fadeIn = new AlphaAnimation(0f, 0.35f);
+                AlphaAnimation fadeIn = new AlphaAnimation(0f, 0.18f);
                 fadeIn.setDuration(1000);
                 fatherBgView.startAnimation(fadeIn);
-                fatherBgView.setAlpha(0.35f);
+                fatherBgView.setAlpha(0.18f);
             }
         });
         fatherBgView.startAnimation(fadeOut);
@@ -273,50 +251,30 @@ public class AthanScreenActivity extends AppCompatActivity implements SensorEven
     protected void onResume() {
         super.onResume();
 
+        // ✅ لو كان فيه إشعار "رجوع" متأخر لسه ماظهرش، الغيه لأننا رجعنا فعلاً بسرعة
+        if (showReturnNotifRunnable != null) {
+            autoHandler.removeCallbacks(showReturnNotifRunnable);
+            showReturnNotifRunnable = null;
+        }
         // ✅ رجعنا للشاشة (سواء عادي أو من الإشعار)، اقفل إشعار الرجوع لو ظاهر
         cancelReturnToAthanNotification();
 
-        // ✅ تفعيل حساس القلب لو المستخدم مفعّل الخاصية (خط دفاع تاني جنب اللي في الـ Service)
-        SharedPreferences flipPrefs = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this);
-        boolean lockOnFlip = flipPrefs.getBoolean("lock_athan_on_flip", false);
-        if (lockOnFlip && sensorManager != null && accelerometerSensor != null) {
-            sensorManager.registerListener(this, accelerometerSensor, SensorManager.SENSOR_DELAY_NORMAL);
-        }
+        // ✅ الشاشة العادية نجحت تفتح فعليًا - اقفل النافذة العائمة الاحتياطية لو كانت ظاهرة
+        Intent dismissOverlay = new Intent(this, com.alaaeltaweel.thikrallah.Notification.AthanOverlayService.class);
+        dismissOverlay.setAction("com.alaaeltaweel.thikrallah.DISMISS_OVERLAY");
+        try {
+            startService(dismissOverlay);
+        } catch (Exception ignored) {}
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        // ✅ نوريه الإشعار طول ما الأذان لسه شغال - سواء طلع برجوع أو هوم - إلا لو هو اللي وقفه بنفسه
+        // ✅ نستنى ثانية قبل ما نوري إشعار الرجوع - لو رجعنا بسرعة (فتح شريط الإشعارات مثلاً) هيتلغي من onResume
         if (!wasExplicitlyStopped) {
-            showReturnToAthanNotification();
+            showReturnNotifRunnable = this::showReturnToAthanNotification;
+            autoHandler.postDelayed(showReturnNotifRunnable, 1000);
         }
-        if (sensorManager != null) {
-            sensorManager.unregisterListener(this);
-        }
-    }
-
-    // ✅ كتم صوت الأذان مرة واحدة بس عند قلب الهاتف (مفيش إرجاع تلقائي)
-    // ✅ بيتشيك دلوقتي على إعداد "قفل الأذان عند قلب الهاتف" عشان يتوافق مع سلوك الخدمة برة الشاشة
-    @Override
-    public void onSensorChanged(SensorEvent event) {
-        if (isMutedByFlip) return; // اتكتم قبل كده، متعملش حاجة تاني
-        SharedPreferences prefs = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this);
-        boolean lockOnFlip = prefs.getBoolean("lock_athan_on_flip", false);
-        if (!lockOnFlip) return; // الإعداد مقفول - متكتمش
-        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
-            float z = event.values[2];
-            boolean isFaceDown = z < -9.0f;
-            if (isFaceDown) {
-                isMutedByFlip = true;
-                sendMuteAction(true);
-            }
-        }
-    }
-
-    @Override
-    public void onAccuracyChanged(Sensor sensor, int accuracy) {
-        // مش محتاجين نعمل حاجة هنا
     }
 
     private void sendMuteAction(boolean mute) {
@@ -360,7 +318,6 @@ public boolean onKeyDown(int keyCode, KeyEvent event) {
         Intent reopenIntent = new Intent(this, AthanScreenActivity.class);
         reopenIntent.putExtra("com.alaaeltaweel.thikrallah.datatype", dataType);
         reopenIntent.putExtra("isCallInProgress", isCallInProgress);
-        reopenIntent.putExtra("isResume", true); // ✅ الأذان شغال بالفعل - متشغلوش تاني من الأول
         reopenIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK
                 | Intent.FLAG_ACTIVITY_SINGLE_TOP
                 | Intent.FLAG_ACTIVITY_CLEAR_TOP);
@@ -468,9 +425,7 @@ MainActivity.startAthanTimer(getApplicationContext());
         athanTextHandler.removeCallbacksAndMessages(null);
         autoHandler.removeCallbacksAndMessages(null);
         unregisterPhoneStateListener();
-        if (wasExplicitlyStopped) {
         cancelReturnToAthanNotification();
-    }
 
         super.onDestroy();
     }
