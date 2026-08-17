@@ -255,14 +255,6 @@ public class AthanScreenActivity extends AppCompatActivity {
         super.onResume();
         isActivityShowing = true; // ✅ عشان ThikrAlarmReceiver يعرف إن الشاشة العادية فتحت صح ومحتاجش النافذة العائمة
 
-        // ✅ لو كان فيه إشعار "رجوع" متأخر لسه ماظهرش، الغيه لأننا رجعنا فعلاً بسرعة
-        if (showReturnNotifRunnable != null) {
-            autoHandler.removeCallbacks(showReturnNotifRunnable);
-            showReturnNotifRunnable = null;
-        }
-        // ✅ رجعنا للشاشة (سواء عادي أو من الإشعار)، اقفل إشعار الرجوع لو ظاهر
-        cancelReturnToAthanNotification();
-
         // ✅ الشاشة العادية نجحت تفتح فعليًا - اقفل النافذة العائمة الاحتياطية لو كانت ظاهرة
         Intent dismissOverlay = new Intent(this, com.alaaeltaweel.thikrallah.Notification.AthanOverlayService.class);
         dismissOverlay.setAction("com.alaaeltaweel.thikrallah.DISMISS_OVERLAY");
@@ -275,7 +267,23 @@ public class AthanScreenActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         isActivityShowing = false; // ✅ مش شغالة دلوقتي - النافذة العائمة تقدر تشتغل لو الأذان لسه شغال
-        // ✅ نستنى ثانية قبل ما نوري إشعار الرجوع - لو رجعنا بسرعة (فتح شريط الإشعارات مثلاً) هيتلغي من onResume
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        // ✅ الشاشة بانت خالص (مش مجرد رجوع تركيز مؤقت) - الغي إشعار الرجوع لو لسه مجدول أو ظاهر
+        if (showReturnNotifRunnable != null) {
+            autoHandler.removeCallbacks(showReturnNotifRunnable);
+            showReturnNotifRunnable = null;
+        }
+        cancelReturnToAthanNotification();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        // ✅ الشاشة اختفت تمامًا (مش مجرد فقدان تركيز مؤقت زي نافذة نظام) - دلوقتي نجدول إشعار الرجوع
         if (!wasExplicitlyStopped) {
             showReturnNotifRunnable = this::showReturnToAthanNotification;
             autoHandler.postDelayed(showReturnNotifRunnable, 3000);
