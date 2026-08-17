@@ -35,7 +35,6 @@ import com.alaaeltaweel.thikrallah.ThikrMediaPlayerService;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
 
-
 /**
  * ✅ خط دفاع إضافي مستقل عن AthanScreenActivity.
  * بعض الأجهزة (زي أوبو/ColorOS) بتمنع فتح شاشة كاملة (Activity) من الخلفية
@@ -106,7 +105,8 @@ public class AthanOverlayService extends Service {
     };
 
     // ✅ نستنى شوية قبل ما نظهر النافذة العائمة - لو الشاشة العادية نجحت في الفترة دي، منظهرش خالص
-    private static final long SHOW_DELAY = 700;
+    // (الوقت ده أطول عشان يدّي فرصة كافية لو التطبيق بيبدأ من الصفر - بياخد وقت أطول من العادي)
+    private static final long SHOW_DELAY = 1800;
     private volatile boolean dismissedBeforeShowing = false;
     private final Handler showDelayHandler = new Handler(Looper.getMainLooper());
 
@@ -299,7 +299,8 @@ public class AthanOverlayService extends Service {
                 | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
                 | WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
                 | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
-                | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN;
+                | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+                | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE; // ✅ منع سرقة التركيز من الشاشة الأصلية لو الاتنين ظهروا للحظة مع بعض
 
         WindowManager.LayoutParams params = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.MATCH_PARENT,
@@ -359,4 +360,3 @@ public class AthanOverlayService extends Service {
         super.onDestroy();
     }
 }
-
