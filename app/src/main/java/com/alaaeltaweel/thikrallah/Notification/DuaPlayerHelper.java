@@ -24,7 +24,7 @@ public class DuaPlayerHelper {
 
     public static synchronized boolean playDuaAfterAthan(Context context) {
         long nowMs = System.currentTimeMillis();
-        if ((nowMs - lastPlayStartTime) < 2000) {
+        if ((nowMs - lastPlayStartTime) < 6000) {
             return true; // ✅ نداء مكرر جه في نفس اللحظة تقريبًا - نتجاهله، لكن الدعاء أصلاً شغال فعلاً
         }
         lastPlayStartTime = nowMs;
