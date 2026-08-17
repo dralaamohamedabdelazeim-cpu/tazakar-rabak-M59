@@ -273,7 +273,7 @@ public class AthanScreenActivity extends AppCompatActivity {
         // ✅ نستنى ثانية قبل ما نوري إشعار الرجوع - لو رجعنا بسرعة (فتح شريط الإشعارات مثلاً) هيتلغي من onResume
         if (!wasExplicitlyStopped) {
             showReturnNotifRunnable = this::showReturnToAthanNotification;
-            autoHandler.postDelayed(showReturnNotifRunnable, 1000);
+            autoHandler.postDelayed(showReturnNotifRunnable, 3000);
         }
     }
 
