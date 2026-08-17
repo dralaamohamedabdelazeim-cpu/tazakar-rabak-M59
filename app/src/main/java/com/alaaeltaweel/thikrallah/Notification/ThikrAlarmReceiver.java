@@ -206,19 +206,35 @@ if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
             // ده نفس الأسلوب اللي بيشتغل بثبات مع تنبيه ما قبل الأذان والإقامة
             showAthanFullScreenNotification(context, athanIntent, dataType);
 
-            // ✅ خط دفاع إضافي مستقل - نافذة عائمة بتشتغل حتى لو الشاشة العادية اتمنعت بالكامل
-            // (بعض الأجهزة زي أوبو/ColorOS بتمنع فتح Activity من الخلفية حتى مع كل الصلاحيات مفعّلة)
-            Intent overlayIntent = new Intent(context, com.alaaeltaweel.thikrallah.Notification.AthanOverlayService.class);
-            overlayIntent.putExtras(data);
-            try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    context.startForegroundService(overlayIntent);
-                } else {
-                    context.startService(overlayIntent);
+            // ✅ خط دفاع إضافي مستقل - نافذة عائمة، بس بس لو الشاشة العادية فعلاً فشلت تفتح.
+            // بدل ما نشغلها فورًا كل مرة (وده كان بيعمل إشعار زيادة يظهر ويختفي بسرعة حتى
+            // لو الشاشة فتحت تمام)، بنستنى شوية ونتأكد إن AthanScreenActivity معملتش onResume
+            // فعلاً - ولو فتحت، منشغلش النافذة العائمة خالص.
+            final Context appContext = context.getApplicationContext();
+            final Bundle overlayData = data;
+            final PendingResult pendingResult = goAsync();
+            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                try {
+                    if (!com.alaaeltaweel.thikrallah.Notification.AthanScreenActivity.isActivityShowing) {
+                        Log.d(TAG, "Real athan screen did not open in time - starting overlay fallback");
+                        Intent overlayIntent = new Intent(appContext, com.alaaeltaweel.thikrallah.Notification.AthanOverlayService.class);
+                        overlayIntent.putExtras(overlayData);
+                        try {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                appContext.startForegroundService(overlayIntent);
+                            } else {
+                                appContext.startService(overlayIntent);
+                            }
+                        } catch (Exception e) {
+                            Log.e(TAG, "Failed to start athan overlay fallback: " + e.getMessage());
+                        }
+                    } else {
+                        Log.d(TAG, "Real athan screen opened successfully - overlay fallback not needed");
+                    }
+                } finally {
+                    pendingResult.finish();
                 }
-            } catch (Exception e) {
-                Log.e(TAG, "Failed to start athan overlay fallback: " + e.getMessage());
-            }
+            }, 2500);
 
         } else {
 

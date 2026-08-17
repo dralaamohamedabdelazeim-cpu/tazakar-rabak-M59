@@ -37,6 +37,9 @@ public class AthanScreenActivity extends AppCompatActivity {
      // ✅ متغيرات قفل الأذان بالقلب / أزرار الصوت
     private boolean isMutedByFlip = false;
     private boolean wasExplicitlyStopped = false; // ✅ true لو المستخدم دوس إيقاف بنفسه
+    // ✅ علامة يقدر ThikrAlarmReceiver يشوفها من برة عشان يعرف الشاشة العادية فاتحة فعلاً
+    // ولا محتاج يلجأ للنافذة العائمة (AthanOverlayService)
+    public static volatile boolean isActivityShowing = false;
     private Runnable showReturnNotifRunnable; // ✅ لتأجيل إشعار الرجوع ومنع الفلاش السريع
 
     private static final int AUTO_DISMISS_DELAY  = 10 * 60 * 1000;
@@ -250,6 +253,7 @@ public class AthanScreenActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        isActivityShowing = true; // ✅ عشان ThikrAlarmReceiver يعرف إن الشاشة العادية فتحت صح ومحتاجش النافذة العائمة
 
         // ✅ لو كان فيه إشعار "رجوع" متأخر لسه ماظهرش، الغيه لأننا رجعنا فعلاً بسرعة
         if (showReturnNotifRunnable != null) {
@@ -270,6 +274,7 @@ public class AthanScreenActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
+        isActivityShowing = false; // ✅ مش شغالة دلوقتي - النافذة العائمة تقدر تشتغل لو الأذان لسه شغال
         // ✅ نستنى ثانية قبل ما نوري إشعار الرجوع - لو رجعنا بسرعة (فتح شريط الإشعارات مثلاً) هيتلغي من onResume
         if (!wasExplicitlyStopped) {
             showReturnNotifRunnable = this::showReturnToAthanNotification;
@@ -416,6 +421,7 @@ MainActivity.startAthanTimer(getApplicationContext());
 
     @Override
     protected void onDestroy() {
+        isActivityShowing = false; // ✅ شبكة أمان إضافية
         try {
             unregisterReceiver(athanCompleteReceiver);
         } catch (IllegalArgumentException e) {
