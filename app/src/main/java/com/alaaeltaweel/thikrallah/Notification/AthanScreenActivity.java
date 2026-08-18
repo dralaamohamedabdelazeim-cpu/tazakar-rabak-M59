@@ -40,13 +40,10 @@ public class AthanScreenActivity extends AppCompatActivity {
     // ✅ علامة يقدر ThikrAlarmReceiver يشوفها من برة عشان يعرف الشاشة العادية فاتحة فعلاً
     // ولا محتاج يلجأ للنافذة العائمة (AthanOverlayService)
     public static volatile boolean isActivityShowing = false;
-    private Runnable showReturnNotifRunnable; // ✅ لتأجيل إشعار الرجوع ومنع الفلاش السريع
 
     private static final int AUTO_DISMISS_DELAY  = 10 * 60 * 1000;
     private static final int SLIDESHOW_INTERVAL  = 30 * 1000; // 30 ثانية
     private static final String TAG = "AthanScreenActivity";
-    private static final String NOTIF_CHANNEL_ID = "athan_screen_channel";
-    private static final int NOTIF_ID = 774411; // ✅ اتغيّر عشان ميتعارضش مع إشعار الدعاء بعد الأذان (كان بيستخدم نفس الرقم 9911)
     private Handler autoHandler = new Handler();
     private Handler slideshowHandler = new Handler();
     private Handler athanTextHandler = new Handler();
@@ -276,27 +273,6 @@ public class AthanScreenActivity extends AppCompatActivity {
         isActivityShowing = false; // ✅ مش شغالة دلوقتي - النافذة العائمة تقدر تشتغل لو الأذان لسه شغال
     }
 
-    @Override
-    protected void onStart() {
-        super.onStart();
-        // ✅ الشاشة بانت خالص (مش مجرد رجوع تركيز مؤقت) - الغي إشعار الرجوع لو لسه مجدول أو ظاهر
-        if (showReturnNotifRunnable != null) {
-            autoHandler.removeCallbacks(showReturnNotifRunnable);
-            showReturnNotifRunnable = null;
-        }
-        cancelReturnToAthanNotification();
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        // ✅ الشاشة اختفت تمامًا (مش مجرد فقدان تركيز مؤقت زي نافذة نظام) - دلوقتي نجدول إشعار الرجوع
-        if (!wasExplicitlyStopped) {
-            showReturnNotifRunnable = this::showReturnToAthanNotification;
-            autoHandler.postDelayed(showReturnNotifRunnable, 3000);
-        }
-    }
-
     private void sendMuteAction(boolean mute) {
         Bundle data = new Bundle();
         data.putInt("ACTION", mute ? ThikrMediaPlayerService.MEDIA_PLAYER_MUTE_BY_FLIP : ThikrMediaPlayerService.MEDIA_PLAYER_UNMUTE_BY_FLIP);
@@ -321,52 +297,6 @@ public boolean onKeyDown(int keyCode, KeyEvent event) {
     }
     return super.onKeyDown(keyCode, event);
 }
-
-    // ✅ إشعار يفضل ظاهر لما نخرج من شاشة الأذان والأذان لسه شغال، يرجعنا للشاشة عند الضغط عليه
-    private void showReturnToAthanNotification() {
-        NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        if (nm == null) return;
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = nm.getNotificationChannel(NOTIF_CHANNEL_ID);
-            if (channel == null) {
-                channel = new NotificationChannel(NOTIF_CHANNEL_ID, "شاشة الأذان", NotificationManager.IMPORTANCE_HIGH);
-                nm.createNotificationChannel(channel);
-            }
-        }
-
-        Intent reopenIntent = new Intent(this, AthanScreenActivity.class);
-        reopenIntent.putExtra("com.alaaeltaweel.thikrallah.datatype", dataType);
-        reopenIntent.putExtra("isCallInProgress", isCallInProgress);
-        reopenIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK
-                | Intent.FLAG_ACTIVITY_SINGLE_TOP
-                | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-
-        int piFlags = PendingIntent.FLAG_UPDATE_CURRENT;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            piFlags |= PendingIntent.FLAG_IMMUTABLE;
-        }
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, reopenIntent, piFlags);
-
-        Notification notification = new NotificationCompat.Builder(this, NOTIF_CHANNEL_ID)
-                .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
-                .setContentTitle("الأذان لسه شغال")
-                .setContentText("اضغط للرجوع لشاشة الأذان")
-                .setContentIntent(pendingIntent)
-                .setAutoCancel(true)
-                .setOngoing(true)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .build();
-
-        nm.notify(NOTIF_ID, notification);
-    }
-
-    private void cancelReturnToAthanNotification() {
-        NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        if (nm != null) {
-            nm.cancel(NOTIF_ID);
-        }
-    }
 
     private String getPrayerName(String dataType) {
         if (dataType == null) return "الصلاة";
@@ -454,7 +384,6 @@ MainActivity.startAthanTimer(getApplicationContext());
         athanTextHandler.removeCallbacksAndMessages(null);
         autoHandler.removeCallbacksAndMessages(null);
         unregisterPhoneStateListener();
-        cancelReturnToAthanNotification();
 
         super.onDestroy();
     }
