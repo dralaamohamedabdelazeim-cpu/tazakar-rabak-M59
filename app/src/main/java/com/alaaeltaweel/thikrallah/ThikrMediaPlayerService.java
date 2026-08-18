@@ -200,8 +200,6 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
     private boolean isMutedByFlip = false;
     // ✅ نسخة static عشان DuaPlayerHelper يقدر يعرف هل الأذان كان مكتوم، ويورّث نفس الحالة للدعاء
     public static volatile boolean lastAthanWasMuted = false;
-    // ✅ مصدر الحقيقة الوحيد لحالة الأذان - أي شاشة/إشعار يقدر يتأكد منها قبل ما يعيد تشغيل الصوت
-    public static volatile boolean isAthanCurrentlyPlaying = false;
 
     private boolean isUserAction = true;
 
@@ -1157,7 +1155,6 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
             // ✅ أذان جديد بيبدأ - نصفّر حالة الكتم القديمة (لو فاضلة من أذان سابق)
             lastAthanWasMuted = false;
-            isAthanCurrentlyPlaying = true; // ✅ علامة حقيقية إن الأذان شغال دلوقتي فعلاً
 
             // ✅ منتدخلش في مستوى الصوت خالص - يشتغل بالظبط على المستوى اللي المستخدم حاطه،
             // حتى لو صفر. اختياره هو الأساس.
@@ -1877,7 +1874,6 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
 
     public void resetPlayer() {
-    isAthanCurrentlyPlaying = false; // ✅ أي إيقاف/اكتمال للأذان - العلامة ترجع false فورًا
     // ✅ إيقاف مراقبة حساس القلب لما الصوت يقف/يخلص
     if (flipSensorManager != null) {
         flipSensorManager.unregisterListener(this);
