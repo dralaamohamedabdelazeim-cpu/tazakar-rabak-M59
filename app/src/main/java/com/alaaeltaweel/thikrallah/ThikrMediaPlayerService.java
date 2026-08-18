@@ -932,12 +932,23 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
                 Timber.d("reset called stopping self");
 
+                // ✅ نلتقط الحالة قبل الإيقاف - عشان نعرف نشغل الدعاء لو كان أذان شغال فعلاً
+                // (زرار الإيقاف في الإشعار كان بيوقف من غير ما يشغل الدعاء خالص - بقى زي زرار الإيقاف في الشاشة)
+                boolean wasAthanPlayingBeforeReset = player != null && player.isPlaying()
+                        && getThikrType() != null && getThikrType().contains(MainActivity.DATA_TYPE_ATHAN);
+
                 this.resetPlayer();
 
-                this.stopForeground(true);
-                if (mediaSession != null) { try { mediaSession.setActive(false); } catch (Exception ignored) {} } // ✅ نقفل كارت التحكم من الشاشة المقفولة/المكالمة عشان ميفضلش عالق
+                boolean duaWillPlayFromReset = false;
+                if (wasAthanPlayingBeforeReset) {
+                    duaWillPlayFromReset = com.alaaeltaweel.thikrallah.Notification.DuaPlayerHelper.playDuaAfterAthan(getApplicationContext());
+                }
 
-                this.stopSelf();
+                if (!duaWillPlayFromReset) {
+                    this.stopForeground(true);
+                    if (mediaSession != null) { try { mediaSession.setActive(false); } catch (Exception ignored) {} } // ✅ نقفل كارت التحكم من الشاشة المقفولة/المكالمة عشان ميفضلش عالق
+                    this.stopSelf();
+                }
 
                 break;
 
@@ -1868,6 +1879,9 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
         volumeButtonReceiver = null;
     }
     if (this.player != null) {
+        // ✅ نفصل مستمع الاكتمال قبل الإيقاف - عشان أي حدث "اكتمال" متأخر لسه في الطابور
+        // ميشغلش الدعاء تاني من مساره الطبيعي (نفس إصلاح MEDIA_PLAYER_STOP بالظبط)
+        try { this.player.setOnCompletionListener(null); } catch (Exception ignored) {}
         try {
             this.player.stop();
         } catch (Exception e) {
