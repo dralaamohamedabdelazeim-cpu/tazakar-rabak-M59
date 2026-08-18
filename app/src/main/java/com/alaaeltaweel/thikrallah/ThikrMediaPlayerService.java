@@ -3,6 +3,7 @@ package com.alaaeltaweel.thikrallah;
 
 
 
+
 import android.annotation.SuppressLint;
 
 import android.app.Notification;
@@ -1167,6 +1168,19 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
             }
 
+        }
+
+
+
+        this.initMediaPlayer();
+
+        // ✅ تسجيل حساس القلب/زرار الصوت لازم يحصل بعد initMediaPlayer() مش قبلها -
+        // initMediaPlayer() بينادي resetPlayer() لو لقى player قديم لسه موجود، وresetPlayer()
+        // بيلغي تسجيل الحساس/الـ receiver على طول. لو سجلناهم قبل initMediaPlayer()، كانوا
+        // بيتلغوا فورًا قبل ما المستخدم يقدر يقلب الهاتف أو يدوس زرار الصوت أصلاً - وده كان
+        // سبب إن حساس القلب مش بيشتغل خالص
+        if (getThikrType().contains(MainActivity.DATA_TYPE_ATHAN)) {
+
             // ✅ تفعيل حساس القلب هنا (مش في الشاشة) عشان يشتغل حتى لو الشاشة مقفولة أو التليفون في الجيب
             boolean lockOnFlip = sharedPrefs.getBoolean("lock_athan_on_flip", false);
             if (lockOnFlip) {
@@ -1206,10 +1220,6 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
             }
 
         }
-
-
-
-        this.initMediaPlayer();
 
         setCurrentPlaying(fileNumber);
 
