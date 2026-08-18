@@ -718,9 +718,11 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
             }
 
-            // ✅ إرسال broadcast لـ AthanScreenActivity - بس لو ده أذان حقيقي فعلاً وكان لسه شغال فعليًا
+            // ✅ إرسال broadcast لـ AthanScreenActivity/النافذة العائمة - بس لو ده أذان حقيقي فعلاً وكان لسه شغال فعليًا
+            // (عشان الشاشة تقفل نفسها لو الإيقاف جه من مصدر تاني غيرها، زي زرار الإشعار)
             boolean duaWillPlay1 = false;
             if (wasActuallyPlaying && incomingDataType != null && incomingDataType.contains(MainActivity.DATA_TYPE_ATHAN)) {
+                sendBroadcast(new Intent("com.alaaeltaweel.thikrallah.ATHAN_COMPLETE"));
                 duaWillPlay1 = com.alaaeltaweel.thikrallah.Notification.DuaPlayerHelper.playDuaAfterAthan(getApplicationContext()); // على طول كلمه - تشغيل الدعاء لما المستخدم يوقف الأذان يدويا
             }
 
@@ -941,6 +943,9 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
                 boolean duaWillPlayFromReset = false;
                 if (wasAthanPlayingBeforeReset) {
+                    // ✅ نبعت إشارة "الأذان خلص" عشان الشاشة/النافذة العائمة تقفل نفسها -
+                    // ده كان ناقص خالص، فالشاشة كانت فاضلة فاتحة لو وقفت من زرار الإشعار
+                    sendBroadcast(new Intent("com.alaaeltaweel.thikrallah.ATHAN_COMPLETE"));
                     duaWillPlayFromReset = com.alaaeltaweel.thikrallah.Notification.DuaPlayerHelper.playDuaAfterAthan(getApplicationContext());
                 }
 
