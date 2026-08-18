@@ -186,10 +186,13 @@ public class AthanScreenActivity extends AppCompatActivity {
         // ابدأ animation كلمات الأذان بعد ثانيتين
         athanTextHandler.postDelayed(athanTextRunnable, 2000);
 
-        boolean isResume = getIntent().getBooleanExtra("isResume", false);
+        boolean isResume = getIntent().getBooleanExtra("isResume", false)
+                || com.alaaeltaweel.thikrallah.ThikrMediaPlayerService.isAthanCurrentlyPlaying;
+        // ✅ متعتمدش على علامة isResume اللي بتيجي مع الـ Intent بس (ممكن تبقى قديمة/غلط
+        // حسب مين فتح الشاشة) - اتأكد كمان من الحالة الحقيقية للأذان في الخدمة نفسها
 
         if (isResume) {
-            // راجعين للشاشة من الإشعار والأذان شغال بالفعل - مترجعش من غير ما نشغله تاني من الأول
+            // الأذان شغال بالفعل فعليًا - مترجعش من غير ما نشغله تاني من الأول
             Log.d(TAG, "Resuming athan screen - athan already playing, not restarting it");
             athanPlayed = true;
             autoHandler.postDelayed(this::stopAthanAndClose, AUTO_DISMISS_DELAY);
