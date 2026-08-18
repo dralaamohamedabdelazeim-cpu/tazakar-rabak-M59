@@ -189,7 +189,14 @@ public class AthanScreenActivity extends AppCompatActivity {
         // ابدأ animation كلمات الأذان بعد ثانيتين
         athanTextHandler.postDelayed(athanTextRunnable, 2000);
 
-        if (isCallInProgress) {
+        boolean isResume = getIntent().getBooleanExtra("isResume", false);
+
+        if (isResume) {
+            // ✅ راجعين للشاشة من الإشعار والأذان شغال بالفعل - نعرض بس، من غير ما نشغّله تاني من الأول
+            Log.d(TAG, "Resuming athan screen - athan already playing, not restarting it");
+            athanPlayed = true;
+            autoHandler.postDelayed(this::stopAthanAndClose, AUTO_DISMISS_DELAY);
+        } else if (isCallInProgress) {
             // ✅ في مكالمة — شغّل الأذان فعليًا لكن بصوت مكتوم فورًا
             // بكده هيخلص في نفس توقيته الطبيعي والشاشة هتقفل تلقائي مع الـ ATHAN_COMPLETE
             Log.d(TAG, "Call in progress, playing athan silently");
@@ -204,7 +211,6 @@ public class AthanScreenActivity extends AppCompatActivity {
             playAthan();
             autoHandler.postDelayed(this::stopAthanAndClose, AUTO_DISMISS_DELAY);
         }
-
         // ✅ تسجيل الاستقبال مرة واحدة بس طول عمر الشاشة، مش مرتبط بكونها في المقدمة
         // (عشان الشاشة تتقفل لوحدها لما الأذان يخلص حتى لو المستخدم في تطبيق تاني)
         registerReceiver(athanCompleteReceiver,
