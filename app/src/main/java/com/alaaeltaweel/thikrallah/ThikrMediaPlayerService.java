@@ -3,7 +3,6 @@ package com.alaaeltaweel.thikrallah;
 
 
 
-
 import android.annotation.SuppressLint;
 
 import android.app.Notification;
