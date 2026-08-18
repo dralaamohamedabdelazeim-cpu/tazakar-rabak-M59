@@ -91,7 +91,7 @@ public class AthanScreenActivity extends AppCompatActivity {
     private BroadcastReceiver athanCompleteReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            stopAthanAndClose();
+            closeScreenOnly(); // ✅ الخدمة هي اللي بعتت الإشارة دي، متبعتلهاش أمر إيقاف تاني
         }
     };
 
@@ -192,7 +192,7 @@ public class AthanScreenActivity extends AppCompatActivity {
         boolean isResume = getIntent().getBooleanExtra("isResume", false);
 
         if (isResume) {
-            // ✅ راجعين للشاشة من الإشعار والأذان شغال بالفعل - نعرض بس، من غير ما نشغّله تاني من الأول
+            // راجعين للشاشة من الإشعار والأذان شغال بالفعل - مترجعش من غير ما نشغله تاني من الأول
             Log.d(TAG, "Resuming athan screen - athan already playing, not restarting it");
             athanPlayed = true;
             autoHandler.postDelayed(this::stopAthanAndClose, AUTO_DISMISS_DELAY);
@@ -211,6 +211,7 @@ public class AthanScreenActivity extends AppCompatActivity {
             playAthan();
             autoHandler.postDelayed(this::stopAthanAndClose, AUTO_DISMISS_DELAY);
         }
+
         // ✅ تسجيل الاستقبال مرة واحدة بس طول عمر الشاشة، مش مرتبط بكونها في المقدمة
         // (عشان الشاشة تتقفل لوحدها لما الأذان يخلص حتى لو المستخدم في تطبيق تاني)
         registerReceiver(athanCompleteReceiver,
@@ -424,13 +425,21 @@ public boolean onKeyDown(int keyCode, KeyEvent event) {
         Intent stopThikr = new Intent(this, ThikrService.class);
         stopService(stopThikr);
 
+        closeScreenOnly();
+   // جدد الأذان الجاي
+MainActivity.startAthanTimer(getApplicationContext());
+    }
+
+    // ✅ قفل الشاشة بس من غير ما نبعت أي أمر إيقاف تاني للخدمة - عشان نستخدمها لما
+    // الخدمة نفسها تكون هي اللي بعتت إشارة "الأذان خلص" (ATHAN_COMPLETE)، فمفيش داعي
+    // نرد عليها بأمر إيقاف زيادة ممكن يوقف الخدمة فجأة وهي لسه بتشغل الدعاء
+    private void closeScreenOnly() {
+        wasExplicitlyStopped = true;
         slideshowHandler.removeCallbacksAndMessages(null);
         athanTextHandler.removeCallbacksAndMessages(null);
         autoHandler.removeCallbacksAndMessages(null);
         unregisterPhoneStateListener();
         finish();
-   // جدد الأذان الجاي
-MainActivity.startAthanTimer(getApplicationContext());
     }
 
     @Override
