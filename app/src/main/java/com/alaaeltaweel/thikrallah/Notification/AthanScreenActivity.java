@@ -214,8 +214,15 @@ public class AthanScreenActivity extends AppCompatActivity {
 
         // ✅ تسجيل الاستقبال مرة واحدة بس طول عمر الشاشة، مش مرتبط بكونها في المقدمة
         // (عشان الشاشة تتقفل لوحدها لما الأذان يخلص حتى لو المستخدم في تطبيق تاني)
-        registerReceiver(athanCompleteReceiver,
-                new IntentFilter("com.alaaeltaweel.thikrallah.ATHAN_COMPLETE"));
+        // ✅ من أندرويد 13 (API 33) لازم نحدد صراحة إنه مش exported، وإلا التسجيل ممكن يعمل Crash
+        if (Build.VERSION.SDK_INT >= 33) {
+            registerReceiver(athanCompleteReceiver,
+                    new IntentFilter("com.alaaeltaweel.thikrallah.ATHAN_COMPLETE"),
+                    Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(athanCompleteReceiver,
+                    new IntentFilter("com.alaaeltaweel.thikrallah.ATHAN_COMPLETE"));
+        }
     }
 
     private void registerPhoneStateListener() {
