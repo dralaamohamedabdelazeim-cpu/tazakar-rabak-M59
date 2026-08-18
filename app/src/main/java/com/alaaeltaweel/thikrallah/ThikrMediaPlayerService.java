@@ -3,6 +3,7 @@ package com.alaaeltaweel.thikrallah;
 
 
 
+
 import android.annotation.SuppressLint;
 
 import android.app.Notification;
@@ -1155,6 +1156,9 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
             // ✅ أذان جديد بيبدأ - نصفّر حالة الكتم القديمة (لو فاضلة من أذان سابق)
             lastAthanWasMuted = false;
 
+            // ✅ أذان جديد فعلي بيبدأ - نسمح للدعاء بعده يشتغل تاني (نصفّر القفل القديم لو فاضل من أذان قبل كده)
+            com.alaaeltaweel.thikrallah.Notification.DuaPlayerHelper.resetGuardForNewAthan();
+
             // ✅ منتدخلش في مستوى الصوت خالص - يشتغل بالظبط على المستوى اللي المستخدم حاطه،
             // حتى لو صفر. اختياره هو الأساس.
 
@@ -1696,10 +1700,18 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
         @Override
         public void onReceive(Context context, Intent intent) {
             int streamType = intent.getIntExtra("android.media.EXTRA_VOLUME_STREAM_TYPE", -1);
-            Timber.d("VolumeButtonReceiver fired - streamType=%s, isMutedByFlip=%s, player=%s", streamType, isMutedByFlip, (player == null ? "null" : "not-null"));
+            int newVal = intent.getIntExtra("android.media.EXTRA_VOLUME_STREAM_VALUE", -1);
+            int prevVal = intent.getIntExtra("android.media.EXTRA_PREV_VOLUME_STREAM_VALUE", -1);
+            Timber.d("VolumeButtonReceiver fired - streamType=%s, prev=%s, new=%s, isMutedByFlip=%s, player=%s", streamType, prevVal, newVal, isMutedByFlip, (player == null ? "null" : "not-null"));
             if (isMutedByFlip) return; // اتكتم قبل كده، متعملش حاجة تاني
             if (streamType != AudioManager.STREAM_MUSIC) return;
             if (player == null) return;
+            // ✅ ضغطة زرار الصوت الحقيقية بتغيّر المستوى بخطوة واحدة (+1/-1) بالظبط.
+            // أي تغيير تاني (تطبيق تاني ضبط الصوت برمجيًا، أو النظام غيّره لسبب آخر) بيتجاهل
+            if (prevVal == -1 || newVal == -1 || Math.abs(newVal - prevVal) != 1) {
+                Timber.d("Ignoring volume change - not a genuine single button press");
+                return;
+            }
             isMutedByFlipService = true;
             isMutedByFlip = true;
             lastAthanWasMuted = true;
