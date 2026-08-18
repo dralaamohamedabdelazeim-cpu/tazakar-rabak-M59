@@ -451,20 +451,11 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
     private void initNotification() {
 
-        // ✅ لو اللي شغال دلوقتي أذان، الإشعار وقت الضغط عليه يرجعنا لشاشة الأذان نفسها
-        // مباشرة - بكده الإشعار ده بقى هو نفسه وسيلة "الرجوع للأذان"، مش محتاجين إشعار منفصل
-        boolean isCurrentlyAthan = this.getThikrType() != null && this.getThikrType().contains(MainActivity.DATA_TYPE_ATHAN);
+        Intent resultIntent = new Intent(this, MainActivity.class);
 
-        Intent resultIntent;
-        if (isCurrentlyAthan) {
-            resultIntent = new Intent(this, com.alaaeltaweel.thikrallah.Notification.AthanScreenActivity.class);
-            resultIntent.putExtra("com.alaaeltaweel.thikrallah.datatype", this.getThikrType());
-            resultIntent.putExtra("isResume", true); // ✅ الأذان شغال بالفعل - متشغلوش تاني من الأول
-        } else {
-            resultIntent = new Intent(this, MainActivity.class);
-            resultIntent.putExtra("FromNotification", true);
-            resultIntent.putExtra("DataType", this.getThikrType());
-        }
+        resultIntent.putExtra("FromNotification", true);
+
+        resultIntent.putExtra("DataType", this.getThikrType());
 
         resultIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
 
