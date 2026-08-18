@@ -20,14 +20,22 @@ public class DuaPlayerHelper {
 
     private static final String TAG = "DuaPlayerHelper";
    private static MediaPlayer duaMediaPlayer;
-    private static long lastPlayStartTime = 0; // ✅ لمنع نداءين متقاربين يشغلوا الدعاء فوق بعض
+    // ✅ قفل بمستوى "الحالة" مش بمستوى "الوقت" - بيتصفر بس لما أذان جديد فعلي يبدأ
+    // (مش زي القفل القديم اللي كان بيعتمد على فرق 6 ثواني، وده كان بيسمح بتشغيل الدعاء
+    // مرتين لو المسارات المختلفة اللي بتنادي الدالة دي حصلت بفارق أكتر من 6 ثواني)
+    private static volatile boolean duaTriggeredForCurrentAthan = false;
+
+    // ✅ ينادَى لما أذان جديد فعلي يبدأ (من ThikrMediaPlayerService.play) عشان يسمح للدعاء
+    // بعده يشتغل، مهما كان عدد المرات اللي هتتنادى فيها playDuaAfterAthan لنفس الأذان ده
+    public static void resetGuardForNewAthan() {
+        duaTriggeredForCurrentAthan = false;
+    }
 
     public static synchronized boolean playDuaAfterAthan(Context context) {
-        long nowMs = System.currentTimeMillis();
-        if ((nowMs - lastPlayStartTime) < 6000) {
-            return true; // ✅ نداء مكرر جه في نفس اللحظة تقريبًا - نتجاهله، لكن الدعاء أصلاً شغال فعلاً
+        if (duaTriggeredForCurrentAthan) {
+            return true; // ✅ الدعاء اتشغل (أو بيتشغل) بالفعل لنفس الأذان ده - تجاهل أي نداء تاني
         }
-        lastPlayStartTime = nowMs;
+        duaTriggeredForCurrentAthan = true;
         boolean isDuaEnabled = androidx.preference.PreferenceManager
                 .getDefaultSharedPreferences(context).getBoolean("isDuaAfterAthan", false);
         if (!isDuaEnabled) return false;
