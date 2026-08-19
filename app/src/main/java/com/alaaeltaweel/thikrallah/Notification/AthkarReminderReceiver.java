@@ -19,6 +19,10 @@ public class AthkarReminderReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         String athkarType = intent.getStringExtra(EXTRA_ATHKAR_TYPE);
+        // ✅ لو الإشعار وصل من غير النوع لأي سبب، منمنعش القيمة دي تعمل Crash على .hashCode()
+        if (athkarType == null) {
+            athkarType = "morning";
+        }
 
         Intent openIntent = new Intent(context, MainActivity.class);
         openIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK
