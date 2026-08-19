@@ -533,9 +533,13 @@ if (hijriOffset != 0) {
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
             @Override public void afterTextChanged(android.text.Editable s) {
                 String val = s.toString().trim();
-                if (!val.isEmpty() && Integer.parseInt(val) >= 1) {
-                    mPrefs.edit().putString("preAthanMinutes_" + key, val).apply();
-                    new android.os.Handler().postDelayed(() -> updateAthanAlarms(), 300);
+                // ✅ لو المستخدم كتب حاجة مش رقم صحيح (زي "-" لوحدها وهو بيعدل)، نتجاهلها بهدوء بدل ما نعمل Crash
+                try {
+                    if (!val.isEmpty() && Integer.parseInt(val) >= 1) {
+                        mPrefs.edit().putString("preAthanMinutes_" + key, val).apply();
+                        new android.os.Handler().postDelayed(() -> updateAthanAlarms(), 300);
+                    }
+                } catch (NumberFormatException ignored) {
                 }
             }
         });
@@ -564,9 +568,13 @@ if (hijriOffset != 0) {
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
             @Override public void afterTextChanged(android.text.Editable s) {
                 String val = s.toString().trim();
-                if (!val.isEmpty() && Integer.parseInt(val) >= 1) {
-                    mPrefs.edit().putString("iqamaMinutes_" + key, val).apply();
-                    new android.os.Handler().postDelayed(() -> updateAthanAlarms(), 300);
+                // ✅ نفس الحماية هنا كمان - نتجاهل أي قيمة مش رقم صحيح بدل ما نعمل Crash
+                try {
+                    if (!val.isEmpty() && Integer.parseInt(val) >= 1) {
+                        mPrefs.edit().putString("iqamaMinutes_" + key, val).apply();
+                        new android.os.Handler().postDelayed(() -> updateAthanAlarms(), 300);
+                    }
+                } catch (NumberFormatException ignored) {
                 }
             }
         });

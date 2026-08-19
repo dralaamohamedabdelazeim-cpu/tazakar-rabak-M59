@@ -114,7 +114,6 @@ public class ThikrFragment extends ListFragment implements OnClickListener {
 				setCurrentlyPlaying(position+1);
 				mCallback.play(this.thikrType,mCallback.getCurrentPlaying());
 			}
-			mCallback.pausePlayer(this.thikrType);
         } else {
             mCallback.play(this.thikrType, position + 1);
             setCurrentlyPlaying(position + 1);
