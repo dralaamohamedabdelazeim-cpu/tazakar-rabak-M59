@@ -38,7 +38,9 @@ if (intent.getBooleanExtra("isWatchdog", false)) {
 
             // تشغيل الـ alarms عند البوت
             if (intent.getAction().equalsIgnoreCase("com.alaaeltaweel.thikrallah.Notification.ThikrBootReceiver.android.action.broadcast")
-                || intent.getAction().equalsIgnoreCase(Intent.ACTION_BOOT_COMPLETED)) {
+                || intent.getAction().equalsIgnoreCase(Intent.ACTION_BOOT_COMPLETED)
+                || intent.getAction().equalsIgnoreCase("android.intent.action.QUICKBOOT_POWERON")
+                || intent.getAction().equalsIgnoreCase("com.htc.intent.action.QUICKBOOT_POWERON")) {
 
                 MyAlarmsManager manager = new MyAlarmsManager(context.getApplicationContext());
                    manager.UpdateAllApplicableAlarms(); 

@@ -240,6 +240,11 @@ public class AthanTimerService extends Service {
 	private void fireIfMissed(String prefKey, Calendar targetTime, Calendar now, long graceMs, FireAction action) {
 		if (!now.after(targetTime)) return;
 		long lateBy = now.getTimeInMillis() - targetTime.getTimeInMillis();
+		// ✅ منديش المنبه الحقيقي (اللي بيشتغل في المعاد بالظبط عن طريق AlarmManager) فرصة
+		// كافية إنه يشتغل الأول - الحارس (Watchdog) ده احتياطي بس لو المنبه الحقيقي "اتمنع"
+		// فعلاً (الجهاز كان مقفول تمامًا مثلاً)، مش لأي تأخير عادي بسيط في أول دقيقة أو اتنين
+		long MIN_LATE_MS = 3 * 60 * 1000L;
+		if (lateBy < MIN_LATE_MS) return;
 		if (lateBy > graceMs) return;
 
 		long lastAttempt = sharedPrefs.getLong(prefKey, 0);
