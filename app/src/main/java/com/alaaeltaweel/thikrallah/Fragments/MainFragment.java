@@ -337,7 +337,12 @@ long daysToRamadan = net.time4j.calendar.HijriCalendar.Unit.DAYS.between(
 private void fetchWeather() {
         String lat = MainFragment.this.mPrefs.getString("latitude", "0");
         String lon = MainFragment.this.mPrefs.getString("longitude", "0");
-        String url = "https://api.openweathermap.org/data/2.5/weather?lat=" + lat + "&lon=" + lon + "&appid=ee5c1d0597ed9dd634b05d5daeed6cc8&units=metric&lang=ar";
+        // ✅ لو الموقع لسه ما اتحددش (لسه على القيمة الافتراضية صفر)، منجيبش طقس غلط لنقطة في المحيط
+        if ("0".equals(lat) && "0".equals(lon)) {
+            Log.d(TAG, "Location not set yet - skipping weather fetch");
+            return;
+        }
+        String url = "https://api.openweathermap.org/data/2.5/weather?lat=" + lat + "&lon=" + lon + "&appid=" + com.alaaeltaweel.thikrallah.BuildConfig.WEATHER_API_KEY + "&units=metric&lang=ar";
         new Thread(() -> {
             try {
                 java.net.HttpURLConnection conn = (java.net.HttpURLConnection) new java.net.URL(url).openConnection();
@@ -381,5 +386,4 @@ private void fetchWeather() {
         }
     }
 }
-
 
