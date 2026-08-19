@@ -30,11 +30,9 @@ buildscript {
     }
 
     // workaround for proguard failing to parse moshi's proguard rules
-    buildscript {
-        configurations.configureEach {
-            resolutionStrategy {
-                force 'net.sf.proguard:proguard-gradle:6.1.0beta2'
-            }
+    configurations.configureEach {
+        resolutionStrategy {
+            force 'net.sf.proguard:proguard-gradle:6.1.0beta2'
         }
     }
 
