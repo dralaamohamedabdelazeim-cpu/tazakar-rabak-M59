@@ -1375,7 +1375,8 @@ public class MainActivity extends AppCompatActivity implements MainInterface, Lo
 //                String cityName = addresses.get(0).getAddressLine(0);
                 //un hg              String stateName = addresses.get(0).getAddressLine(1);
                 //       String countryName = addresses.get(0).getAddressLine(2);
-                if (addresses.size() > 0) {
+                // ✅ addresses ممكن ترجع null في حالات نادرة (مفيش نت / خدمة الـ Geocoder مش متاحة)
+                if (addresses != null && addresses.size() > 0) {
                     String country = addresses.get(0).getCountryName();
                     String city = addresses.get(0).getLocality();
                     locationDiscription = country + "  " + city;// nbn  khjbmn countryName+" "+stateName + "" + cityName;
