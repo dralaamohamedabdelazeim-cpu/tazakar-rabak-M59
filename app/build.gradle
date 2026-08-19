@@ -99,7 +99,7 @@ dependencies {
 
 
     implementation project(path: ':data')
-    implementation project(path: '::networking')
+    implementation project(path: ':networking')
     implementation project(path: ':pages')
     implementation project(path: ':search')
     implementation project(path: ':madani')
