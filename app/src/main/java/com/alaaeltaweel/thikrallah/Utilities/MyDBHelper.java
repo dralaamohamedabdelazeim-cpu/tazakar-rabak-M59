@@ -170,11 +170,13 @@ public class MyDBHelper  extends SQLiteOpenHelper {
                 thikr=this.context.getResources().getStringArray(R.array.GeneralThikr)[Integer.parseInt(file)-1];
             }
             UserThikr requested_thikr = new UserThikr(id, thikr, isEnabled, isBuiltIn, file);
+            cursor.close();
             db.close();
             return requested_thikr;
 
 
         }
+        cursor.close();
         db.close();
         return null;
     }
@@ -231,6 +233,7 @@ public class MyDBHelper  extends SQLiteOpenHelper {
                 cursor.moveToNext();
             }
         }
+        cursor.close();
         db.close();
         return list;
     }
@@ -262,6 +265,7 @@ public class MyDBHelper  extends SQLiteOpenHelper {
             }
             Log.d("testing123","enabledThikrs count is "+list.size());
         }
+        cursor.close();
         db.close();
         return list;
     }
@@ -296,8 +300,10 @@ public class MyDBHelper  extends SQLiteOpenHelper {
                 list.add(new UserThikr(id,thikr,isEnabled,isBuiltIn,file));
                 cursor.moveToNext();
             }
+            cursor.close();
             db.close();
         }else{
+            cursor.close();
             db.close();
             list=this.getAllBuiltinThikrs();
             for (int i=0;i<list.size();i++){
@@ -335,6 +341,7 @@ public class MyDBHelper  extends SQLiteOpenHelper {
             }
             Log.d("testing123","enabledThikrs count is "+list.size());
         }
+        cursor.close();
 
         return list;
     }
@@ -363,6 +370,7 @@ public class MyDBHelper  extends SQLiteOpenHelper {
             }
             Log.d("testing123","enabledThikrs count is "+list.size());
         }
+        cursor.close();
 
         return list;
     }
@@ -395,6 +403,7 @@ public class MyDBHelper  extends SQLiteOpenHelper {
             }
             Log.d("testing123", "enabledThikrs count is " + list.size());
         }
+        cursor.close();
         db.close();
         return list;
     }
