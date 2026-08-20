@@ -163,6 +163,7 @@ public class CitiesCoordinatesDbOpenHelper extends SQLiteOpenHelper {
                 cursor.moveToNext();
             }
         }
+        cursor.close();
         db.close();
         return countries;
     }
@@ -178,6 +179,7 @@ public class CitiesCoordinatesDbOpenHelper extends SQLiteOpenHelper {
                 cursor.moveToNext();
             }
         }
+        cursor.close();
         db.close();
         return cities;
     }
@@ -192,6 +194,7 @@ public class CitiesCoordinatesDbOpenHelper extends SQLiteOpenHelper {
             coordinates[1]=cursor.getDouble(cursor.getColumnIndex("latitude"));
 
         }
+        cursor.close();
         db.close();
         return coordinates;
     }
@@ -203,8 +206,9 @@ public class CitiesCoordinatesDbOpenHelper extends SQLiteOpenHelper {
         String cos_lat_2 = String.valueOf(Math.pow(cos(Double.parseDouble(latitude) * PI / 180),2));
 
         SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = null;
         try{
-            Cursor cursor = db.rawQuery(
+            cursor = db.rawQuery(
                     "SELECT city, country FROM cities ORDER BY (( ? - latitude ) * ( ? - latitude )) + (( ? - longitude)*( ? - longitude ) * ? ) ASC LIMIT 1"
                     ,new String[]{latitude,latitude,longitude,longitude,cos_lat_2});
             if (cursor .moveToFirst()) {
@@ -215,6 +219,9 @@ public class CitiesCoordinatesDbOpenHelper extends SQLiteOpenHelper {
         }catch (SQLiteException e){
             closestLocation[1]=latitude;
             closestLocation[0]=longitude;
+        } finally {
+            // ✅ نتأكد إن الـ cursor بيتقفل حتى لو حصل استثناء أثناء الاستعلام
+            if (cursor != null) cursor.close();
         }
         db.close();
         return closestLocation;
