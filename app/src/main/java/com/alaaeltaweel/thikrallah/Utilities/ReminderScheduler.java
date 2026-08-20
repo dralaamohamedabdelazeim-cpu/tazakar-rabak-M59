@@ -51,6 +51,9 @@ public class ReminderScheduler {
         Intent intent = new Intent(context, PrayerReminderReceiver.class);
         intent.putExtra(PrayerReminderReceiver.EXTRA_PRAYER_KEY, key);
         intent.putExtra(PrayerReminderReceiver.EXTRA_PRAYER_NAME, name);
+        // ✅ بنبعت الساعة/الدقيقة عشان الـ receiver يقدر يجدد التذكير لبكرة بنفس الميعاد
+        intent.putExtra("hour", hour);
+        intent.putExtra("minute", minute);
 
         PendingIntent pendingIntent = PendingIntent.getBroadcast(
             context, key.hashCode(), intent,
@@ -65,10 +68,10 @@ public class ReminderScheduler {
             calendar.add(Calendar.DAY_OF_YEAR, 1);
         }
 
-        alarmManager.setRepeating(
+        // ✅ setExactAndAllowWhileIdle بدل setRepeating - دقة حقيقية بدل تقريب أندرويد للبطارية
+        alarmManager.setExactAndAllowWhileIdle(
             AlarmManager.RTC_WAKEUP,
             calendar.getTimeInMillis(),
-            AlarmManager.INTERVAL_DAY,
             pendingIntent);
     }
 
@@ -102,6 +105,9 @@ public class ReminderScheduler {
 
         Intent intent = new Intent(context, AthkarReminderReceiver.class);
         intent.putExtra(AthkarReminderReceiver.EXTRA_ATHKAR_TYPE, type);
+        // ✅ بنبعت الساعة/الدقيقة عشان الـ receiver يقدر يجدد التذكير لبكرة بنفس الميعاد
+        intent.putExtra("hour", hour);
+        intent.putExtra("minute", minute);
 
         PendingIntent pendingIntent = PendingIntent.getBroadcast(
             context, type.hashCode(), intent,
@@ -116,10 +122,10 @@ public class ReminderScheduler {
             calendar.add(Calendar.DAY_OF_YEAR, 1);
         }
 
-        alarmManager.setRepeating(
+        // ✅ setExactAndAllowWhileIdle بدل setRepeating - دقة حقيقية بدل تقريب أندرويد للبطارية
+        alarmManager.setExactAndAllowWhileIdle(
             AlarmManager.RTC_WAKEUP,
             calendar.getTimeInMillis(),
-            AlarmManager.INTERVAL_DAY,
             pendingIntent);
     }
 }
