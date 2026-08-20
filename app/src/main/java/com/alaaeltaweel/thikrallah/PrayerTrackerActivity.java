@@ -19,7 +19,9 @@ public class PrayerTrackerActivity extends AppCompatActivity {
     private SharedPreferences prefs;
 
     private String getTodayKey() {
-        return new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
+        // ✅ لازم لغة ثابتة هنا لأن ده مفتاح تخزين داخلي مش نص معروض - لو استخدمنا لغة الجهاز
+        // ممكن الأرقام تتغير شكلها لو المستخدم غيّر لغة الموبايل، فيضيع تتبع الصلاة بتاعته
+        return new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date());
     }
 
     @Override
