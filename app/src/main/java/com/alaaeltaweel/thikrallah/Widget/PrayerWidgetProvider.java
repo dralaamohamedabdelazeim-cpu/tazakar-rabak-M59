@@ -33,7 +33,7 @@ public class PrayerWidgetProvider extends AppWidgetProvider {
 
     private static final String TAG = "PrayerWidget";
     public static final String ACTION_UPDATE_WIDGET = "com.alaaeltaweel.thikrallah.WIDGET_UPDATE";
-    private static final String WEATHER_API_KEY = "ee5c1d0597ed9dd634b05d5daeed6cc8";
+    // ✅ نفس المفتاح المؤمّن المستخدم في MainFragment - بييجي من BuildConfig/GitHub Secret مش مكتوب هنا صريح
 
     private static final String[] PRAYER_NAMES = {"الفجر", "الظهر", "العصر", "المغرب", "العشاء"};
     private static final int[] PRAYER_POSITIONS = {0, 2, 3, 4, 5};
@@ -185,15 +185,20 @@ public class PrayerWidgetProvider extends AppWidgetProvider {
         String result0 = null, result1 = null;
         try {
             String urlStr = "https://api.openweathermap.org/data/2.5/weather?lat=" + lat
-                + "&lon=" + lon + "&appid=" + WEATHER_API_KEY + "&units=metric&lang=ar";
+                + "&lon=" + lon + "&appid=" + com.alaaeltaweel.thikrallah.BuildConfig.WEATHER_API_KEY + "&units=metric&lang=ar";
             HttpURLConnection conn = (HttpURLConnection) new URL(urlStr).openConnection();
             conn.setConnectTimeout(5000);
             conn.setReadTimeout(5000);
-            BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
             StringBuilder sb = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) sb.append(line);
-            reader.close();
+            try {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                String line;
+                while ((line = reader.readLine()) != null) sb.append(line);
+                reader.close();
+            } finally {
+                // ✅ نتأكد إن الاتصال بيتقفل حتى لو حصل خطأ أثناء القراءة
+                conn.disconnect();
+            }
             JSONObject json = new JSONObject(sb.toString());
             double temp = json.getJSONObject("main").getDouble("temp");
             String desc = json.getJSONArray("weather").getJSONObject(0).getString("description");
