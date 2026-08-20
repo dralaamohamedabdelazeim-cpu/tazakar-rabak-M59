@@ -106,7 +106,10 @@ public class RecordThikrDialog extends DialogFragment {
                         MyDBHelper db = new MyDBHelper(context);
                         db.addThikr(newThikr,0, file);
                         Log.d(TAG,"filename is "+context.getFilesDir().getPath() + File.separator  +"user"+file_id+".mp3");
-                        my_interface.updateList();
+                        // ✅ لو الشاشة اتعملها إعادة بناء من النظام، الـ target fragment ممكن يضيع
+                        if (my_interface != null) {
+                            my_interface.updateList();
+                        }
 
                     }
                 })
@@ -181,7 +184,12 @@ public class RecordThikrDialog extends DialogFragment {
             public void onClick(DialogInterface dialog, int whichButton) {
                 file=context.getFilesDir().getPath()  +File.separator+"user"+file_id+".mp3";
                 mProgressDialog.dismiss();
-                recorder.stop();
+                // ✅ تسجيل قصير جدًا (أقل من ثانية) بيخلي stop() ترمي استثناء معروف - نتعامل معاه بهدوء
+                try {
+                    recorder.stop();
+                } catch (RuntimeException e) {
+                    Log.e(TAG, "Recording too short, no valid data recorded", e);
+                }
                 recorder.reset();
                 recorder.release();
                 mCallback.play(file);
@@ -191,7 +199,11 @@ public class RecordThikrDialog extends DialogFragment {
         mProgressDialog.setOnCancelListener(new DialogInterface.OnCancelListener(){
             @Override
             public void onCancel(DialogInterface p1) {
-                recorder.stop();
+                try {
+                    recorder.stop();
+                } catch (RuntimeException e) {
+                    Log.e(TAG, "Recording too short, no valid data recorded", e);
+                }
                 recorder.reset();
                 recorder.release();
             }
@@ -223,8 +235,10 @@ public class RecordThikrDialog extends DialogFragment {
             }
             case MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE: {
                 // If request is cancelled, the result arrays are empty.
+                // ✅ الصلاحية المطلوبة فعليًا كانت READ_EXTERNAL_STORAGE، فلازم نتحقق منها هي
+                // مش WRITE_EXTERNAL_STORAGE (كانت بتفشل حتى لو المستخدم وافق فعلاً)
                 if (grantResults.length > 0
-                        && (ActivityCompat.checkSelfPermission(this.getActivity(), Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED )) {
+                        && (ActivityCompat.checkSelfPermission(this.getActivity(), Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED )) {
                     Intent intent = new Intent(getActivity(), MediaBrowser.class);
                     startActivityForResult(intent, 0);
                     // permission was granted, yay! Do the
