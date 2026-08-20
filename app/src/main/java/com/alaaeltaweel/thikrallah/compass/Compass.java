@@ -13,6 +13,11 @@ public class Compass implements SensorEventListener {
         void onNewAzimuth(float azimuth);
     }
 
+    // ✅ بعض الأجهزة الاقتصادية مالهاش حساس بوصلة (Magnetometer) خالص
+    public boolean isAvailable() {
+        return gsensor != null && msensor != null;
+    }
+
     private CompassListener listener;
 
     private SensorManager sensorManager;
@@ -35,6 +40,10 @@ public class Compass implements SensorEventListener {
     }
 
     public void start() {
+        // ✅ من غير الشرط ده، الأجهزة اللي مالهاش حساس بوصلة كانت هتعمل Crash فوري هنا
+        if (!isAvailable()) {
+            return;
+        }
         sensorManager.registerListener(this, gsensor,
                 SensorManager.SENSOR_DELAY_GAME);
         sensorManager.registerListener(this, msensor,
