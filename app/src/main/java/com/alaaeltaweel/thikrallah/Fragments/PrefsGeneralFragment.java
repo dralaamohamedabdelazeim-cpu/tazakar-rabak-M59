@@ -213,6 +213,11 @@ public class PrefsGeneralFragment extends PreferenceFragmentCompat implements On
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+        // ✅ بعض الأجهزة بتنادي الدالة دي أحيانًا بمفتاح فاضي (null) - مثلاً لو كل الإعدادات
+        // اتمسحت مرة واحدة - من غير الشرط ده كان بيعمل Crash فوري
+        if (key == null) {
+            return;
+        }
         if (key.equalsIgnoreCase("volume")) {
             return;
         }
