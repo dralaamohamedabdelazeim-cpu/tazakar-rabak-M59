@@ -66,21 +66,29 @@ public class MediaBrowser extends AppCompatActivity {
     }
 
     private void loadAudioFiles() {
-        AllAudioFiles = getAllAudioFromDevice(this.getApplicationContext());
-        myList.clear();
-        for (int i = 0; i < AllAudioFiles.size(); i++) {
-            myList.add(AllAudioFiles.get(i).getaName());
-        }
-        pathTextView.setText("Select Audio File from below:");
-        listView.setAdapter(new ArrayAdapter<>(this,
-                android.R.layout.simple_list_item_1, myList));
+        pathTextView.setText("جاري تحميل الملفات...");
+        // ✅ قراءة كل ملفات الصوت من الجهاز ممكن تاخد وقت لو المكتبة كبيرة - نعملها في خيط تاني
+        // عشان منعملش تجميد (ANR) للشاشة
+        new Thread(() -> {
+            List<AudioModel> files = getAllAudioFromDevice(this.getApplicationContext());
+            runOnUiThread(() -> {
+                AllAudioFiles = files;
+                myList.clear();
+                for (int i = 0; i < AllAudioFiles.size(); i++) {
+                    myList.add(AllAudioFiles.get(i).getaName());
+                }
+                pathTextView.setText("Select Audio File from below:");
+                listView.setAdapter(new ArrayAdapter<>(this,
+                        android.R.layout.simple_list_item_1, myList));
 
-        listView.setOnItemClickListener((arg0, arg1, position, arg3) -> {
-            Intent data = new Intent();
-            data.putExtra("FILE", AllAudioFiles.get(position).getUri().toString());
-            setResult(RESULT_OK, data);
-            finish();
-        });
+                listView.setOnItemClickListener((arg0, arg1, position, arg3) -> {
+                    Intent data = new Intent();
+                    data.putExtra("FILE", AllAudioFiles.get(position).getUri().toString());
+                    setResult(RESULT_OK, data);
+                    finish();
+                });
+            });
+        }).start();
     }
 
     @Override
@@ -112,6 +120,8 @@ public class MediaBrowser extends AppCompatActivity {
             while (c.moveToNext()) {
                 AudioModel audioModel = new AudioModel();
                 String path = c.getString(0);
+                // ✅ بعض الملفات (خصوصًا من تخزين سحابي) ممكن ترجع مسار فاضي (null) - نتخطاها بهدوء
+                if (path == null) continue;
                 String album = c.getString(1);
                 String artist = c.getString(2);
                 long id = c.getLong(3);
