@@ -23,8 +23,10 @@ public class PrayerReminderReceiver extends BroadcastReceiver {
         String prayerKey = intent.getStringExtra(EXTRA_PRAYER_KEY);
 
         // تحقق هل صلى المستخدم الصلاة دي النهارده
+        // ✅ لازم لغة ثابتة هنا (زي PrayerTrackerActivity بالظبط) وإلا المفتاحين ملهمش
+        // يتطابقوا وهيفضل يبعت تذكير حتى لو المستخدم سجل إنه صلى بالفعل
         String todayKey = new java.text.SimpleDateFormat(
-            "yyyy-MM-dd", java.util.Locale.getDefault())
+            "yyyy-MM-dd", java.util.Locale.US)
             .format(new java.util.Date());
 
         android.content.SharedPreferences prefs =
@@ -38,6 +40,39 @@ public class PrayerReminderReceiver extends BroadcastReceiver {
         if (!alreadyPrayed) {
             sendNotification(context, prayerName, prayerKey);
         }
+
+        // ✅ setExactAndAllowWhileIdle بتشتغل مرة واحدة بس - لازم نجدد الميعاد لبكرة يدويًا
+        int hour = intent.getIntExtra("hour", -1);
+        int minute = intent.getIntExtra("minute", -1);
+        if (hour != -1 && minute != -1 && prayerKey != null) {
+            rescheduleForTomorrow(context, prayerKey, prayerName, hour, minute);
+        }
+    }
+
+    private void rescheduleForTomorrow(Context context, String prayerKey, String prayerName, int hour, int minute) {
+        android.app.AlarmManager alarmManager =
+            (android.app.AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+
+        Intent intent = new Intent(context, PrayerReminderReceiver.class);
+        intent.putExtra(EXTRA_PRAYER_KEY, prayerKey);
+        intent.putExtra(EXTRA_PRAYER_NAME, prayerName);
+        intent.putExtra("hour", hour);
+        intent.putExtra("minute", minute);
+
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(
+            context, prayerKey.hashCode(), intent,
+            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+        java.util.Calendar calendar = java.util.Calendar.getInstance();
+        calendar.set(java.util.Calendar.HOUR_OF_DAY, hour);
+        calendar.set(java.util.Calendar.MINUTE, minute);
+        calendar.set(java.util.Calendar.SECOND, 0);
+        calendar.add(java.util.Calendar.DAY_OF_YEAR, 1);
+
+        alarmManager.setExactAndAllowWhileIdle(
+            android.app.AlarmManager.RTC_WAKEUP,
+            calendar.getTimeInMillis(),
+            pendingIntent);
     }
 
     private void sendNotification(Context context,

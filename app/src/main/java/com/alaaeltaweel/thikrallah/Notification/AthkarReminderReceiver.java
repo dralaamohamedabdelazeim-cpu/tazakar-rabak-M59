@@ -64,5 +64,37 @@ public class AthkarReminderReceiver extends BroadcastReceiver {
                 .setContentIntent(pendingIntent);
 
         manager.notify(athkarType.hashCode(), builder.build());
+
+        // ✅ setExactAndAllowWhileIdle بتشتغل مرة واحدة بس - لازم نجدد الميعاد لبكرة يدويًا
+        int hour = intent.getIntExtra("hour", -1);
+        int minute = intent.getIntExtra("minute", -1);
+        if (hour != -1 && minute != -1) {
+            rescheduleForTomorrow(context, athkarType, hour, minute);
+        }
+    }
+
+    private void rescheduleForTomorrow(Context context, String athkarType, int hour, int minute) {
+        android.app.AlarmManager alarmManager =
+            (android.app.AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+
+        Intent intent = new Intent(context, AthkarReminderReceiver.class);
+        intent.putExtra(EXTRA_ATHKAR_TYPE, athkarType);
+        intent.putExtra("hour", hour);
+        intent.putExtra("minute", minute);
+
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(
+            context, athkarType.hashCode(), intent,
+            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+        java.util.Calendar calendar = java.util.Calendar.getInstance();
+        calendar.set(java.util.Calendar.HOUR_OF_DAY, hour);
+        calendar.set(java.util.Calendar.MINUTE, minute);
+        calendar.set(java.util.Calendar.SECOND, 0);
+        calendar.add(java.util.Calendar.DAY_OF_YEAR, 1);
+
+        alarmManager.setExactAndAllowWhileIdle(
+            android.app.AlarmManager.RTC_WAKEUP,
+            calendar.getTimeInMillis(),
+            pendingIntent);
     }
 }

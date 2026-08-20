@@ -45,6 +45,11 @@ if (intent.getBooleanExtra("isWatchdog", false)) {
                 MyAlarmsManager manager = new MyAlarmsManager(context.getApplicationContext());
                    manager.UpdateAllApplicableAlarms(); 
 
+                // ✅ تذكيرات الصلاة والأذكار (ReminderScheduler) كانت بتتسجل بس لما المستخدم
+                // يفتح الشاشة الرئيسية - وبما إن كل المنبهات بتتمسح تلقائيًا بعد أي إعادة تشغيل
+                // للجهاز، كانت بتتوقف بصمت لو المستخدم ما فتحش التطبيق بعد الريستارت
+                com.alaaeltaweel.thikrallah.Utilities.ReminderScheduler.scheduleAllReminders(context.getApplicationContext());
+
                                 
                 // تأخير 5 ثواني عشان الجهاز يكمل الإقلاع
                 new Handler(Looper.getMainLooper()).postDelayed(() -> {
