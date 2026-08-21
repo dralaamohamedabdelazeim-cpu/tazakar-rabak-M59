@@ -189,6 +189,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
     private int currentPlaying;
 
     private String ThikrType;
+    private String currentThikrText; // ✅ نص الذكر الحالي - بيتعرض في الإشعار لو موجود (للذكر العام)
 
     private MediaSessionCompat mediaSession;
 
@@ -518,7 +519,11 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
                 .setPriority(Notification.PRIORITY_MAX)
 
-                .setContentText(getThikrTypeString(this.getThikrType()))
+                .setContentText(
+                        (this.getThikrType().equalsIgnoreCase(MainActivity.DATA_TYPE_GENERAL_THIKR)
+                                && currentThikrText != null && !currentThikrText.trim().isEmpty())
+                                ? currentThikrText
+                                : getThikrTypeString(this.getThikrType()))
 
                 .setContentIntent(launchAppPendingIntent);
 
@@ -778,6 +783,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
             }
             lastAthanPlayStartTime = nowMsAthan;
         }
+        this.currentThikrText = intent.getExtras().getString("THIKR_TEXT", null); // ✅ نص الذكر الحالي (لو موجود) عشان نعرضه في الإشعار
         this.setThikrType(incomingDataType);
         Timber.d("initNotification called");
 
@@ -2029,7 +2035,21 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
                 Timber.d("transient loss of  focus");
 
-                if (isPlaying()) player.pause();
+                // ✅ لو الأذان هو اللي كان شغال وقاطعته مكالمة، منستناش المكالمة تخلص عشان
+                // نكمله - الأذان وقت-محدد، إكماله بعد دقايق من نهاية المكالمة مش منطقي،
+                // وده كان سبب إن إشعار الأذان يفضل عالق لحد ما أذان جديد يجي يشيله
+                if (getThikrType() != null && getThikrType().contains(MainActivity.DATA_TYPE_ATHAN)) {
+                    Timber.d("Athan interrupted by call - stopping fully instead of pause/resume");
+                    if (isPlaying()) {
+                        try { player.stop(); } catch (Exception ignored) {}
+                    }
+                    this.resetPlayer();
+                    this.stopForeground(true);
+                    if (mediaSession != null) { try { mediaSession.setActive(false); } catch (Exception ignored) {} }
+                    this.stopSelf();
+                } else {
+                    if (isPlaying()) player.pause();
+                }
 
                 break;
 
