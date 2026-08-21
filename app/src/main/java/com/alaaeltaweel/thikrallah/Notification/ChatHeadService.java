@@ -49,13 +49,19 @@ public class ChatHeadService extends Service implements View.OnTouchListener {
 	}
 
 	private void startnotification() {
-		String NOTIFICATION_CHANNEL_ID = "com.alaaeltaweel.thikrallah.Notification.ChatHeadService";
+		// ✅ قناة جديدة بالكامل (v2) عشان أهمية القناة الجديدة (HIGH) تتطبق على الكل، حتى اللي
+		// عندهم التطبيق مثبت فعلاً - أندرويد بيحمي إعدادات القناة القديمة ومبيغيّرهاش لوحده
+		String NOTIFICATION_CHANNEL_ID = "com.alaaeltaweel.thikrallah.Notification.ChatHeadService.v2";
 		String channelName = this.getResources().getString(R.string.floating_notification);
 		NotificationCompat.Builder mBuilder;
 
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-			NotificationChannel chan = new NotificationChannel(NOTIFICATION_CHANNEL_ID, channelName, NotificationManager.IMPORTANCE_DEFAULT);
+			// ✅ IMPORTANCE_HIGH بدل DEFAULT - عشان الشاشة تنور تلقائيًا لما الذكر يوصل، زي ما
+			// كانت شغالة قبل كده
+			NotificationChannel chan = new NotificationChannel(NOTIFICATION_CHANNEL_ID, channelName, NotificationManager.IMPORTANCE_HIGH);
 			chan.setSound(null, null);
+			chan.enableVibration(true);
+			chan.setVibrationPattern(new long[]{0, 250});
 			chan.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
 			NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 			assert manager != null;
@@ -70,6 +76,8 @@ public class ChatHeadService extends Service implements View.OnTouchListener {
 		mBuilder.setContentTitle(this.getString(R.string.my_app_name))
 				.setContentText(thikr)
 				.setSmallIcon(R.drawable.ic_launcher)
+				// ✅ للأجهزة الأقدم من أندرويد 8 (اللي مالهاش قنوات إشعارات أصلاً)
+				.setPriority(NotificationCompat.PRIORITY_HIGH)
 				.setAutoCancel(true);
 		mBuilder = setVisibilityPublic(mBuilder);
 		Intent launchAppIntent = new Intent(this, MainActivity.class);
