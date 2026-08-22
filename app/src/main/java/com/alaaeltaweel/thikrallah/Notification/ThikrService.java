@@ -208,8 +208,10 @@ private PhoneStateListener phoneStateListener;
                 }
                 Log.d(TAG, "filenumber is" + fileNumber);
                 int reminderType = Integer.parseInt(sharedPrefs.getString("RemindmeThroughTheDayType", "1"));
+                // ✅ فترة الراحة المفروض توقف كل حاجة مع بعض (صوت + فقاعة + إشعار)، مش الصوت بس
+                boolean isQuietTime = isTimeNowQuietTime();
                 //fire text chat head service
-                if (reminderType == 1 || reminderType == 3) {
+                if (!isQuietTime && (reminderType == 1 || reminderType == 3)) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                         if (Settings.canDrawOverlays(this)) {
                             Log.d(TAG, "calling chatheadservice 150");
@@ -233,7 +235,6 @@ private PhoneStateListener phoneStateListener;
                     }
                 }
 
-                boolean isQuietTime = isTimeNowQuietTime();
                 if (((reminderType == 1 || reminderType == 2) && isQuietTime == false && !DuaPlayerHelper.isDuaPlaying() && (thikr.isBuiltIn() == true || thikr.getFile().length() > 2))) {
                     if (!isInCall()) {
                         sharedPrefs.edit().putString("com.alaaeltaweel.thikrallah.datatype", MainActivity.DATA_TYPE_GENERAL_THIKR).apply();
