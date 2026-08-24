@@ -2008,6 +2008,8 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
                 mediaSession.setActive(false);
 
+                boolean wasAthanOnPermanentLoss = getThikrType() != null && getThikrType().contains(MainActivity.DATA_TYPE_ATHAN);
+
                 if (isPlaying()) {
 
                     player.stop();
@@ -2015,6 +2017,11 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
                 }
 
                 Timber.d("reseting player and releasing service");
+
+                // ✅ نفس التصليح - لو ده كان أذان، لازم نبعت الإشارة عشان الشاشة متفضلش معلّقة
+                if (wasAthanOnPermanentLoss) {
+                    sendBroadcast(new Intent("com.alaaeltaweel.thikrallah.ATHAN_COMPLETE"));
+                }
 
                 this.resetPlayer();
 
@@ -2037,6 +2044,9 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
                     if (isPlaying()) {
                         try { player.stop(); } catch (Exception ignored) {}
                     }
+                    // ✅ كان ده السطر الناقص - من غيره شاشة الأذان مالهاش أي طريقة تعرف إن الأذان خلص
+                    // فبتفضل معلّقة لحد ما أذان/ذكر/إقامة تانية تبعث نفس الإشارة بالصدفة
+                    sendBroadcast(new Intent("com.alaaeltaweel.thikrallah.ATHAN_COMPLETE"));
                     this.resetPlayer();
                     this.stopForeground(true);
                     if (mediaSession != null) { try { mediaSession.setActive(false); } catch (Exception ignored) {} }
