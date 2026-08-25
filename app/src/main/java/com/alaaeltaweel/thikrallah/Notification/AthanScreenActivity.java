@@ -95,15 +95,12 @@ public class AthanScreenActivity extends AppCompatActivity {
         }
     };
 
-    // ✅ مراقبة حالة المكالمة
+    // ✅ الأذان لو بدأ وقت مكالمة شغالة، المفروض يفضل مكتوم لحد ما هو نفسه يخلص وقته الطبيعي
+    // مش لحد ما المكالمة تخلص - عشان كده مبقاش فيه رجّوع صوت لما المكالمة تخلص
     private PhoneStateListener phoneStateListener = new PhoneStateListener() {
         @Override
         public void onCallStateChanged(int state, String phoneNumber) {
-            if (state == TelephonyManager.CALL_STATE_IDLE && isCallInProgress) {
-                Log.d(TAG, "Call ended, unmuting athan");
-                isCallInProgress = false;
-                sendMuteAction(false); // ✅ رجّع صوت الأذان لو لسه شغال (الأذان أصلاً بيشتغل صامت من البداية)
-            }
+            // مقصودة فاضية - إبقاء الأذان مكتوم طول الوقت لحد ما stopAthanAndClose يشتغل عادي
         }
     };
 
