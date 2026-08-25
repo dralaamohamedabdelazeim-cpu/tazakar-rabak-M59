@@ -810,24 +810,22 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
             if ((am.getRingerMode() == AudioManager.RINGER_MODE_SILENT || am.getRingerMode() == AudioManager.RINGER_MODE_VIBRATE)) {
 
-                if (this.getThikrType().contains(MainActivity.DATA_TYPE_ATHAN)) {
+                // ✅ تصليح: الشرط القديم كان بيتحقق من DATA_TYPE_ATHAN جوه فرع بيشتغل بس لو DATA_TYPE_GENERAL_THIKR،
+                // يعني الشرط الداخلي مستحيل يتحقق - فالخدمة كانت بترجع من غير ما توقف نفسها ولا تقفل الإشعار
+                if (am.getRingerMode() == AudioManager.RINGER_MODE_VIBRATE) {
 
-                    if (am.getRingerMode() == AudioManager.RINGER_MODE_VIBRATE) {
+                    vibrate();
 
-                        vibrate();
-
-                        Timber.d("ringer mode vibrate. now vibrating");
-
-                    }
-
-                    Timber.d("stopping self");
-
-                    this.stopForeground(true);
-                    if (mediaSession != null) { try { mediaSession.setActive(false); } catch (Exception ignored) {} } // ✅ نقفل كارت التحكم من الشاشة المقفولة/المكالمة عشان ميفضلش عالق
-
-                    this.stopSelf();
+                    Timber.d("ringer mode vibrate. now vibrating");
 
                 }
+
+                Timber.d("stopping self");
+
+                this.stopForeground(true);
+                if (mediaSession != null) { try { mediaSession.setActive(false); } catch (Exception ignored) {} } // ✅ نقفل كارت التحكم من الشاشة المقفولة/المكالمة عشان ميفضلش عالق
+
+                this.stopSelf();
 
                 return Service.START_NOT_STICKY;
 
@@ -1270,6 +1268,8 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
                 player.prepare();
 
+                try { afd.close(); } catch (IOException ignored) {} // ✅ تسريب file descriptor - الـ player بياخد نسخته الخاصة بعد setDataSource
+
 
 
                 int ret = requestAudioFocus();
@@ -1379,6 +1379,8 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
                 player.setDataSource(afd);
 
                 player.prepare();
+
+                try { fis.close(); } catch (IOException ignored) {} // ✅ تسريب file descriptor - الـ player بياخد نسخته الخاصة بعد setDataSource
 
                 Log.d(TAG, "player prepared");
 
@@ -1499,6 +1501,8 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
                 Timber.d("datasource set");
 
                 player.prepare();
+
+                try { afd.close(); } catch (IOException ignored) {} // ✅ تسريب file descriptor - الـ player بياخد نسخته الخاصة بعد setDataSource
 
                 Timber.d("current playing was prepared successfully %s", getCurrentPlaying());
 
@@ -2040,6 +2044,8 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
                     this.resetPlayer();
                     this.stopForeground(true);
                     if (mediaSession != null) { try { mediaSession.setActive(false); } catch (Exception ignored) {} }
+                    // ✅ من غير السطر ده، شاشة الأذان كانت مالهاش خبر إن الأذان خلص فبتفضل مفتوحة
+                    sendBroadcast(new Intent("com.alaaeltaweel.thikrallah.ATHAN_COMPLETE"));
                     this.stopSelf();
                 } else {
                     if (isPlaying()) player.pause();
