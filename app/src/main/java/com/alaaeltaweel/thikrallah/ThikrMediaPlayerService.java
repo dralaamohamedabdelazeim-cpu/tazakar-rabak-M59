@@ -433,6 +433,9 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
                                     com.alaaeltaweel.thikrallah.Notification.ChatHeadService.class));
 
+                            // ✅ من غير السطر ده، شاشة الأذان كانت مالهاش خبر إن الأذان اتوقف بسبب مكالمة فبتفضل مفتوحة
+                            sendBroadcast(new Intent("com.alaaeltaweel.thikrallah.ATHAN_COMPLETE"));
+
                             stopSelf();
 
                         }
@@ -2411,6 +2414,9 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
                     stopService(new Intent(ThikrMediaPlayerService.this,
 
                             com.alaaeltaweel.thikrallah.Notification.ChatHeadService.class));
+
+                    // ✅ من غير السطر ده، شاشة الأذان كانت مالهاش خبر إن الأذان اتوقف بسبب مكالمة فبتفضل مفتوحة
+                    sendBroadcast(new Intent("com.alaaeltaweel.thikrallah.ATHAN_COMPLETE"));
 
                     ThikrMediaPlayerService.this.stopSelf();
 
