@@ -2040,8 +2040,6 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
                     this.resetPlayer();
                     this.stopForeground(true);
                     if (mediaSession != null) { try { mediaSession.setActive(false); } catch (Exception ignored) {} }
-                    // ✅ من غير السطر ده، شاشة الأذان كانت مالهاش خبر إن الأذان خلص فبتفضل مفتوحة
-                    sendBroadcast(new Intent("com.alaaeltaweel.thikrallah.ATHAN_COMPLETE"));
                     this.stopSelf();
                 } else {
                     if (isPlaying()) player.pause();
