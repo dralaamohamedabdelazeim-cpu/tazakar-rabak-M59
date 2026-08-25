@@ -417,9 +417,20 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
             tm.listen(new PhoneStateListener() {
 
+                // ✅ نفس فكرة النسخة الحديثة: نتجاهل أول استدعاء عشان المكالمة الشغالة بالفعل ماتقفلش الأذان فورًا
+                private boolean isFirstCallback = true;
+
                 @Override
 
                 public void onCallStateChanged(int state, String phoneNumber) {
+
+                    if (isFirstCallback) {
+
+                        isFirstCallback = false;
+
+                        return;
+
+                    }
 
                     if (state == TelephonyManager.CALL_STATE_RINGING ||
 
@@ -2399,9 +2410,21 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
             implements android.telephony.TelephonyCallback.CallStateListener {
 
+        // ✅ النظام بيبعت الحالة الحالية فورًا أول ما نسجل - لو المكالمة شغالة بالفعل قبل ما الأذان يبدأ
+        // متسجلش الإشعار ده كـ"مكالمة جديدة قاطعت الأذان"، عشان الأذان المكتوم يكمل لحد ما وقته يخلص
+        private boolean isFirstCallback = true;
+
         @Override
 
         public void onCallStateChanged(int state) {
+
+            if (isFirstCallback) {
+
+                isFirstCallback = false;
+
+                return;
+
+            }
 
             if (state == TelephonyManager.CALL_STATE_RINGING ||
 
