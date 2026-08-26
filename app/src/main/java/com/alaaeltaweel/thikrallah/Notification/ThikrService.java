@@ -180,25 +180,8 @@ private PhoneStateListener phoneStateListener;
 		if (data == null) return;
 		String thikrType="";
 		thikrType=data.getString("com.alaaeltaweel.thikrallah.datatype", "");
-
-	// ✅ ذكر تذكير فتح الشاشة - بيستخدم نفس منطق الذكر العام تماماً، لكن بشرط "مرت 7 دقايق على الأقل من آخر ذكر"
-	// بدل شرط "الحجز المجدول" (اللي بيخص التذكير الدوري بس)
-	final String DATA_TYPE_SCREEN_UNLOCK_THIKR = "screen_unlock_thikr";
-	final long SCREEN_UNLOCK_COOLDOWN_MS = 7 * 60 * 1000L; // 7 دقايق ثابتة
-
-	if (thikrType.equals(MainActivity.DATA_TYPE_GENERAL_THIKR) || thikrType.equals(DATA_TYPE_SCREEN_UNLOCK_THIKR)){
-
-		boolean isScreenUnlockTrigger = thikrType.equals(DATA_TYPE_SCREEN_UNLOCK_THIKR);
-
-		if (isScreenUnlockTrigger) {
-			// ✅ فحص التهدئة: لو ذكر (أي نوع) اشتغل من أقل من 7 دقايق، تجاهل الطلب ده عشان منتكررش على المستخدم
-			long lastGeneralThikrTime = sharedPrefs.getLong("last_general_thikr_time", 0);
-			long sinceLast = System.currentTimeMillis() - lastGeneralThikrTime;
-			if (lastGeneralThikrTime > 0 && sinceLast < SCREEN_UNLOCK_COOLDOWN_MS) {
-				Log.d(TAG, "Screen-unlock thikr skipped, still in 7-minute cooldown");
-				return;
-			}
-		} else {
+	if (thikrType.equals(MainActivity.DATA_TYPE_GENERAL_THIKR)){
+		
        // ✅ كل ذكر مجدول له هوية فريدة (وقته المستهدف بالظبط)
             long thisOccurrence = sharedPrefs.getLong("next_general_thikr_scheduled_time", 0);
             long lastClaimedOccurrence = sharedPrefs.getLong("last_claimed_general_thikr_occurrence", 0);
@@ -207,8 +190,7 @@ private PhoneStateListener phoneStateListener;
                 return;
             }
             sharedPrefs.edit().putLong("last_claimed_general_thikr_occurrence", thisOccurrence).commit();
-		}
-
+        
 			try {
                 MyDBHelper db = new MyDBHelper(this);
                 ArrayList<UserThikr> allThikrs = db.getAllEnabledThikrs();
@@ -229,9 +211,7 @@ private PhoneStateListener phoneStateListener;
                 // ✅ فترة الراحة المفروض توقف كل حاجة مع بعض (صوت + فقاعة + إشعار)، مش الصوت بس
                 boolean isQuietTime = isTimeNowQuietTime();
                 //fire text chat head service
-                // ✅ تذكير فتح الشاشة دايمًا نص مكتوب (فقاعة) بغض النظر عن إعداد "نوع التذكير" العام،
-                // لأنها أصلاً ميزة مصممة تكون نص من الأول - مش صوت
-                if (!isQuietTime && (isScreenUnlockTrigger || reminderType == 1 || reminderType == 3)) {
+                if (!isQuietTime && (reminderType == 1 || reminderType == 3)) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                         if (Settings.canDrawOverlays(this)) {
                             Log.d(TAG, "calling chatheadservice 150");
@@ -255,8 +235,7 @@ private PhoneStateListener phoneStateListener;
                     }
                 }
 
-                // ✅ تذكير فتح الشاشة نص بس، مفيهوش صوت خالص
-                if (!isScreenUnlockTrigger && ((reminderType == 1 || reminderType == 2) && isQuietTime == false && !DuaPlayerHelper.isDuaPlaying() && (thikr.isBuiltIn() == true || thikr.getFile().length() > 2))) {
+                if (((reminderType == 1 || reminderType == 2) && isQuietTime == false && !DuaPlayerHelper.isDuaPlaying() && (thikr.isBuiltIn() == true || thikr.getFile().length() > 2))) {
                     if (!isInCall()) {
                         sharedPrefs.edit().putString("com.alaaeltaweel.thikrallah.datatype", MainActivity.DATA_TYPE_GENERAL_THIKR).apply();
                         data.putInt("ACTION", ThikrMediaPlayerService.MEDIA_PLAYER_PLAY);
