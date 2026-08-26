@@ -12,6 +12,10 @@ import com.alaaeltaweel.thikrallah.quran.labs.androidquran.component.application
 import com.alaaeltaweel.thikrallah.quran.labs.androidquran.component.application.DaggerApplicationComponent;
 import com.alaaeltaweel.thikrallah.quran.labs.androidquran.module.application.ApplicationModule;
 import com.alaaeltaweel.thikrallah.quran.labs.androidquran.util.RecordingLogTree;
+import com.alaaeltaweel.thikrallah.Notification.ScreenUnlockThikrReceiver;
+
+import android.content.Intent;
+import android.content.IntentFilter;
 
 import net.time4j.android.ApplicationStarter;
 
@@ -28,6 +32,11 @@ public class QuranApplication extends Application {
     Timber.plant(new RecordingLogTree());
     this.applicationComponent = initializeInjector();
     ApplicationStarter.initialize(this, true);
+
+    // ✅ تسجيل محفّز "تذكير فتح الشاشة" - لازم يتسجل بالكود مش في الـ Manifest،
+    // لأن ACTION_USER_PRESENT حدث محمي (protected broadcast) مش مسموح تسجيله ثابت
+    // من أندرويد 8 وما بعده
+    registerReceiver(new ScreenUnlockThikrReceiver(), new IntentFilter(Intent.ACTION_USER_PRESENT));
 
   }
 
