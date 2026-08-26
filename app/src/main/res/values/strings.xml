@@ -46,8 +46,6 @@
     <string name="remember_notification" translatable="false">Remembrance of Allah</string>
     <string name="floating_notification" translatable="false">Remember Allah Floating Reminders</string>
     <string name="volume_level">مستوى صوت التذكير</string>
-    <string name="screen_unlock_thikr_enabled">تذكير عند فتح الشاشة</string>
-    <string name="screen_unlock_thikr_enabled_summary">يظهر ذكر مكتوب كل ما تفتح شاشة موبايلك (بحد أقصى مرة كل 7 دقايق)</string>
     <string name="translation_link" translatable="false">https://crowdin.com/project/thikrallah</string>
     <string name="mute_when_ringer_mute">كتم التذكير اذا الجهاز في وضع الصامت</string>
     <string name="morningThikr">أذكار الصباح</string>
