@@ -88,6 +88,7 @@ public class ScreenUnlockThikrReceiver extends BroadcastReceiver {
             Log.d(TAG, "Showing screen-unlock thikr bubble");
             Intent intentChatHead = new Intent(context.getApplicationContext(), ChatHeadService.class);
             intentChatHead.putExtra("thikr", thikr.getThikrText());
+            intentChatHead.putExtra("isScreenUnlockThikr", true);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(intentChatHead);
             } else {

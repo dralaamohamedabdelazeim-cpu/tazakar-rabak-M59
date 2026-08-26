@@ -126,7 +126,10 @@ public class ChatHeadService extends Service implements View.OnTouchListener {
 		}
 		SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this.getApplicationContext());
 		int reminderType = Integer.parseInt(sharedPrefs.getString("RemindmeThroughTheDayType", "1"));
-		if (reminderType == 1 || reminderType == 3) {
+		// ✅ تذكير فتح الشاشة نص دايمًا بتصميمه، فمن حقه يتجاوز فحص "طريقة التذكير" العام
+		// (اللي ممكن يكون مظبوط على "صوتي فقط" مثلاً)
+		boolean isScreenUnlockThikr = intent.getBooleanExtra("isScreenUnlockThikr", false);
+		if (isScreenUnlockThikr || reminderType == 1 || reminderType == 3) {
 
 			String thikr = intent.getStringExtra("thikr");
 			isAthan = intent.getBooleanExtra("isAthan", false);
@@ -199,7 +202,7 @@ public class ChatHeadService extends Service implements View.OnTouchListener {
 					if (Settings.canDrawOverlays(this)) {
 						windowManager.addView(chatHead, params);
 						if (!isAthan) {
-							new Handler().postDelayed(new DestroyRunnable(this), 5000);
+							new Handler().postDelayed(new DestroyRunnable(this), 10000);
 						}
 					} else {
     Log.d(TAG, "No overlay permission - stopping service");
@@ -209,7 +212,7 @@ public class ChatHeadService extends Service implements View.OnTouchListener {
 				} else {
 					windowManager.addView(chatHead, params);
 					if (!isAthan) {
-						new Handler().postDelayed(new DestroyRunnable(this), 5000);
+						new Handler().postDelayed(new DestroyRunnable(this), 10000);
 					}
 				}
 			} catch (Exception e) {
