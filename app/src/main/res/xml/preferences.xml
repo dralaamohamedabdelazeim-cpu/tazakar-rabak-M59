@@ -24,11 +24,6 @@
             android:defaultValue="100"
             android:key="volume"
             android:title="@string/volume_level"/>
-        <CheckBoxPreference
-            android:defaultValue="false"
-            android:key="screen_unlock_thikr_enabled"
-            android:title="@string/screen_unlock_thikr_enabled"
-            android:summary="@string/screen_unlock_thikr_enabled_summary" />
     </PreferenceCategory>
 
     <PreferenceCategory
