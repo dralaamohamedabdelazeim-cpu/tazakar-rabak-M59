@@ -278,6 +278,16 @@ if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
                 }
                 generalPrefs.edit().putLong("last_general_thikr_receiver_time", nowMs2).commit();
            new MyAlarmsManager(context).UpdateAllApplicableAlarms();
+
+                // ✅ فحص التهدئة بتاع 7 دقايق (نفس الفحص اللي في تذكير فتح الشاشة، بس بالعكس):
+                // لو ذكر (من أي نوع، حتى تذكير فتح الشاشة) اشتغل فعلاً من أقل من 7 دقايق، منسيبش
+                // الذكر الدوري يشتغل كمان فوق بعضه - رغم إن معاده وصل، هيستنى للمرة الجاية
+                long lastGeneralThikrPlayed = generalPrefs.getLong("last_general_thikr_time", 0);
+                if (lastGeneralThikrPlayed > 0 && nowMs2 - lastGeneralThikrPlayed < 7 * 60 * 1000L) {
+                    Log.d(TAG, "Scheduled general thikr skipped, a thikr already played within the last 7 minutes");
+                    if (wakeLock != null && wakeLock.isHeld()) wakeLock.release();
+                    return;
+                }
             }
 
             // باقي التنبيهات تشتغل عادي

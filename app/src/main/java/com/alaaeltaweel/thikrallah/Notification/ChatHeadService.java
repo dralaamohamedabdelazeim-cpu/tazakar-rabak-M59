@@ -199,7 +199,7 @@ public class ChatHeadService extends Service implements View.OnTouchListener {
 					if (Settings.canDrawOverlays(this)) {
 						windowManager.addView(chatHead, params);
 						if (!isAthan) {
-							new Handler().postDelayed(new DestroyRunnable(this), 10000);
+							new Handler().postDelayed(new DestroyRunnable(this), 5000);
 						}
 					} else {
     Log.d(TAG, "No overlay permission - stopping service");
@@ -209,7 +209,7 @@ public class ChatHeadService extends Service implements View.OnTouchListener {
 				} else {
 					windowManager.addView(chatHead, params);
 					if (!isAthan) {
-						new Handler().postDelayed(new DestroyRunnable(this), 10000);
+						new Handler().postDelayed(new DestroyRunnable(this), 5000);
 					}
 				}
 			} catch (Exception e) {
