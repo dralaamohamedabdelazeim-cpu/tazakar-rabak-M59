@@ -27,9 +27,8 @@ jobs:
 
       - name: Update version name
         run: |
-          NEW_VERSION_CODE=$((${{ github.run_number }} + 1000))
-          sed -i "s/versionName \".*\"/versionName \"$NEW_VERSION_CODE\"/" app/build.gradle
-          sed -i "s/versionCode .*/versionCode $NEW_VERSION_CODE/" app/build.gradle
+          sed -i "s/versionName \".*\"/versionName \"${{ github.run_number }}\"/" app/build.gradle
+          sed -i "s/versionCode .*/versionCode ${{ github.run_number }}/" app/build.gradle
 
       - name: Decode Keystore
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/keystore.jks
