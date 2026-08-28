@@ -40,6 +40,10 @@ public class AthanScreenActivity extends AppCompatActivity {
     // ✅ علامة يقدر ThikrAlarmReceiver يشوفها من برة عشان يعرف الشاشة العادية فاتحة فعلاً
     // ولا محتاج يلجأ للنافذة العائمة (AthanOverlayService)
     public static volatile boolean isActivityShowing = false;
+    // ✅ دي بتفضل true طول ما الأذان ده شغال حتى لو خرجت من الشاشة (بعكس isActivityShowing
+    // اللي بترجع false فورًا لما تعمل onPause) - عشان ThikrAlarmReceiver يعرف إن الشاشة
+    // فعلاً فتحت بنجاح قبل كده، ومترجعش تشغل النافذة العائمة زيادة لمجرد إنك خرجت بسرعة
+    public static volatile boolean hasOpenedSuccessfully = false;
     private Runnable showReturnNotifRunnable; // ✅ لتأجيل إشعار الرجوع ومنع الفلاش السريع
 
     private static final int AUTO_DISMISS_DELAY  = 10 * 60 * 1000;
@@ -145,6 +149,9 @@ public class AthanScreenActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // ✅ أذان جديد بيبدأ - نصفّر العلامة دي عشان تعكس الجلسة الحالية بس
+        hasOpenedSuccessfully = false;
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true);
@@ -265,6 +272,7 @@ public class AthanScreenActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         isActivityShowing = true; // ✅ عشان ThikrAlarmReceiver يعرف إن الشاشة العادية فتحت صح ومحتاجش النافذة العائمة
+        hasOpenedSuccessfully = true; // ✅ توثيق دائم إن الشاشة فتحت بنجاح، مبترجعش false لمجرد الخروج منها
 
         // ✅ الشاشة العادية نجحت تفتح فعليًا - اقفل النافذة العائمة الاحتياطية لو كانت ظاهرة
         Intent dismissOverlay = new Intent(this, com.alaaeltaweel.thikrallah.Notification.AthanOverlayService.class);

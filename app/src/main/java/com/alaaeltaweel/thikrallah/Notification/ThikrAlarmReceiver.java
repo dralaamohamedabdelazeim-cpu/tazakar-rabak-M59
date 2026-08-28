@@ -215,7 +215,7 @@ if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
             final PendingResult pendingResult = goAsync();
             new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
                 try {
-                    if (!com.alaaeltaweel.thikrallah.Notification.AthanScreenActivity.isActivityShowing) {
+                    if (!com.alaaeltaweel.thikrallah.Notification.AthanScreenActivity.hasOpenedSuccessfully) {
                         Log.d(TAG, "Real athan screen did not open in time - starting overlay fallback");
                         Intent overlayIntent = new Intent(appContext, com.alaaeltaweel.thikrallah.Notification.AthanOverlayService.class);
                         overlayIntent.putExtras(overlayData);
