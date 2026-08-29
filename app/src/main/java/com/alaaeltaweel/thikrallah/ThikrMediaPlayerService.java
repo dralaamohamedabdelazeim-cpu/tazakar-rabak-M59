@@ -200,6 +200,9 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
     private boolean isMutedByFlip = false;
     // ✅ نسخة static عشان DuaPlayerHelper يقدر يعرف هل الأذان كان مكتوم، ويورّث نفس الحالة للدعاء
     public static volatile boolean lastAthanWasMuted = false;
+    // ✅ true طول ما صوت الأذان شغال فعليًا دلوقتي - عشان أي مصدر تاني (زي شاشة الأذان)
+    // يتأكد من الحالة الحقيقية بدل ما يعتمد على نافذة وقت ثابتة ممكن تفشل لو النظام أخّر فتح الشاشة
+    public static volatile boolean isAthanSoundActive = false;
 
     private boolean isUserAction = true;
 
@@ -712,6 +715,8 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
             Timber.d("MEDIA_PLAYER_STOP called - stopping athan");
 
+            isAthanSoundActive = false;
+
             boolean wasActuallyPlaying = player != null && player.isPlaying(); // ✅ نلتقط الحالة قبل أي إيقاف
 
             if (player != null) {
@@ -949,6 +954,8 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
                 Timber.d("reset called stopping self");
 
+                isAthanSoundActive = false;
+
                 // ✅ نلتقط الحالة قبل الإيقاف - عشان نعرف نشغل الدعاء لو كان أذان شغال فعلاً
                 // (زرار الإيقاف في الإشعار كان بيوقف من غير ما يشغل الدعاء خالص - بقى زي زرار الإيقاف في الشاشة)
                 boolean wasAthanPlayingBeforeReset = player != null && player.isPlaying()
@@ -1171,6 +1178,9 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
             // ✅ أذان جديد بيبدأ - نصفّر حالة الكتم القديمة (لو فاضلة من أذان سابق)
             lastAthanWasMuted = false;
 
+            // ✅ الأذان بقى شغال فعليًا دلوقتي - أي مصدر تاني (زي الشاشة) يقدر يتأكد من الحالة دي
+            isAthanSoundActive = true;
+
             // ✅ أذان جديد فعلي بيبدأ - نسمح للدعاء بعده يشتغل تاني (نصفّر القفل القديم لو فاضل من أذان قبل كده)
             com.alaaeltaweel.thikrallah.Notification.DuaPlayerHelper.resetGuardForNewAthan();
 
@@ -1245,6 +1255,8 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
         player.setOnCompletionListener(mp -> {
 
             mp.reset();
+
+            isAthanSoundActive = false;
 
             Timber.d("athan completed - sending broadcast to close AthanScreenActivity");
 
