@@ -66,7 +66,22 @@ public class DuaPlayerHelper {
                 AudioManager.STREAM_ALARM,
                 AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
         }
-        duaMediaPlayer = MediaPlayer.create(context, R.raw.dua_after_athan);
+        // ✅ نبني الـ MediaPlayer يدويًا (بدل MediaPlayer.create الافتراضي) عشان نحطه
+        // على نفس قناة صوت الأذان (الإشعارات) مش قناة الميديا، عشان يتبع نفس مستوى الصوت
+        duaMediaPlayer = new MediaPlayer();
+        duaMediaPlayer.setAudioAttributes(new android.media.AudioAttributes.Builder()
+                .setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION)
+                .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SPEECH)
+                .build());
+        try {
+            android.content.res.AssetFileDescriptor afd = context.getResources().openRawResourceFd(R.raw.dua_after_athan);
+            duaMediaPlayer.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
+            afd.close();
+            duaMediaPlayer.prepare();
+        } catch (Exception e) {
+            Log.e(TAG, "فشل تحميل ملف الدعاء dua_after_athan.mp3: " + e.getMessage());
+            duaMediaPlayer = null;
+        }
         if (duaMediaPlayer == null) {
             Log.e(TAG, "فشل تحميل ملف الدعاء dua_after_athan.mp3");
             if (am != null) am.abandonAudioFocus(null);
