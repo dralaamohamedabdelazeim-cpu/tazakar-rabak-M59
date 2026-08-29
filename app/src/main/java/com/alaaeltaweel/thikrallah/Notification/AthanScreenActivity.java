@@ -398,7 +398,13 @@ public boolean onKeyDown(int keyCode, KeyEvent event) {
     }
 
     private void playAthan() {
-        // ✅ لو المنبه شغّل الصوت أصلاً، متشغلوش تاني من هنا
+        // ✅ لو الأذان شغال فعليًا دلوقتي (من المنبه أو من محاولة سابقة)، متشغلوش تاني -
+        // ده أدق من الاعتماد على وقت ثابت بس، لأن النظام ممكن يأخر فتح الشاشة لأكتر من 10 ثواني
+        if (com.alaaeltaweel.thikrallah.ThikrMediaPlayerService.isAthanSoundActive) {
+            Log.d(TAG, "Athan sound already active, skipping duplicate play");
+            return;
+        }
+        // ✅ لو المنبه شغّل الصوت أصلاً، متشغلوش تاني من هنا (حماية إضافية لأول لحظات قبل ما العلامة تتحدث)
         SharedPreferences soundPrefs = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this);
         long triggeredTime = soundPrefs.getLong("athan_sound_triggered_" + dataType, 0);
         if (System.currentTimeMillis() - triggeredTime < 10 * 1000L) {
