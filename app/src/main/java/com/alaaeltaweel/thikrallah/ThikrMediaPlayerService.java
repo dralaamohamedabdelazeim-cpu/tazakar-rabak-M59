@@ -2138,9 +2138,9 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
         int athanVolumeLevel = sharedPrefs.getInt("athan_volume", 100);
 
-        int maxVolume = 101;
-
-        float athanVolume = (float) (1 - Math.log(maxVolume - athanVolumeLevel) / Math.log(maxVolume));
+        // ✅ تحويل خطي مباشر (بدل المنحنى اللوغاريتمي القاسي) عشان النسبة المختارة (مثلاً 80%)
+        // تطابق فعليًا الصوت المسموع، مش تحس إنها أقل بكتير
+        float athanVolume = athanVolumeLevel / 100f;
 
         if (athanVolume < FLOAT_VOLUME_MIN) athanVolume = FLOAT_VOLUME_MIN;
 
