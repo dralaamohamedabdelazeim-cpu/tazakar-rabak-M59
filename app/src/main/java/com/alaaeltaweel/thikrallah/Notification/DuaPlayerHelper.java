@@ -73,8 +73,12 @@ public class DuaPlayerHelper {
             return false;
         }
         // ✅ لو الأذان كان مكتوم (بالقلب أو زرار الصوت)، الدعاء يفضل مكتوم كمان بدل ما يرجع عالي فجأة
+        // ولو مش مكتوم، الدعاء بيشتغل بنفس مستوى "صوت الأذان" اللي المستخدم حدده في الإعدادات
         if (ThikrMediaPlayerService.lastAthanWasMuted) {
             try { duaMediaPlayer.setVolume(0f, 0f); } catch (Exception ignored) {}
+        } else {
+            float duaVolume = getAthanVolumeFloat(context);
+            try { duaMediaPlayer.setVolume(duaVolume, duaVolume); } catch (Exception ignored) {}
         }
         duaMediaPlayer.setOnCompletionListener(mp -> {
             mp.release();
@@ -117,6 +121,18 @@ public class DuaPlayerHelper {
 
     public static boolean isDuaPlaying() {
         return duaMediaPlayer != null;
+    }
+
+    // ✅ نفس معادلة حساب مستوى صوت الأذان (خطية 1:1) المستخدمة في ThikrMediaPlayerService
+    // عشان الدعاء يتبع نفس المستوى بالظبط
+    private static float getAthanVolumeFloat(Context context) {
+        android.content.SharedPreferences prefs = androidx.preference.PreferenceManager
+                .getDefaultSharedPreferences(context);
+        int athanVolumeLevel = prefs.getInt("athan_volume", 100);
+        float vol = athanVolumeLevel / 100f;
+        if (vol < 0f) vol = 0f;
+        else if (vol > 1f) vol = 1f;
+        return vol;
     }
 
     // ✅ التحقق من وجود مكالمة هاتفية دلوقتي
