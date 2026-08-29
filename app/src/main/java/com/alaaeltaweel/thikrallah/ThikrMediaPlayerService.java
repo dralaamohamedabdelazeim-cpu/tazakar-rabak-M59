@@ -1776,6 +1776,8 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
         currentThikrCounter++;
 
         if (this.getThikrType().contains(MainActivity.DATA_TYPE_ATHAN)) {
+            // ✅ الأذان خلص من المسار ده كمان - نصفّر العلامة عشان محدش يفضل فاكر إنه لسه شغال
+            isAthanSoundActive = false;
             // ✅ شغل الدعاء بعد الأذان - بس لو ده أذان حقيقي فعلاً
             Intent duaIntent = new Intent("com.alaaeltaweel.thikrallah.ATHAN_COMPLETE");
             sendBroadcast(duaIntent);
