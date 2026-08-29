@@ -912,7 +912,10 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
                 isMutedByFlip = false;
                 lastAthanWasMuted = false;
                 if (player != null) {
-                    try { player.setVolume(1f, 1f); } catch (Exception ignored) {}
+                    try {
+                        float restoredVolume = getAthanMaxVolumeFloat();
+                        player.setVolume(restoredVolume, restoredVolume);
+                    } catch (Exception ignored) {}
                 }
 
                 break;
@@ -2103,7 +2106,9 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
             } else {
 
-                player.setVolume(1f, 1f);
+                float athanVolume = getAthanMaxVolumeFloat();
+
+                player.setVolume(athanVolume, athanVolume);
 
             }
 
@@ -2120,6 +2125,28 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
         float volume = (float) (1 - Math.log(maxVolume - volumeLevel) / Math.log(maxVolume));
 
         player.setVolume(volume, volume);
+
+    }
+
+
+
+    // ✅ يحسب أقصى مستوى صوت (من 0 لـ 1) مسموح بيه للأذان حسب إعداد athan_volume في الإعدادات،
+    // بنفس منطق حساب صوت الأذكار (log scale) عشان يكون التدرج طبيعي بنفس الإحساس
+    private float getAthanMaxVolumeFloat() {
+
+        SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this.getApplicationContext());
+
+        int athanVolumeLevel = sharedPrefs.getInt("athan_volume", 100);
+
+        int maxVolume = 101;
+
+        float athanVolume = (float) (1 - Math.log(maxVolume - athanVolumeLevel) / Math.log(maxVolume));
+
+        if (athanVolume < FLOAT_VOLUME_MIN) athanVolume = FLOAT_VOLUME_MIN;
+
+        else if (athanVolume > FLOAT_VOLUME_MAX) athanVolume = FLOAT_VOLUME_MAX;
+
+        return athanVolume;
 
     }
 
@@ -2377,6 +2404,16 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
         else if (fVolume > FLOAT_VOLUME_MAX)
 
             fVolume = FLOAT_VOLUME_MAX;
+
+
+
+        // ✅ الصوت التدريجي للأذان يوصل لسقف "مستوى صوت الأذان" اللي اختاره المستخدم مش للصوت الكامل دايمًا
+
+        if (getThikrType() != null && getThikrType().contains(MainActivity.DATA_TYPE_ATHAN)) {
+
+            fVolume = fVolume * getAthanMaxVolumeFloat();
+
+        }
 
 
 
