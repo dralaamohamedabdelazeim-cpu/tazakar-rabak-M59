@@ -30,6 +30,10 @@
             android:defaultValue="true"
             android:key="gradual_volume"
             android:title="@string/gradual_volume" />
+        <com.alaaeltaweel.thikrallah.Utilities.SeekBarPreference
+            android:defaultValue="100"
+            android:key="athan_volume"
+            android:title="@string/athan_volume_level"/>
         <CheckBoxPreference
             android:defaultValue="true"
             android:key="foreground_athan_timer"
