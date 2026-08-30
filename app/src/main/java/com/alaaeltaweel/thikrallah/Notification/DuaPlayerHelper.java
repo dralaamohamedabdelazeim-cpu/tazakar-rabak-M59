@@ -177,12 +177,16 @@ public class DuaPlayerHelper {
 
     // ✅ نفس إشعار الدعاء، لكن كدالة قابلة لإعادة الاستخدام (مع startForeground برضو)
     public static android.app.Notification buildDuaNotification(Context context) {
-        String channelId = "dua_stop_channel_v3";
+        // ✅ معرّف قناة جديد (v4) عشان التغيير يتطبق حتى على اللي مثبتين التطبيق بالفعل -
+        // أندرويد مبيسمحش بتغيير إعدادات قناة موجودة بالكود بعد إنشائها أول مرة
+        String channelId = "dua_stop_channel_v4";
         android.app.NotificationManager nm = (android.app.NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && nm != null) {
             android.app.NotificationChannel channel = new android.app.NotificationChannel(
                 channelId, "الدعاء بعد الأذان", android.app.NotificationManager.IMPORTANCE_DEFAULT);
             channel.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
+            // ✅ من غير صوت خالص - عشان مايتضاربش مع صوت الدعاء نفسه اللي التطبيق بيشغله
+            channel.setSound(null, null);
             nm.createNotificationChannel(channel);
         }
         Intent stopIntent = new Intent(context, ThikrAlarmReceiver.class);
