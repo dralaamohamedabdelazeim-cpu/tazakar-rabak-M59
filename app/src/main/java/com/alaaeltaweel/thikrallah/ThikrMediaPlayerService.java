@@ -2043,6 +2043,11 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
                 mediaSession.setActive(false);
 
+                // ✅ نلتقط النوع والحالة قبل أي إيقاف أو تصفير
+                boolean wasAthanBeforeFocusLoss = this.getThikrType() != null
+                        && this.getThikrType().contains(MainActivity.DATA_TYPE_ATHAN);
+                boolean wasPlayingBeforeFocusLoss = isPlaying();
+
                 if (isPlaying()) {
 
                     player.stop();
@@ -2053,10 +2058,21 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
                 this.resetPlayer();
 
-                this.stopForeground(true);
-                if (mediaSession != null) { try { mediaSession.setActive(false); } catch (Exception ignored) {} } // ✅ نقفل كارت التحكم من الشاشة المقفولة/المكالمة عشان ميفضلش عالق
+                isAthanSoundActive = false;
 
-                this.stopSelf();
+                // ✅ نشغل الدعاء زي أي حالة إيقاف تانية للأذان - عشان ميضيعش لو الصوت اتاخد منا فجأة
+                boolean duaWillPlay4 = false;
+                if (wasPlayingBeforeFocusLoss && wasAthanBeforeFocusLoss) {
+                    sendBroadcast(new Intent("com.alaaeltaweel.thikrallah.ATHAN_COMPLETE"));
+                    duaWillPlay4 = com.alaaeltaweel.thikrallah.Notification.DuaPlayerHelper.playDuaAfterAthan(getApplicationContext());
+                }
+
+                if (!duaWillPlay4) {
+                    this.stopForeground(true);
+                    if (mediaSession != null) { try { mediaSession.setActive(false); } catch (Exception ignored) {} } // ✅ نقفل كارت التحكم من الشاشة المقفولة/المكالمة عشان ميفضلش عالق
+
+                    this.stopSelf();
+                }
 
                 break;
 
