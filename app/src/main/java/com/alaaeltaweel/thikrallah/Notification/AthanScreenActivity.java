@@ -49,7 +49,8 @@ public class AthanScreenActivity extends AppCompatActivity {
     private static final int AUTO_DISMISS_DELAY  = 10 * 60 * 1000;
     private static final int SLIDESHOW_INTERVAL  = 30 * 1000; // 30 ثانية
     private static final String TAG = "AthanScreenActivity";
-    private static final String NOTIF_CHANNEL_ID = "athan_screen_channel";
+    // ✅ معرّف جديد (v2) عشان إعداد "بدون صوت" يتطبق حتى على اللي مثبتين التطبيق بالفعل
+    private static final String NOTIF_CHANNEL_ID = "athan_screen_channel_v2";
     private static final int NOTIF_ID = 774411; // ✅ اتغيّر عشان ميتعارضش مع إشعار الدعاء بعد الأذان (كان بيستخدم نفس الرقم 9911)
     private Handler autoHandler = new Handler();
     private Handler slideshowHandler = new Handler();
@@ -302,11 +303,15 @@ public class AthanScreenActivity extends AppCompatActivity {
     @Override
     protected void onStop() {
         super.onStop();
-        // ✅ الشاشة اختفت تمامًا (مش مجرد فقدان تركيز مؤقت زي نافذة نظام) - دلوقتي نجدول إشعار الرجوع
+        // ✅ تم إيقاف إشعار "الأذان لسه شغال" نهائيًا (مش محتاجينه بعد تعديلات تانية) -
+        // سايبين الكود والمتغيرات المرتبطة بيه زي ما هي عشان الإلغاء (cancelReturnToAthanNotification)
+        // يفضل شغال لو فيه إشعار قديم لسه ظاهر من نسخة سابقة قبل التحديث
+        /*
         if (!wasExplicitlyStopped) {
             showReturnNotifRunnable = this::showReturnToAthanNotification;
             autoHandler.postDelayed(showReturnNotifRunnable, 3000);
         }
+        */
     }
 
     private void sendMuteAction(boolean mute) {
@@ -343,6 +348,8 @@ public boolean onKeyDown(int keyCode, KeyEvent event) {
             NotificationChannel channel = nm.getNotificationChannel(NOTIF_CHANNEL_ID);
             if (channel == null) {
                 channel = new NotificationChannel(NOTIF_CHANNEL_ID, "شاشة الأذان", NotificationManager.IMPORTANCE_HIGH);
+                // ✅ من غير صوت خالص - عشان مايتضاربش مع صوت الأذان نفسه اللي شغال بالفعل
+                channel.setSound(null, null);
                 nm.createNotificationChannel(channel);
             }
         }
