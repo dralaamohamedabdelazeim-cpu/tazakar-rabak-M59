@@ -2041,12 +2041,14 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
                 Timber.d("lost focus");
 
-                mediaSession.setActive(false);
+                // ✅ لو ده أذان، نتجاهل فقدان التركيز الصوتي تمامًا ويكمل عادي - الأذان أهم من إنه يتقطع
+                // لصوت تطبيق تاني
+                if (this.getThikrType() != null && this.getThikrType().contains(MainActivity.DATA_TYPE_ATHAN)) {
+                    Timber.d("lost focus but this is athan - ignoring and continuing playback");
+                    break;
+                }
 
-                // ✅ نلتقط النوع والحالة قبل أي إيقاف أو تصفير
-                boolean wasAthanBeforeFocusLoss = this.getThikrType() != null
-                        && this.getThikrType().contains(MainActivity.DATA_TYPE_ATHAN);
-                boolean wasPlayingBeforeFocusLoss = isPlaying();
+                mediaSession.setActive(false);
 
                 if (isPlaying()) {
 
@@ -2060,19 +2062,10 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
                 isAthanSoundActive = false;
 
-                // ✅ نشغل الدعاء زي أي حالة إيقاف تانية للأذان - عشان ميضيعش لو الصوت اتاخد منا فجأة
-                boolean duaWillPlay4 = false;
-                if (wasPlayingBeforeFocusLoss && wasAthanBeforeFocusLoss) {
-                    sendBroadcast(new Intent("com.alaaeltaweel.thikrallah.ATHAN_COMPLETE"));
-                    duaWillPlay4 = com.alaaeltaweel.thikrallah.Notification.DuaPlayerHelper.playDuaAfterAthan(getApplicationContext());
-                }
+                this.stopForeground(true);
+                if (mediaSession != null) { try { mediaSession.setActive(false); } catch (Exception ignored) {} } // ✅ نقفل كارت التحكم من الشاشة المقفولة/المكالمة عشان ميفضلش عالق
 
-                if (!duaWillPlay4) {
-                    this.stopForeground(true);
-                    if (mediaSession != null) { try { mediaSession.setActive(false); } catch (Exception ignored) {} } // ✅ نقفل كارت التحكم من الشاشة المقفولة/المكالمة عشان ميفضلش عالق
-
-                    this.stopSelf();
-                }
+                this.stopSelf();
 
                 break;
 
