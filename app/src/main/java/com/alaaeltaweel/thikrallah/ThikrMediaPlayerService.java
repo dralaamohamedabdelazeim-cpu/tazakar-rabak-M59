@@ -205,6 +205,9 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
     public static volatile boolean isAthanSoundActive = false;
 
     private boolean isUserAction = true;
+    // ✅ بيحفظ هل التشغيل الحالي كان "تجربة صوت يدوية من الإعدادات" ولا "أذان/ذكر حقيقي" -
+    // بنستخدمه وقت الإيقاف اليدوي عشان مايشتغلش الدعاء لو ده كان مجرد تجربة صوت مؤذن
+    private volatile boolean currentPlaybackIsUserAction = false;
 
     private NotificationCompat.Builder notificationBuilder;
 
@@ -740,7 +743,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
             // ✅ إرسال broadcast لـ AthanScreenActivity/النافذة العائمة - بس لو ده أذان حقيقي فعلاً وكان لسه شغال فعليًا
             // (عشان الشاشة تقفل نفسها لو الإيقاف جه من مصدر تاني غيرها، زي زرار الإشعار)
             boolean duaWillPlay1 = false;
-            if (wasActuallyPlaying && incomingDataType != null && incomingDataType.contains(MainActivity.DATA_TYPE_ATHAN)) {
+            if (wasActuallyPlaying && incomingDataType != null && incomingDataType.contains(MainActivity.DATA_TYPE_ATHAN) && !this.currentPlaybackIsUserAction) { // ✅ متشغلش الدعاء لو ده كان مجرد تجربة صوت مؤذن من الإعدادات مش أذان حقيقي
                 sendBroadcast(new Intent("com.alaaeltaweel.thikrallah.ATHAN_COMPLETE"));
                 duaWillPlay1 = com.alaaeltaweel.thikrallah.Notification.DuaPlayerHelper.playDuaAfterAthan(getApplicationContext()); // على طول كلمه - تشغيل الدعاء لما المستخدم يوقف الأذان يدويا
             }
@@ -959,7 +962,8 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
                 // ✅ نلتقط الحالة قبل الإيقاف - عشان نعرف نشغل الدعاء لو كان أذان شغال فعلاً
                 // (زرار الإيقاف في الإشعار كان بيوقف من غير ما يشغل الدعاء خالص - بقى زي زرار الإيقاف في الشاشة)
                 boolean wasAthanPlayingBeforeReset = player != null && player.isPlaying()
-                        && getThikrType() != null && getThikrType().contains(MainActivity.DATA_TYPE_ATHAN);
+                        && getThikrType() != null && getThikrType().contains(MainActivity.DATA_TYPE_ATHAN)
+                        && !this.currentPlaybackIsUserAction; // ✅ متشغلش الدعاء لو ده كان مجرد تجربة صوت مؤذن
 
                 this.resetPlayer();
 
@@ -1165,6 +1169,9 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
     public void play(int fileNumber) {
 
         final boolean isUserActionForThisPlay = this.isUserAction; // ✅ نثبت قيمة isUserAction وقت بداية التشغيل عشان نستخدمها صح لما الصوت يخلص
+        // ✅ نحفظها كمان على مستوى الكلاس عشان حالة "الإيقاف اليدوي" تقدر توصلها،
+        // لأن this.isUserAction ممكن تتغير لو وصلت إشارة تانية (زي إشارة الإيقاف نفسها) قبل ما نستخدمها
+        this.currentPlaybackIsUserAction = isUserActionForThisPlay;
 
 
         int fadeDuration = 0;
