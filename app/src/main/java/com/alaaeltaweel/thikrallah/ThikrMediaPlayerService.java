@@ -2078,24 +2078,16 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
             case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
 
-                Timber.d("transient loss of  focus");
+                Timber.d("transient loss of focus");
 
-                // ✅ لو الأذان هو اللي كان شغال وقاطعته مكالمة (هاتف عادي أو مكالمة إنترنت)،
-                // نكتفي بوقف-وقت-محدد، إكماله بعد دقايق من نهاية المكالمة مش منطقي،
-                // وده كان سبب إن إشعار الأذان يفضل عالق لحد ما أذان جديد يجي يشيله
-                if (getThikrType() != null && getThikrType().contains(MainActivity.DATA_TYPE_ATHAN)) {
-                    Timber.d("Athan interrupted by call - stopping fully instead of pause/resume");
-                    if (isPlaying()) {
-                        try { player.stop(); } catch (Exception ignored) {}
-                    }
-                    this.resetPlayer();
-                    this.stopForeground(true);
-                    if (mediaSession != null) { try { mediaSession.setActive(false); } catch (Exception ignored) {} }
-                    // ✅ من غير السطر ده، شاشة الأذان كانت مالهاش خبر إن الأذان خلص فبتفضل مفتوحة
-                    sendBroadcast(new Intent("com.alaaeltaweel.thikrallah.ATHAN_COMPLETE"));
-                    this.stopSelf();
-                } else {
-                    if (isPlaying()) player.pause();
+                // ✅ المكالمات الحقيقية متغطاة بالفعل عن طريق TelephonyManager listener منفصل
+                // (بيوقف الصوت فورًا لو فيه مكالمة فعلية). هنا مبقيناش نفترض إن أي "فقدان مؤقت"
+                // لازم يكون مكالمة - ده بيحصل كمان مع حاجات عادية تمامًا زي صوت قصير من لعبة،
+                // فبنكتفي بإيقاف مؤقت وهو هيكمل لوحده لما التركيز يرجع (AUDIOFOCUS_GAIN)
+                if (isPlaying()) {
+
+                    player.pause();
+
                 }
 
                 break;
@@ -2500,6 +2492,8 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
                 if (player != null && player.isPlaying()) {
 
                     player.stop();
+
+                    isAthanSoundActive = false;
 
                     stopService(new Intent(ThikrMediaPlayerService.this,
 
