@@ -2098,7 +2098,24 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
                 if (isPlaying()) {
 
-                    player.setVolume(0.1f, 0.1f);
+                    // ✅ نخفض لنص الصوت الحالي (مش لرقم ثابت واطي جدًا زي 0.1) -
+                    // عشان حتى لو فضل عالق (لو التطبيق التاني ما بلغش أندرويد إنه خلص)،
+                    // يفضل مسموع بدل ما يبقى شبه صامت
+                    float currentDuckVolume = this.getThikrType() != null && this.getThikrType().contains(MainActivity.DATA_TYPE_ATHAN)
+                            ? getAthanMaxVolumeFloat() * 0.5f
+                            : 0.3f;
+
+                    player.setVolume(currentDuckVolume, currentDuckVolume);
+
+                    // ✅ شبكة أمان: لو التطبيق التاني (زي واتساب) ما رجعش يبلغ أندرويد إنه خلص،
+                    // نرجع الصوت لطبيعته لوحدنا بعد كام ثانية بدل ما يفضل عالق واطي للأبد
+                    final android.media.MediaPlayer playerAtDuckTime = player;
+                    new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                        if (player == playerAtDuckTime && player != null && player.isPlaying()) {
+                            Timber.d("duck safety-net: restoring volume in case focus was never returned");
+                            setVolume();
+                        }
+                    }, 4000);
 
                 }
 
