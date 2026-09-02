@@ -2077,20 +2077,24 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
                 break;
 
             case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
-
-                Timber.d("transient loss of focus");
-
-                // ✅ المكالمات الحقيقية متغطاة بالفعل عن طريق TelephonyManager listener منفصل
-                // (بيوقف الصوت فورًا لو فيه مكالمة فعلية). هنا مبقيناش نفترض إن أي "فقدان مؤقت"
-                // لازم يكون مكالمة - ده بيحصل كمان مع حاجات عادية تمامًا زي صوت قصير من لعبة،
-                // فبنكتفي بإيقاف مؤقت وهو هيكمل لوحده لما التركيز يرجع (AUDIOFOCUS_GAIN)
-                if (isPlaying()) {
-
-                    player.pause();
-
-                }
-
-                break;
+    Timber.d("transient loss of focus");
+    if (this.getThikrType() != null && this.getThikrType().contains(MainActivity.DATA_TYPE_ATHAN)) {
+        // ✅ الأذان أهم من إنه يفضل واقف بسبب صوت إشعار قصير (زي واتساب) -
+        // بنكمّل تشغيل عادي بدل ما نستنى AUDIOFOCUS_GAIN اللي مش مضمون يرجع
+        Timber.d("transient loss but this is athan - ignoring and continuing playback");
+        break;
+    }
+    if (isPlaying()) {
+        player.pause();
+    }
+    final android.media.MediaPlayer playerAtPauseTime = player;
+    new Handler(Looper.getMainLooper()).postDelayed(() -> {
+        if (player == playerAtPauseTime && player != null && !isPlaying() && isAthanSoundActive) {
+            Timber.d("transient-pause safety-net: resuming playback, focus was never returned");
+            startPlayerIfAllowed();
+        }
+    }, 4000);
+    break;
 
             case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
 
