@@ -1753,7 +1753,10 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
             int prevVal = intent.getIntExtra("android.media.EXTRA_PREV_VOLUME_STREAM_VALUE", -1);
             Timber.d("VolumeButtonReceiver fired - streamType=%s, prev=%s, new=%s, isMutedByFlip=%s, player=%s", streamType, prevVal, newVal, isMutedByFlip, (player == null ? "null" : "not-null"));
             if (isMutedByFlip) return; // اتكتم قبل كده، متعملش حاجة تاني
-            if (streamType != AudioManager.STREAM_MUSIC) return;
+            // ✅ الأذان بيتشغّل فعليًا على قناة الإشعارات (getStreamType())، مش قناة الموسيقى -
+// فلازم نراقب نفس القناة الحقيقية دي، وإلا ضغطة الصوت برا شاشة الأذان (لما الأندرويد
+// بيغيّر مستوى صوت الإشعارات فعليًا) هتتجاهل تمامًا وميحصلش كتم
+if (streamType != getStreamType()) return;
             if (player == null) return;
             // ✅ ضغطة زرار الصوت الحقيقية بتغيّر المستوى بخطوة واحدة (+1/-1) بالظبط.
             // أي تغيير تاني (تطبيق تاني ضبط الصوت برمجيًا، أو النظام غيّره لسبب آخر) بيتجاهل
