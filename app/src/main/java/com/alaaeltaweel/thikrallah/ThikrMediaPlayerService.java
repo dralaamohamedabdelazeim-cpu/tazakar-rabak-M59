@@ -196,6 +196,12 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
     private boolean overRideRespectMute = false;
 
+    // ✅ بنسجل هنا نتيجة آخر طلب تركيز صوتي عملناه (منوح/مرفوض/مؤجل) - عشان لما إشعار استرجاع
+    // التركيز (GAIN) يوصل، نقدر نفرّق بين حالتين: (1) كان في طلب تشغيل حقيقي اتأجل ولسه مستني
+    // يبدأ فعليًا - في الحالة دي لازم نبدأ التشغيل. (2) استرجاع تركيز عشوائي جاي من تطبيق تاني
+    // (زي واتساب) ياخد ويسيب التركيز من غير أي علاقة بتشغيلنا - في الحالة دي متعملش حاجة
+    private volatile int lastFocusRequestResult = AudioManager.AUDIOFOCUS_REQUEST_FAILED;
+
     // ✅ لمنع مؤقت تدرّج الصوت أو استرجاع الـ audio focus من إرجاع الصوت لوحده وقت الكتم بالقلب/زرار الصوت
     private boolean isMutedByFlip = false;
     // ✅ نسخة static عشان DuaPlayerHelper يقدر يعرف هل الأذان كان مكتوم، ويورّث نفس الحالة للدعاء
@@ -1606,15 +1612,23 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
                     .build();
 
-            return am.requestAudioFocus(mFocusRequest);
+            int focusResult = am.requestAudioFocus(mFocusRequest);
+
+            lastFocusRequestResult = focusResult;
+
+            return focusResult;
 
         } else {
 
-            return am.requestAudioFocus(this,
+            int focusResult = am.requestAudioFocus(this,
 
                     this.getStreamType(),
 
                     getAudioFocusRequestType());
+
+            lastFocusRequestResult = focusResult;
+
+            return focusResult;
 
         }
 
@@ -2033,12 +2047,23 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
                 mediaSession.setActive(true);
 
-                // ✅ ما بقيناش نستدعي initMediaPlayer() هنا لو player == null - ده كان بيسبب
-                // تشغيل تلقائي غير مقصود للذكر لما تطبيق تاني (زي واتساب) ياخد التركيز الصوتي
-                // مؤقتًا وبعدين يسيبه بعد ما جلسة الذكر السابقة تكون خلصت خالص والخدمة لسه
-                // شغالة في الخلفية. البدء الحقيقي للتشغيل بيحصل مباشرة من نفس مسار الطلب
-                // (initMediaPlayer() بينادى مباشرة من غير المرور من هنا)، فمحتاجينش الاستدعاء ده
-                if (player != null && !isPlaying()) {
+                // ✅ نبدأ تشغيل من الصفر بس لو آخر طلب تركيز صوتي عملناه كان "متأجل" (يعني كنا
+                // فعلاً بننتظر الرد ده عشان نشغّل - زي ميعاد ذكر جه واتصادف وقتها تطبيق تاني شغال).
+                // من غير الشرط ده، أي استرجاع تركيز عشوائي (زي واتساب ياخد ويسيب) كان بيشغّل
+                // الذكر بالغلط من غير أي طلب تشغيل حقيقي وراه
+                if (player == null) {
+
+                    if (lastFocusRequestResult == AudioManager.AUDIOFOCUS_REQUEST_DELAYED) {
+
+                        Timber.d("delayed focus request finally granted - starting playback now");
+
+                        lastFocusRequestResult = AudioManager.AUDIOFOCUS_REQUEST_FAILED; // استهلكناه، منستخدموش تاني
+
+                        initMediaPlayer();
+
+                    }
+
+                } else if (!isPlaying()) {
 
                     startPlayerIfAllowed();
 
