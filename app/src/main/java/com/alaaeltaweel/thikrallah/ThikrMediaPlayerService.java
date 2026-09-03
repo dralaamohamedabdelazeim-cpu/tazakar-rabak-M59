@@ -1754,9 +1754,9 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
             Timber.d("VolumeButtonReceiver fired - streamType=%s, prev=%s, new=%s, isMutedByFlip=%s, player=%s", streamType, prevVal, newVal, isMutedByFlip, (player == null ? "null" : "not-null"));
             if (isMutedByFlip) return; // اتكتم قبل كده، متعملش حاجة تاني
             // ✅ الأذان بيتشغّل فعليًا على قناة الإشعارات (getStreamType())، مش قناة الموسيقى -
-// فلازم نراقب نفس القناة الحقيقية دي، وإلا ضغطة الصوت برا شاشة الأذان (لما الأندرويد
-// بيغيّر مستوى صوت الإشعارات فعليًا) هتتجاهل تمامًا وميحصلش كتم
-if (streamType != getStreamType()) return;
+            // فلازم نراقب نفس القناة الحقيقية دي، وإلا ضغطة الصوت برا شاشة الأذان (لما الأندرويد
+            // بيغيّر مستوى صوت الإشعارات فعليًا) هتتجاهل تمامًا وميحصلش كتم
+            if (streamType != getStreamType()) return;
             if (player == null) return;
             // ✅ ضغطة زرار الصوت الحقيقية بتغيّر المستوى بخطوة واحدة (+1/-1) بالظبط.
             // أي تغيير تاني (تطبيق تاني ضبط الصوت برمجيًا، أو النظام غيّره لسبب آخر) بيتجاهل
@@ -2033,11 +2033,12 @@ if (streamType != getStreamType()) return;
 
                 mediaSession.setActive(true);
 
-                if (player == null) {
-
-                    initMediaPlayer();
-
-                } else if (!isPlaying()) {
+                // ✅ ما بقيناش نستدعي initMediaPlayer() هنا لو player == null - ده كان بيسبب
+                // تشغيل تلقائي غير مقصود للذكر لما تطبيق تاني (زي واتساب) ياخد التركيز الصوتي
+                // مؤقتًا وبعدين يسيبه بعد ما جلسة الذكر السابقة تكون خلصت خالص والخدمة لسه
+                // شغالة في الخلفية. البدء الحقيقي للتشغيل بيحصل مباشرة من نفس مسار الطلب
+                // (initMediaPlayer() بينادى مباشرة من غير المرور من هنا)، فمحتاجينش الاستدعاء ده
+                if (player != null && !isPlaying()) {
 
                     startPlayerIfAllowed();
 
