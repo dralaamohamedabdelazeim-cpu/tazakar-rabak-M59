@@ -261,6 +261,12 @@ private PhoneStateListener phoneStateListener;
             } catch (Exception e) {
                 Log.d(TAG, "Error while processing general thikr, will still reschedule next occurrence: " + e.getMessage());
             } finally {
+                SharedPreferences finalPrefs = PreferenceManager.getDefaultSharedPreferences(this.getApplicationContext());
+                long nextScheduled = finalPrefs.getLong("next_general_thikr_scheduled_time", 0);
+                if (nextScheduled <= System.currentTimeMillis()) {
+                    // ✅ الحارس مانجحش يحجز الميعاد الجاي (أو فشل لأي سبب) - ده نداء احتياطي بس
+                    new MyAlarmsManager(getApplicationContext()).UpdateAllApplicableAlarms();
+                }
             }
             return;
 
