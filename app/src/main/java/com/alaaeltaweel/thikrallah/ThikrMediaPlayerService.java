@@ -2118,7 +2118,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
     }
     final android.media.MediaPlayer playerAtPauseTime = player;
     new Handler(Looper.getMainLooper()).postDelayed(() -> {
-        if (player == playerAtPauseTime && player != null && !isPlaying() && isAthanSoundActive) {
+        if (player == playerAtPauseTime && player != null && !isPlaying()) {
             Timber.d("transient-pause safety-net: resuming playback, focus was never returned");
             startPlayerIfAllowed();
         }
