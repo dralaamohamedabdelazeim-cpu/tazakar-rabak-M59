@@ -202,6 +202,11 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
     // (زي واتساب) ياخد ويسيب التركيز من غير أي علاقة بتشغيلنا - في الحالة دي متعملش حاجة
     private volatile int lastFocusRequestResult = AudioManager.AUDIOFOCUS_REQUEST_FAILED;
 
+    // ✅ لازم نحتفظ بنفس كائن الطلب ده عشان نقدر نلغي التركيز الصوتي بيه صح بعد كده -
+    // إلغاء التركيز بطريقة قديمة مش مرتبطة بنفس الطلب ده كان بيخلي الأندرويد مايرجّعش
+    // التركيز فعليًا للتطبيق التاني (زي انستا)، فصوته كان فاضل مكتوم من غير رجوع
+    private AudioFocusRequest mFocusRequest;
+
     // ✅ لمنع مؤقت تدرّج الصوت أو استرجاع الـ audio focus من إرجاع الصوت لوحده وقت الكتم بالقلب/زرار الصوت
     private boolean isMutedByFlip = false;
     // ✅ نسخة static عشان DuaPlayerHelper يقدر يعرف هل الأذان كان مكتوم، ويورّث نفس الحالة للدعاء
@@ -1602,7 +1607,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
                     .build();
 
-            AudioFocusRequest mFocusRequest = new AudioFocusRequest.Builder(this.getAudioFocusRequestType())
+            mFocusRequest = new AudioFocusRequest.Builder(this.getAudioFocusRequestType())
 
                     .setAcceptsDelayedFocusGain(true)
 
@@ -1669,7 +1674,17 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
         }
 
-        am.abandonAudioFocus(this);
+        // ✅ لازم نلغي التركيز الصوتي بنفس طريقة الطلب بالظبط - وإلا الأندرويد مايرجّعش
+        // التركيز فعليًا للتطبيق التاني (زي انستا)، وصوته يفضل مكتوم من غير رجوع
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O && mFocusRequest != null) {
+
+            am.abandonAudioFocusRequest(mFocusRequest);
+
+        } else {
+
+            am.abandonAudioFocus(this);
+
+        }
 
         this.sendMessageToUI(MSG_CURRENT_PLAYING, -99);
 
