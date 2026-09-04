@@ -169,6 +169,17 @@ if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
             } catch (SecurityException e) {
                 Log.d(TAG, "Cannot check call state");
             }
+            // ✅ فحص إضافي لمكالمات الإنترنت (واتساب/ماسنجر/إلخ) - TelephonyManager مبيكتشفهاش
+            if (!isInCall) {
+                try {
+                    AudioManager voipCheckAm = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+                    if (voipCheckAm != null && voipCheckAm.getMode() == AudioManager.MODE_IN_COMMUNICATION) {
+                        isInCall = true;
+                    }
+                } catch (Exception e) {
+                    Log.d(TAG, "Cannot check audio mode");
+                }
+            }
 
             // ✅ شغّل صوت الأذان مباشرة من المنبه نفسه - مستقل عن نجاح فتح الشاشة
             // القفل ده مشترك مع AthanScreenActivity عشان الصوت ميتكررش لو الشاشة فتحت بعده
