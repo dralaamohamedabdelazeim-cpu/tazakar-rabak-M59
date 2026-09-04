@@ -2269,6 +2269,22 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
             Log.d(TAG, "audio focused request denied");
 
+            // ✅ لو ده أذان وطلب الـ focus اترفض (زي وقت مكالمة شغالة)، شغله برضه -
+            // من غيرها الشاشة كانت بتفضل معلقة لحد الـ safety net بتاع 10 دقايق
+            // (نفس فلسفة تجاهل AUDIOFOCUS_LOSS للأذان في onAudioFocusChange)
+            if (this.getThikrType() != null && this.getThikrType().contains(MainActivity.DATA_TYPE_ATHAN)
+                    && player != null) {
+                Timber.d("athan focus denied - starting playback anyway so it can complete normally");
+                try {
+                    this.play_count++;
+                    sendMessageToUI(MSG_CURRENT_PLAYING, currentPlaying);
+                    player.start();
+                    this.updateActions();
+                } catch (Exception e) {
+                    Timber.e(e, "athan fallback start failed");
+                }
+            }
+
         }
 
     }
