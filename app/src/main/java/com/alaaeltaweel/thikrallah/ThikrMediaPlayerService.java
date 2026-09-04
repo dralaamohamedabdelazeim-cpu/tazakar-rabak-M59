@@ -2108,44 +2108,9 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
             case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
     Timber.d("transient loss of focus");
     if (this.getThikrType() != null && this.getThikrType().contains(MainActivity.DATA_TYPE_ATHAN)) {
-
-        // ✅ نفرق هنا بين قطع بسبب مكالمة فعلية (عادية أو إنترنت زي واتساب) وقطع بسبب
-        // صوت قصير (زي نغمة إشعار). لو مكالمة فعلية، نوقف الأذان فورًا ونقفل الشاشة معاه -
-        // إكماله بعد دقايق من نهاية المكالمة مش منطقي. لو مجرد إشعار، نكمل تشغيل عادي
-        boolean isRealCall = false;
-        try {
-            android.telephony.TelephonyManager tm =
-                    (android.telephony.TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-            if (tm != null && tm.getCallState() != android.telephony.TelephonyManager.CALL_STATE_IDLE) {
-                isRealCall = true;
-            }
-        } catch (Exception ignored) {}
-        if (!isRealCall) {
-            try {
-                if (am != null && am.getMode() == AudioManager.MODE_IN_COMMUNICATION) {
-                    isRealCall = true;
-                }
-            } catch (Exception ignored) {}
-        }
-
-        if (isRealCall) {
-            Timber.d("Athan interrupted by a real call (regular or internet) - stopping fully instead of pause/resume");
-            if (isPlaying()) {
-                try { player.stop(); } catch (Exception ignored) {}
-            }
-            isAthanSoundActive = false;
-            this.resetPlayer();
-            this.stopForeground(true);
-            if (mediaSession != null) { try { mediaSession.setActive(false); } catch (Exception ignored) {} }
-            // ✅ من غير السطر ده، شاشة الأذان كانت مالهاش خبر إن الأذان خلص فبتفضل مفتوحة
-            sendBroadcast(new Intent("com.alaaeltaweel.thikrallah.ATHAN_COMPLETE"));
-            this.stopSelf();
-            break;
-        }
-
         // ✅ الأذان أهم من إنه يفضل واقف بسبب صوت إشعار قصير (زي واتساب) -
         // بنكمّل تشغيل عادي بدل ما نستنى AUDIOFOCUS_GAIN اللي مش مضمون يرجع
-        Timber.d("transient loss but this is athan and not a real call - ignoring and continuing playback");
+        Timber.d("transient loss but this is athan - ignoring and continuing playback");
         break;
     }
     if (isPlaying()) {
@@ -2359,30 +2324,6 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
             player = new MediaPlayer();
 
             player.setWakeMode(this, PowerManager.PARTIAL_WAKE_LOCK);
-
-            // ✅ من غير الميستمع ده، لو حصل خطأ فعلي في تشغيل الصوت (زي تعارض مع مكالمة
-            // واتساب شغالة بتاخد الـ audio session) كان onCompletion مبيتنداش خالص،
-            // فمفيش حد بيبعت ATHAN_COMPLETE وشاشة الأذان تفضل معلقة لحد الـ safety net
-            // بتاع 10 دقايق. هنا بنعامل الخطأ زي ما لو الأذان خلص عادي عشان الشاشة تقفل فورًا
-            player.setOnErrorListener((mp, what, extra) -> {
-                Timber.e("MediaPlayer error: what=%s extra=%s thikrType=%s", what, extra, getThikrType());
-
-                if (getThikrType() != null && getThikrType().contains(MainActivity.DATA_TYPE_ATHAN)) {
-                    isAthanSoundActive = false;
-                    sendBroadcast(new Intent("com.alaaeltaweel.thikrallah.ATHAN_COMPLETE"));
-                    this.resetPlayer();
-                    this.stopForeground(true);
-                    if (mediaSession != null) { try { mediaSession.setActive(false); } catch (Exception ignored) {} }
-                    this.stopSelf();
-                } else {
-                    this.resetPlayer();
-                    this.stopForeground(true);
-                    if (mediaSession != null) { try { mediaSession.setActive(false); } catch (Exception ignored) {} }
-                    this.stopSelf();
-                }
-
-                return true; // ✅ عشان مايتنداش onCompletion كمان على نفس الخطأ
-            });
 
             am = (AudioManager) this.getApplicationContext().getSystemService(Context.AUDIO_SERVICE);
 
