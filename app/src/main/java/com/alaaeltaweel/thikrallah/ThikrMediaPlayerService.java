@@ -1089,11 +1089,11 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
     public int getAudioFocusRequestType() {
 
-        if (this.getThikrType().equalsIgnoreCase(MainActivity.DATA_TYPE_GENERAL_THIKR)) {
-
-            return AudioManager.AUDIOFOCUS_GAIN_TRANSIENT;
-        }
-
+        // ✅ الذكر العام بقى بياخد تركيز صوتي دائم (زي الأذان والإقامة بالظبط) بدل المؤقت -
+        // عشان ياخد أولوية أعلى من التطبيقات التانية (انستا/يوتيوب/فيس) ويقدر يقاطعها فورًا
+        // من غير ما يدخل في حالة "استنى" أو "مرفوض" اللي كانت بتمنعه يشتغل خالص وقتها.
+        // ملحوظة: التطبيقات التانية هتستقبل "فقدان تركيز دائم" مش "مؤقت"، فبعضها (زي يوتيوب)
+        // ممكن يوقف الفيديو تمامًا بدل ما يخفّت بس، ومحتاج المستخدم يشغّله تاني يدوي بعد كده
         return AudioManager.AUDIOFOCUS_GAIN;
 
     }
