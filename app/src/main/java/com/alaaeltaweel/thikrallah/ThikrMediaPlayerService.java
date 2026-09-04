@@ -202,6 +202,11 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
     // (زي واتساب) ياخد ويسيب التركيز من غير أي علاقة بتشغيلنا - في الحالة دي متعملش حاجة
     private volatile int lastFocusRequestResult = AudioManager.AUDIOFOCUS_REQUEST_FAILED;
 
+    // ✅ لازم نحتفظ بنفس كائن الطلب ده عشان نقدر نلغي التركيز الصوتي بيه صح بعد كده -
+    // إلغاء التركيز بطريقة قديمة مش مرتبطة بنفس الطلب ده كان بيخلي الأندرويد مايرجّعش
+    // التركيز فعليًا للتطبيق التاني (زي انستا)، فصوته كان فاضل مكتوم من غير رجوع
+    private AudioFocusRequest mFocusRequest;
+
     // ✅ لمنع مؤقت تدرّج الصوت أو استرجاع الـ audio focus من إرجاع الصوت لوحده وقت الكتم بالقلب/زرار الصوت
     private boolean isMutedByFlip = false;
     // ✅ نسخة static عشان DuaPlayerHelper يقدر يعرف هل الأذان كان مكتوم، ويورّث نفس الحالة للدعاء
@@ -1602,7 +1607,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
                     .build();
 
-            AudioFocusRequest mFocusRequest = new AudioFocusRequest.Builder(this.getAudioFocusRequestType())
+            mFocusRequest = new AudioFocusRequest.Builder(this.getAudioFocusRequestType())
 
                     .setAcceptsDelayedFocusGain(true)
 
@@ -1669,7 +1674,17 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
         }
 
-        am.abandonAudioFocus(this);
+        // ✅ لازم نلغي التركيز الصوتي بنفس طريقة الطلب بالظبط - وإلا الأندرويد مايرجّعش
+        // التركيز فعليًا للتطبيق التاني (زي انستا)، وصوته يفضل مكتوم من غير رجوع
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O && mFocusRequest != null) {
+
+            am.abandonAudioFocusRequest(mFocusRequest);
+
+        } else {
+
+            am.abandonAudioFocus(this);
+
+        }
 
         this.sendMessageToUI(MSG_CURRENT_PLAYING, -99);
 
@@ -2268,6 +2283,22 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
         } else {
 
             Log.d(TAG, "audio focused request denied");
+
+            // ✅ لو ده أذان وطلب الـ focus اترفض (زي وقت مكالمة شغالة)، شغله برضه -
+            // من غيرها الشاشة كانت بتفضل معلقة لحد الـ safety net بتاع 10 دقايق
+            // (نفس فلسفة تجاهل AUDIOFOCUS_LOSS للأذان في onAudioFocusChange)
+            if (this.getThikrType() != null && this.getThikrType().contains(MainActivity.DATA_TYPE_ATHAN)
+                    && player != null) {
+                Timber.d("athan focus denied - starting playback anyway so it can complete normally");
+                try {
+                    this.play_count++;
+                    sendMessageToUI(MSG_CURRENT_PLAYING, currentPlaying);
+                    player.start();
+                    this.updateActions();
+                } catch (Exception e) {
+                    Timber.e(e, "athan fallback start failed");
+                }
+            }
 
         }
 
