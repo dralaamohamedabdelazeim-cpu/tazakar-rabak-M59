@@ -1169,6 +1169,10 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
         // لأن this.isUserAction ممكن تتغير لو وصلت إشارة تانية (زي إشارة الإيقاف نفسها) قبل ما نستخدمها
         this.currentPlaybackIsUserAction = isUserActionForThisPlay;
 
+        // ✅ نصفّر العلامة دي مع كل تشغيل جديد - هترفع تاني بس لو فعلاً لقينا مكالمة شغالة
+        // بالفعل وقت البدء، عشان متفضلش شايلة قيمة قديمة من جلسة سابقة خالص
+        athanIntentionallyMutedForExistingCall = false;
+
 
         int fadeDuration = 0;
 
@@ -1371,6 +1375,8 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
                         // طبيعي لما وقت الأذان يخلص عادي زي أي أذان تاني (مش لما المكالمة تخلص)
                         Timber.d("call already active at athan start - starting muted instead of failing");
 
+                        athanIntentionallyMutedForExistingCall = true;
+
                         startPlayerIfAllowed();
 
                         try { player.setVolume(0f, 0f); } catch (Exception ignored) {}
@@ -1458,6 +1464,8 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
                     if (isAthanType2 && isCallCurrentlyActive()) {
 
                         Timber.d("call already active at athan start - starting muted instead of failing");
+
+                        athanIntentionallyMutedForExistingCall = true;
 
                         startPlayerIfAllowed();
 
@@ -2631,6 +2639,11 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
     // ✅ بيتأكد هل فيه مكالمة شغالة بالفعل دلوقتي (عادية أو نت) - بنستخدمها وقت بدء الأذان
     // عشان لو لقينا مكالمة شغالة من الأساس، نبدأ الأذان مكتوم بدل ما نفشل نشغّله خالص
+    // ✅ true لو الأذان بدأ مكتوم بسبب مكالمة كانت شغالة بالفعل من الأول - عشان مراقبة
+    // وضع الصوت (اللي بتوقف الأذان لو مكالمة جديدة جت وقته) متلخبطش بين "مكالمة قديمة
+    // إحنا قررنا نكمل معاها" و"مكالمة جديدة فعلاً لازم توقف الأذان"
+    private volatile boolean athanIntentionallyMutedForExistingCall = false;
+
     private boolean isCallCurrentlyActive() {
 
         try {
@@ -2718,7 +2731,9 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
             int mode = audioManager.getMode();
 
-            if (mode == AudioManager.MODE_IN_COMMUNICATION || mode == AudioManager.MODE_IN_CALL) {
+            if ((mode == AudioManager.MODE_IN_COMMUNICATION || mode == AudioManager.MODE_IN_CALL)
+
+                    && !athanIntentionallyMutedForExistingCall) {
 
                 handleCallInterruption("internet/VoIP call - detected via audio mode");
 
