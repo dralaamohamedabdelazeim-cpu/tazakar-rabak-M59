@@ -259,6 +259,18 @@ if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
             } catch (SecurityException e) {
                 Log.d(TAG, "Cannot check call state");
             }
+            // ✅ فحص إضافي لمكالمات الإنترنت (واتساب/ماسنجر/إلخ) - نفس فكرة فحص الأذان فوق،
+            // كان ناقص هنا وهو سبب اشتغال الذكر العام بصوت وقت مكالمات النت
+            if (!isInCallForThikr) {
+                try {
+                    AudioManager voipCheckAm2 = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+                    if (voipCheckAm2 != null && voipCheckAm2.getMode() == AudioManager.MODE_IN_COMMUNICATION) {
+                        isInCallForThikr = true;
+                    }
+                } catch (Exception e) {
+                    Log.d(TAG, "Cannot check audio mode for thikr");
+                }
+            }
             if (isInCallForThikr) {
                 Log.d(TAG, "Call in progress, scheduling thikr after 15 min");
                 android.app.AlarmManager alarmManager =
