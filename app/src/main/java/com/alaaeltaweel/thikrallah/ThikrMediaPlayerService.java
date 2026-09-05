@@ -1314,6 +1314,67 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
 
 
+                // ✅ للأذان بس: شيلنا طلب إذن الصوت المكرر ده (كان بيتطلب هنا، وبعدين تاني
+                // جوه startPlayerIfAllowed() على طول). التكرار ده كان بيخلي الطلب التاني يترفض
+                // أحيانًا حتى من غير أي تعارض فعلي، وبما إن الحماية الحقيقية (تشغيل الأذان مكتوم
+                // بدل ما يتقفل تمامًا) موجودة بس جوه startPlayerIfAllowed()، الطلب الأول ده كان
+                // بيمنعها توصل لو هو نفسه اترفض. الأذكار العادية فضلت زي ما هي من غير أي تعديل
+                boolean isAthanTypeNow = getThikrType() != null && getThikrType().contains(MainActivity.DATA_TYPE_ATHAN);
+
+                if (isAthanTypeNow) {
+
+                    startPlayerIfAllowed();
+
+                    updateActions();
+
+                    if (fadeDuration > 0) {
+
+                        final Timer timer = new Timer(true);
+
+                        TimerTask timerTask = new TimerTask() {
+
+                            @Override
+
+                            public void run() {
+
+                                if (player == null) {
+
+                                    timer.cancel();
+
+                                    timer.purge();
+
+                                } else {
+
+                                    incrementVolume();
+
+                                }
+
+                                if (iVolume == INT_VOLUME_MAX) {
+
+                                    timer.cancel();
+
+                                    timer.purge();
+
+                                }
+
+                            }
+
+                        };
+
+                        int delay = fadeDuration / INT_VOLUME_MAX;
+
+                        if (delay == 0) delay = 1;
+
+                        timer.schedule(timerTask, delay, delay);
+
+                    } else {
+
+                        this.setVolume();
+
+                    }
+
+                } else {
+
                 int ret = requestAudioFocus();
 
                 if (ret == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
@@ -1373,6 +1434,8 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
                 } else {
 
                     Timber.d("audio focus request denied.");
+
+                }
 
                 }
 
