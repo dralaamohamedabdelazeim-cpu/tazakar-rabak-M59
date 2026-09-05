@@ -2265,6 +2265,20 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
         boolean isAthanType = this.getThikrType() != null && this.getThikrType().contains(MainActivity.DATA_TYPE_ATHAN);
 
+        boolean isGeneralThikrType = this.getThikrType() != null && this.getThikrType().equalsIgnoreCase(MainActivity.DATA_TYPE_GENERAL_THIKR);
+
+        // ✅ الذكر العام لازم مايشتغلش خالص وقت مكالمة شغالة (عادية أو نت) - بغض النظر إن
+        // التركيز الصوتي الدائم بتاعه ممكن يتوافق عليه رغم المكالمة (زي ما بيحصل مع الأذان)،
+        // هنا بنفرض إننا نتجاهل الموافقة دي ومنشغلش خالص، لأن الذكر العام (على عكس الأذان)
+        // مالوش داعي يقاطع مكالمة، ومحاولته الجاية بعد 10 دقايق كفاية
+        if (isGeneralThikrType && isCallCurrentlyActive()) {
+
+            Timber.d("general thikr - call is active, skipping this occurrence entirely (will try again next cycle)");
+
+            return;
+
+        }
+
         // ✅ بنفحص المكالمة **بغض النظر عن نتيجة التركيز الصوتي** - لأن الأذان بياخد أولوية
         // عالية وممكن الأندرويد يوافقله على التركيز حتى لو فيه مكالمة شغالة بالفعل، وده كان
         // بيخلي الأذان يشتغل بصوت عادي غلط وقت المكالمة. المكان ده بقى المصدر الوحيد لهذا القرار
