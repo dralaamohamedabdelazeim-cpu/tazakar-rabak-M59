@@ -1079,21 +1079,11 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
     public int getAudioFocusRequestType() {
 
-        // ✅ الذكر العام بياخد تركيز صوتي دائم (زي الأذان والإقامة بالظبط) بدل المؤقت -
+        // ✅ الذكر العام بقى بياخد تركيز صوتي دائم (زي الأذان والإقامة بالظبط) بدل المؤقت -
         // عشان ياخد أولوية أعلى من التطبيقات التانية (انستا/يوتيوب/فيس) ويقدر يقاطعها فورًا
         // من غير ما يدخل في حالة "استنى" أو "مرفوض" اللي كانت بتمنعه يشتغل خالص وقتها.
         // ملحوظة: التطبيقات التانية هتستقبل "فقدان تركيز دائم" مش "مؤقت"، فبعضها (زي يوتيوب)
         // ممكن يوقف الفيديو تمامًا بدل ما يخفّت بس، ومحتاج المستخدم يشغّله تاني يدوي بعد كده
-        //
-        // ✅ تصليح مشكلة اشتغال الذكر العام بصوت وقت مكالمات النت: التركيز الدائم (GAIN) بيتوافق
-        // عليه غالبًا من الأندرويد حتى لو فيه مكالمة نت شغالة (على عكس المؤقت اللي كان الأندرويد
-        // بيرفضه تلقائي زمان وهو ده اللي كان بيمنع الذكر يشتغل وقت المكالمة من غير ما نكتب كود
-        // فحص أصلاً). فلو isCallCurrentlyActive() لقى مكالمة شغالة، نرجع للنوع المؤقت الضعيف
-        // كطبقة حماية احتياطية تانية - مش بديل عن الفحص اللي بيوقف التشغيل خالص في startPlayerIfAllowed،
-        // لكن تأمين إضافي لو نوع مكالمة النت معين مش بيغيّر AudioManager mode فمش بيتكتشف
-        if (this.getThikrType().equalsIgnoreCase(MainActivity.DATA_TYPE_GENERAL_THIKR) && isCallCurrentlyActive()) {
-            return AudioManager.AUDIOFOCUS_GAIN_TRANSIENT;
-        }
         return AudioManager.AUDIOFOCUS_GAIN;
 
     }
@@ -2675,42 +2665,11 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
             AudioManager am2 = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
 
-            // ✅ لوج تشخيصي - عشان نتأكد فعليًا إيه القيمة اللي بيرجعها ماسنجر وقت المكالمة
-            Timber.d("isCallCurrentlyActive check - AudioManager.getMode() = %s",
-                    am2 != null ? am2.getMode() : "null");
-
-            // ✅ بنفحص MODE_IN_CALL كمان مش بس MODE_IN_COMMUNICATION - بعض تطبيقات المكالمات
-            // ممكن تسيب النظام يستخدم الوضع ده بدل التاني حسب طريقة تكاملها مع الأندرويد
-            if (am2 != null && (am2.getMode() == AudioManager.MODE_IN_COMMUNICATION
-                    || am2.getMode() == AudioManager.MODE_IN_CALL)) {
+            if (am2 != null && am2.getMode() == AudioManager.MODE_IN_COMMUNICATION) {
 
                 return true;
 
             }
-
-        } catch (Exception ignored) {
-
-        }
-
-        // ✅ طبقة تانية - TelecomManager.isInCall() بتلقط أي تطبيق مكالمات (زي ماسنجر/واتساب)
-        // مسجل نفسه رسميًا كـ ConnectionService عند الأندرويد، حتى لو مغيّرش AudioManager mode
-        try {
-
-            android.telecom.TelecomManager telecomManager =
-                    (android.telecom.TelecomManager) getSystemService(Context.TELECOM_SERVICE);
-
-            if (telecomManager != null && telecomManager.isInCall()) {
-
-                Timber.d("isCallCurrentlyActive - detected via TelecomManager.isInCall()");
-
-                return true;
-
-            }
-
-        } catch (SecurityException se) {
-
-            // ✅ محتاجة READ_PHONE_STATE على بعض إصدارات الأندرويد - لو مرفوضة، نتجاهلها ونكمل بالفحوصات التانية
-            Timber.d("TelecomManager.isInCall() needs READ_PHONE_STATE - skipping this check");
 
         } catch (Exception ignored) {
 
