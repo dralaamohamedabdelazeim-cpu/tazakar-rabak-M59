@@ -781,6 +781,15 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
     public int onStartCommand(Intent intent, int flags, int startId) {
 
+        // ✅ حماية من كراش "توقف التطبيق" لو الإشعار وصل ببيانات فاضية لأي سبب
+        if (intent.getExtras() == null) {
+
+            Timber.e("onStartCommand received an intent with null extras - ignoring safely");
+
+            return Service.START_NOT_STICKY;
+
+        }
+
         String incomingDataType = intent.getExtras().getString("com.alaaeltaweel.thikrallah.datatype", null);
 
         Timber.d("ThikrMediaPlayerService onStartCommand");
@@ -851,22 +860,30 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
 
 
-        if (intent.getExtras().getString("com.alaaeltaweel.thikrallah.datatype", MainActivity.DATA_TYPE_DAY_THIKR).equalsIgnoreCase(MainActivity.DATA_TYPE_GENERAL_THIKR) && this.isPlaying()) {
+        if (action == MEDIA_PLAYER_RESET) {
+
+            // ✅ زرار الإيقاف لازم يشتغل دايمًا، حتى لو الخدمة معتبراش الصوت "شغال" في نفس
+            // اللحظة (تأخير بسيط، تركيز صوتي لسه مستني، إلخ) - وإلا الأمر ده كان بيقع في
+            // مسار "تشغيل جديد" بالغلط بدل ما يوقف، وده ممكن يسبب كراش لو البيانات ناقصة
+            Timber.d("reset called (unconditional stop button handling)");
 
             this.updateAllAlarms();
 
-            if (action == MEDIA_PLAYER_RESET) {
+            this.resetPlayer();
 
-                Timber.d("reset called");
+            this.stopForeground(true);
 
-                this.resetPlayer();
+            if (mediaSession != null) { try { mediaSession.setActive(false); } catch (Exception ignored) {} }
 
-                this.stopForeground(true);
-                if (mediaSession != null) { try { mediaSession.setActive(false); } catch (Exception ignored) {} } // ✅ نقفل كارت التحكم من الشاشة المقفولة/المكالمة عشان ميفضلش عالق
+            this.stopSelf();
 
-                this.stopSelf();
+            return Service.START_NOT_STICKY;
 
-            }
+        }
+
+        if (intent.getExtras().getString("com.alaaeltaweel.thikrallah.datatype", MainActivity.DATA_TYPE_DAY_THIKR).equalsIgnoreCase(MainActivity.DATA_TYPE_GENERAL_THIKR) && this.isPlaying()) {
+
+            this.updateAllAlarms();
 
             return Service.START_NOT_STICKY;
 
