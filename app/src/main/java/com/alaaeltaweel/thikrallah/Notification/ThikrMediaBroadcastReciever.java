@@ -29,7 +29,10 @@ public class ThikrMediaBroadcastReciever extends BroadcastReceiver {
             String intentAction = intent.getAction();
             data=new Bundle();
             Log.d(TAG,"onReceive called");
-            data.putAll(intent.getExtras());
+            // ✅ حماية من كراش "توقف التطبيق" لو الإشعار وصل ببيانات فاضية لأي سبب
+            if (intent.getExtras() != null) {
+                data.putAll(intent.getExtras());
+            }
             data.putBoolean("isUserAction",true);
             Log.i("mediastyle", intentAction.toString() + " happended");
             if (Intent.ACTION_MEDIA_BUTTON.equals(intent.getAction())) {
