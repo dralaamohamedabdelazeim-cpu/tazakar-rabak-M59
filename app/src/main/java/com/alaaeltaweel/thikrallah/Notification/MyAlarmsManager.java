@@ -169,8 +169,16 @@ public class MyAlarmsManager {
             long storedNextTime = sharedPrefs.getLong("next_general_thikr_scheduled_time", 0);
             String storedInterval = sharedPrefs.getString("next_general_thikr_scheduled_interval", "");
             boolean intervalChanged = !RandomReminderInterval.equals(storedInterval);
+            // ✅ لازم نعيد الحساب برضه لو المستخدم غيّر وقت الراحة نفسه (بداية أو نهاية أو تفعيله)،
+            // مش بس لما الفاصل الزمني يتغير - وإلا الميعاد المجدول بيفضل زي ما هو من غير ما ياخد
+            // الإعداد الجديد في الاعتبار
+            String currentQuietSignature = sharedPrefs.getBoolean("quiet_time_choice", true)
+                    + "_" + sharedPrefs.getString("quiet_time_start", "22:00")
+                    + "_" + sharedPrefs.getString("quiet_time_end", "22:00");
+            String storedQuietSignature = sharedPrefs.getString("next_general_thikr_scheduled_quiet_signature", "");
+            boolean quietTimeSettingsChanged = !currentQuietSignature.equals(storedQuietSignature);
 
-            if (storedNextTime > now.getTimeInMillis() && !intervalChanged) {
+            if (storedNextTime > now.getTimeInMillis() && !intervalChanged && !quietTimeSettingsChanged) {
                 Log.d("MyAlarmsManager", "General thikr already scheduled, skipping reschedule");
             } else {
                 alarmMgr.cancel(pendingIntentGeneral);
@@ -212,6 +220,7 @@ public class MyAlarmsManager {
                 sharedPrefs.edit()
                         .putLong("next_general_thikr_scheduled_time", calendar1.getTimeInMillis())
                         .putString("next_general_thikr_scheduled_interval", RandomReminderInterval)
+                        .putString("next_general_thikr_scheduled_quiet_signature", currentQuietSignature)
                         .apply();
             }
         } else {
