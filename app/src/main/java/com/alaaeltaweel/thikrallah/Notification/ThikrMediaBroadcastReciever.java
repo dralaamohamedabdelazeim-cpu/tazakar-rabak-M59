@@ -34,7 +34,13 @@ public class ThikrMediaBroadcastReciever extends BroadcastReceiver {
                 data.putAll(intent.getExtras());
             }
             data.putBoolean("isUserAction",true);
-            Log.i("mediastyle", intentAction.toString() + " happended");
+            // ✅ إصلاح كراش: intentAction ممكن تكون null لو الإشعار وصل من غير action محدد
+            if (intentAction != null) {
+                Log.i("mediastyle", intentAction + " happended");
+            } else {
+                Log.i("mediastyle", "onReceive called with null action");
+                return;
+            }
             if (Intent.ACTION_MEDIA_BUTTON.equals(intent.getAction())) {
 
                 final KeyEvent event = intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT);

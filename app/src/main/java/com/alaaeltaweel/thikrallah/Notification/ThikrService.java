@@ -112,6 +112,12 @@ private PhoneStateListener phoneStateListener;
     private void registerCallListener() {
         TelephonyManager tm = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
         if (tm == null) return;
+        // ✅ إصلاح تسريب المستمعين: لو فيه مستمع قديم مسجل من نداء سابق لـ onHandleIntent،
+        // لازم نلغيه الأول قبل ما نسجل واحد جديد - وإلا هيتراكموا مستمعين شغالين مع بعض
+        if (phoneStateListener != null) {
+            tm.listen(phoneStateListener, PhoneStateListener.LISTEN_NONE);
+            phoneStateListener = null;
+        }
         phoneStateListener = new PhoneStateListener() {
             @Override
             public void onCallStateChanged(int state, String phoneNumber) {
