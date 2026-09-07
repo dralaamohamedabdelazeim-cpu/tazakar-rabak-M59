@@ -1098,7 +1098,8 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
         // ✅ رجّعنا الذكر العام لنوعه الأصلي (تركيز مؤقت) - ده كان شغال صح من الأساس وبيوقف
         // التطبيق التاني (انستا/يوتيوب/فيس) مؤقتًا ويرجّعه لوحده تلقائي بعد ما الذكر يخلص،
         // بدل التركيز الدائم اللي كان بيوقف الفيديو تمامًا ومحتاج تشغيل يدوي بعد كده
-        if (this.getThikrType().equalsIgnoreCase(MainActivity.DATA_TYPE_GENERAL_THIKR)) {
+        // ✅ إصلاح كراش: getThikrType() ممكن ترجع null لو الخدمة اتنادت في توقيت غلط
+        if (this.getThikrType() != null && this.getThikrType().equalsIgnoreCase(MainActivity.DATA_TYPE_GENERAL_THIKR)) {
 
             return AudioManager.AUDIOFOCUS_GAIN_TRANSIENT;
 
@@ -1112,7 +1113,12 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
     private int getStreamType() {
 
-        if (this.getThikrType().equalsIgnoreCase(MainActivity.DATA_TYPE_GENERAL_THIKR)) {
+        // ✅ إصلاح كراش: getThikrType() ممكن ترجع null لو الخدمة اتنادت في توقيت غلط
+        if (this.getThikrType() == null) {
+
+            return AudioManager.STREAM_MUSIC;
+
+        } else if (this.getThikrType().equalsIgnoreCase(MainActivity.DATA_TYPE_GENERAL_THIKR)) {
 
             return AudioManager.STREAM_NOTIFICATION;
 
