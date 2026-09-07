@@ -2352,9 +2352,18 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
             boolean isScreenOff = screenCheckPm != null && !screenCheckPm.isInteractive();
             if (isScreenOff) {
                 Timber.d("Screen is off - delaying playback start slightly to let device wake up fully");
-                PowerManager.WakeLock delayWakeLock = screenCheckPm.newWakeLock(
-                        PowerManager.PARTIAL_WAKE_LOCK, "Thikrallah:delayedStartWakeLock");
-                delayWakeLock.acquire(2000);
+                PowerManager.WakeLock delayWakeLock = null;
+                try {
+                    delayWakeLock = screenCheckPm.newWakeLock(
+                            PowerManager.PARTIAL_WAKE_LOCK, "Thikrallah:delayedStartWakeLock");
+                    delayWakeLock.acquire(2000);
+                } catch (Exception e) {
+                    // ✅ إصلاح: لو صلاحية الاستيقاظ مش متاحة أو حصل أي خطأ في حجز القفل،
+                    // ما ينفعش نخلي ده يمنع الذكر من الشغل خالص - نكمل من غير قفل بدل ما نوقف هنا
+                    Timber.e(e, "could not acquire delayed-start wake lock - continuing without it");
+                    delayWakeLock = null;
+                }
+                final PowerManager.WakeLock finalDelayWakeLock = delayWakeLock;
                 new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
                     if (player != null) {
                         try {
@@ -2364,7 +2373,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
                             Timber.e(e, "delayed player.start failed");
                         }
                     }
-                    if (delayWakeLock.isHeld()) delayWakeLock.release();
+                    if (finalDelayWakeLock != null && finalDelayWakeLock.isHeld()) finalDelayWakeLock.release();
                 }, 400);
             } else {
 
