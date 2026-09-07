@@ -135,6 +135,7 @@ public class PrefsThikrFragment extends PreferenceFragmentCompat implements OnSh
             "lastAlarmsUpdate",
             "next_general_thikr_scheduled_time",
             "next_general_thikr_scheduled_interval",
+            "next_general_thikr_scheduled_quiet_signature",
             "last_claimed_general_thikr_occurrence",
             "thikr_current_index",
             "last_general_thikr_time",
