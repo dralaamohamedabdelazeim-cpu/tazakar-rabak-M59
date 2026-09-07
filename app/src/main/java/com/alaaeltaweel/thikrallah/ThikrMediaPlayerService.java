@@ -2351,20 +2351,22 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
             PowerManager screenCheckPm = (PowerManager) getSystemService(Context.POWER_SERVICE);
             boolean isScreenOff = screenCheckPm != null && !screenCheckPm.isInteractive();
             if (isScreenOff) {
-    PowerManager.WakeLock delayWakeLock = screenCheckPm.newWakeLock(
-            PowerManager.PARTIAL_WAKE_LOCK, "Thikrallah:delayedStartWakeLock");
-    delayWakeLock.acquire(2000);
-    new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
-        if (player != null) {
-            try {
-                player.start();
-            } catch (Exception e) {
-                Timber.e(e, "delayed player.start failed");
-            }
-        }
-        if (delayWakeLock.isHeld()) delayWakeLock.release();
-    }, 400);
-} else {
+                Timber.d("Screen is off - delaying playback start slightly to let device wake up fully");
+                PowerManager.WakeLock delayWakeLock = screenCheckPm.newWakeLock(
+                        PowerManager.PARTIAL_WAKE_LOCK, "Thikrallah:delayedStartWakeLock");
+                delayWakeLock.acquire(2000);
+                new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                    if (player != null) {
+                        try {
+                            player.start();
+                            Timber.d("player started after wake-up delay");
+                        } catch (Exception e) {
+                            Timber.e(e, "delayed player.start failed");
+                        }
+                    }
+                    if (delayWakeLock.isHeld()) delayWakeLock.release();
+                }, 400);
+            } else {
 
             player.start();
 
