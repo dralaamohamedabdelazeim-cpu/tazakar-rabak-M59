@@ -170,8 +170,7 @@ public class MyAlarmsManager {
             String storedInterval = sharedPrefs.getString("next_general_thikr_scheduled_interval", "");
             boolean intervalChanged = !RandomReminderInterval.equals(storedInterval);
             // ✅ لازم نعيد الحساب برضه لو المستخدم غيّر وقت الراحة نفسه (بداية أو نهاية أو تفعيله)،
-            // مش بس لما الفاصل الزمني يتغير - وإلا الميعاد المجدول بيفضل زي ما هو من غير ما ياخد
-            // الإعداد الجديد في الاعتبار
+            // مش بس لما الفاصل الزمني يتغير
             String currentQuietSignature = sharedPrefs.getBoolean("quiet_time_choice", true)
                     + "_" + sharedPrefs.getString("quiet_time_start", "22:00")
                     + "_" + sharedPrefs.getString("quiet_time_end", "22:00");
@@ -183,24 +182,21 @@ public class MyAlarmsManager {
             } else {
                 alarmMgr.cancel(pendingIntentGeneral);
                 Calendar calendar1 = Calendar.getInstance();
-                // ✅ إصلاح دقة التوقيت: لو ده احتساب "المعاد الجاي" بعد ما الذكر اللي فات شغل فعلاً
-                // (يعني مفيش تغيير في الفاصل الزمني ولا في إعدادات وقت الراحة، بس المعاد القديم
-                // عدّى)، لازم ناخد أساس الحساب من "المعاد المفروض" الأصلي مش من الوقت الفعلي دلوقتي.
-                // لو حسبنا من "دلوقتي" كل مرة، أي تأخير بسيط من الجهاز (حتى ثواني أو دقايق بسبب
-                // توفير الطاقة) بيتحول لزيادة فعلية في الفاصل الزمني، وبيبعد المعاد الجاي عن نهاية
-                // فترة الراحة أو عن الشبكة الزمنية الصح.
-                // ✅ لازم نتأكد كمان إن الفرق بين دلوقتي والمعاد القديم صغير (مسموح بيه دقيقتين
-                // بالكتير، عشان تأخير الجهاز الطبيعي وقت الاستيقاظ). لو الفرق أكبر من كده، معناه
-                // حدث تاني (زي أذان أو فتح التطبيق) نادى على الحساب ده قبل ما الذكر العام نفسه
-                // ياخد فرصته يشتغل - فلو استخدمنا المعاد القديم كأساس هنا، الفترة الجاية هتبقى
-                // أقصر من الفاصل الزمني المحدد فعليًا.
-                long staleness = now.getTimeInMillis() - storedNextTime;
-                boolean isNaturalContinuation = storedNextTime > 0
-                        && storedNextTime <= now.getTimeInMillis()
-                        && staleness <= 2 * 60 * 1000
-                        && !intervalChanged && !quietTimeSettingsChanged;
-                Date anchor = isNaturalContinuation ? new Date(storedNextTime) : dat;
-                calendar1.setTime(anchor);
+                // ✅ الأساس الصح للحساب هو "آخر وقت اشتغل فيه الذكر فعليًا" مش "الميعاد المجدول
+                // القديم". الميعاد المجدول ممكن يتلغى بمعرفة ThikrAlarmReceiver (زي فحص الـ7 دقايق
+                // لو حصل تصادم مع الحارس الذاتي) من غير ما الجدولة تعرف، فلو فضلنا نحسب من الميعاد
+                // القديم كأنه اشتغل فعلاً، الفاصل الحقيقي بين التشغيلتين الفعليتين بيبقى غلط (زيادة
+                // أو نقصان). آخر وقت تشغيل فعلي هو الرقم الوحيد المضمون إنه يعكس الواقع.
+                long lastActualRun = sharedPrefs.getLong("last_general_thikr_time", 0);
+                long intervalMillis = Long.parseLong(RandomReminderInterval) * 60 * 1000L;
+                long anchorMillis;
+                if (lastActualRun > 0 && !intervalChanged && !quietTimeSettingsChanged
+                        && (now.getTimeInMillis() - lastActualRun) < 3 * intervalMillis) {
+                    anchorMillis = lastActualRun;
+                } else {
+                    anchorMillis = now.getTimeInMillis();
+                }
+                calendar1.setTime(new Date(anchorMillis));
              calendar1.add(Calendar.MINUTE, Integer.parseInt(RandomReminderInterval));
             
                 // ✅ لو دلوقتي (وقت الحساب نفسه) واقع جوه فترة الراحة، اقفز لآخرها فورًا
@@ -480,16 +476,7 @@ private void setAlarmClockHighPriority(long timeInMilliseconds, PendingIntent op
         double latitude = Double.parseDouble(MainActivity.getLatitude(context));
         double longitude = Double.parseDouble(MainActivity.getLongitude(context));
         if (latitude == 0 && longitude == 0) {
-            // ✅ إصلاح: بدل ما نرجع بصمت (كل إنذارات الصلاة كانت بتتجمد من غير أي تنبيه)،
-            // نسجل تحذير واضح ونحفظ فلاج عشان أي شاشة في التطبيق تقدر تتحقق منه وتنبه المستخدم
-            Log.w(TAG, "updateAllPrayerAlarms: location not set yet (lat/lon = 0,0) - prayer alarms NOT scheduled");
-            if (sharedPrefs != null) {
-                sharedPrefs.edit().putBoolean("location_not_set_warning", true).apply();
-            }
             return;
-        }
-        if (sharedPrefs != null) {
-            sharedPrefs.edit().putBoolean("location_not_set_warning", false).apply();
         }
         updatePrayerAlarms(requestCodeAthan1, requestCodePreAthan1, requestCodeSilentOn1, requestCodeSilentOff1, requestCodeIqama1, "isFajrReminder", 0, MainActivity.DATA_TYPE_ATHAN1, "fajr");
         updatePrayerAlarms(requestCodeAthan2, requestCodePreAthan2, requestCodeSilentOn2, requestCodeSilentOff2, requestCodeIqama2, "isDuhrReminder", 2, MainActivity.DATA_TYPE_ATHAN2, "dhuhr");
