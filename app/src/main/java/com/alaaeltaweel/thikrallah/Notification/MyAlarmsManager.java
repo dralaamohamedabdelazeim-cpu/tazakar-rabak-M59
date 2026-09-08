@@ -189,8 +189,15 @@ public class MyAlarmsManager {
                 // لو حسبنا من "دلوقتي" كل مرة، أي تأخير بسيط من الجهاز (حتى ثواني أو دقايق بسبب
                 // توفير الطاقة) بيتحول لزيادة فعلية في الفاصل الزمني، وبيبعد المعاد الجاي عن نهاية
                 // فترة الراحة أو عن الشبكة الزمنية الصح.
+                // ✅ لازم نتأكد كمان إن الفرق بين دلوقتي والمعاد القديم صغير (مسموح بيه دقيقتين
+                // بالكتير، عشان تأخير الجهاز الطبيعي وقت الاستيقاظ). لو الفرق أكبر من كده، معناه
+                // حدث تاني (زي أذان أو فتح التطبيق) نادى على الحساب ده قبل ما الذكر العام نفسه
+                // ياخد فرصته يشتغل - فلو استخدمنا المعاد القديم كأساس هنا، الفترة الجاية هتبقى
+                // أقصر من الفاصل الزمني المحدد فعليًا.
+                long staleness = now.getTimeInMillis() - storedNextTime;
                 boolean isNaturalContinuation = storedNextTime > 0
                         && storedNextTime <= now.getTimeInMillis()
+                        && staleness <= 2 * 60 * 1000
                         && !intervalChanged && !quietTimeSettingsChanged;
                 Date anchor = isNaturalContinuation ? new Date(storedNextTime) : dat;
                 calendar1.setTime(anchor);
