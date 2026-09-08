@@ -444,9 +444,11 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
                     }
 
-                    if (state == TelephonyManager.CALL_STATE_RINGING ||
+                    if ((state == TelephonyManager.CALL_STATE_RINGING ||
 
-                            state == TelephonyManager.CALL_STATE_OFFHOOK) {
+                            state == TelephonyManager.CALL_STATE_OFFHOOK)
+                            // ✅ إصلاح: نفس المكالمة اللي بدأ الأذان مكتوم بسببها متوقفوش تاني
+                            && !athanIntentionallyMutedForExistingCall) {
 
                         handleCallInterruption("real call - PhoneStateListener");
 
@@ -2806,9 +2808,12 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
             }
 
-            if (state == TelephonyManager.CALL_STATE_RINGING ||
+            if ((state == TelephonyManager.CALL_STATE_RINGING ||
 
-                    state == TelephonyManager.CALL_STATE_OFFHOOK) {
+                    state == TelephonyManager.CALL_STATE_OFFHOOK)
+                    // ✅ إصلاح: لو الأذان بدأ مكتوم من الأساس بسبب مكالمة كانت شغالة بالفعل،
+                    // نفس المكالمة دي متوقفش الأذان تاني - يكمل مكتوم لحد ما وقته يخلص
+                    && !athanIntentionallyMutedForExistingCall) {
 
                 handleCallInterruption("real call - TelephonyCallback");
 
