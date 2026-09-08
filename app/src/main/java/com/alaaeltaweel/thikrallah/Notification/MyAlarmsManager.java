@@ -183,7 +183,17 @@ public class MyAlarmsManager {
             } else {
                 alarmMgr.cancel(pendingIntentGeneral);
                 Calendar calendar1 = Calendar.getInstance();
-             calendar1.setTime(dat);
+                // ✅ إصلاح دقة التوقيت: لو ده احتساب "المعاد الجاي" بعد ما الذكر اللي فات شغل فعلاً
+                // (يعني مفيش تغيير في الفاصل الزمني ولا في إعدادات وقت الراحة، بس المعاد القديم
+                // عدّى)، لازم ناخد أساس الحساب من "المعاد المفروض" الأصلي مش من الوقت الفعلي دلوقتي.
+                // لو حسبنا من "دلوقتي" كل مرة، أي تأخير بسيط من الجهاز (حتى ثواني أو دقايق بسبب
+                // توفير الطاقة) بيتحول لزيادة فعلية في الفاصل الزمني، وبيبعد المعاد الجاي عن نهاية
+                // فترة الراحة أو عن الشبكة الزمنية الصح.
+                boolean isNaturalContinuation = storedNextTime > 0
+                        && storedNextTime <= now.getTimeInMillis()
+                        && !intervalChanged && !quietTimeSettingsChanged;
+                Date anchor = isNaturalContinuation ? new Date(storedNextTime) : dat;
+                calendar1.setTime(anchor);
              calendar1.add(Calendar.MINUTE, Integer.parseInt(RandomReminderInterval));
             
                 // ✅ لو دلوقتي (وقت الحساب نفسه) واقع جوه فترة الراحة، اقفز لآخرها فورًا
