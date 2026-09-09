@@ -773,29 +773,21 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
 
 
-        if (action == MEDIA_PLAYER_RESET) {
-
-            // ✅ زرار الإيقاف لازم يشتغل دايمًا، حتى لو الخدمة معتبراش الصوت "شغال" في نفس
-            // اللحظة - وإلا الأمر ده كان بيقع في مسار "تشغيل جديد" بالغلط بدل ما يوقف
-            Timber.d("reset called (unconditional stop button handling)");
-
-            this.updateAllAlarms();
-
-            this.resetPlayer();
-
-            this.stopForeground(true);
-
-            if (mediaSession != null) { try { mediaSession.setActive(false); } catch (Exception ignored) {} }
-
-            this.stopSelf();
-
-            return Service.START_NOT_STICKY;
-
-        }
-
         if (intent.getExtras().getString("com.alaaeltaweel.thikrallah.datatype", MainActivity.DATA_TYPE_DAY_THIKR).equalsIgnoreCase(MainActivity.DATA_TYPE_GENERAL_THIKR) && this.isPlaying()) {
 
             this.updateAllAlarms();
+
+            if (action == MEDIA_PLAYER_RESET) {
+
+                Timber.d("reset called");
+
+                this.resetPlayer();
+
+                this.stopForeground(true);
+
+                this.stopSelf();
+
+            }
 
             return Service.START_NOT_STICKY;
 
@@ -1103,13 +1095,17 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
     public int getAudioFocusRequestType() {
 
-        // ✅ رجّعنا الذكر العام لنوعه الأصلي (تركيز مؤقت) - ده كان شغال صح من الأساس وبيوقف
-        // التطبيق التاني (انستا/يوتيوب/فيس) مؤقتًا ويرجّعه لوحده تلقائي بعد ما الذكر يخلص،
-        // بدل التركيز الدائم اللي كان بيوقف الفيديو تمامًا ومحتاج تشغيل يدوي بعد كده
+        // ✅ إصلاح: التعليق القديم هنا كان بيقول إننا "رجّعنا الذكر العام لنوعه الأصلي
+        // (تركيز مؤقت)" - ده غلط. راجعت النسخة الأصلية الحقيقية اللي كانت شغالة كويس،
+        // ولقيتها بتستخدم تركيز دائم (زي الأذان والإقامة بالظبط)، مش مؤقت. رجّعناه صح دلوقتي.
+        // السبب: تركيز دائم بياخد أولوية أعلى من التطبيقات التانية (انستا/يوتيوب/فيس) ويقدر
+        // يقاطعها فورًا من غير ما يدخل حالة "استنى" أو "مؤجل" اللي ممكن تمنعه يشتغل في معاده.
+        // ملحوظة: التطبيقات التانية هتستقبل "فقدان تركيز دائم" مش "مؤقت"، فبعضها (زي يوتيوب)
+        // ممكن يوقف الفيديو تمامًا بدل ما يخفّت بس، ومحتاج المستخدم يشغّله تاني يدوي بعد كده
         // ✅ إصلاح كراش: getThikrType() ممكن ترجع null لو الخدمة اتنادت في توقيت غلط
-        if (this.getThikrType() != null && this.getThikrType().equalsIgnoreCase(MainActivity.DATA_TYPE_GENERAL_THIKR)) {
+        if (this.getThikrType() == null) {
 
-            return AudioManager.AUDIOFOCUS_GAIN_TRANSIENT;
+            return AudioManager.AUDIOFOCUS_GAIN;
 
         }
 
