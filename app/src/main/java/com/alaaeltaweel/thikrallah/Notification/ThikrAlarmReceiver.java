@@ -260,18 +260,12 @@ if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
             } catch (SecurityException e) {
                 Log.d(TAG, "Cannot check call state");
             }
-            // ✅ فحص إضافي لمكالمات الإنترنت (واتساب/ماسنجر/إلخ) - نفس فكرة فحص الأذان فوق،
-            // كان ناقص هنا وهو سبب اشتغال الذكر العام بصوت وقت مكالمات النت
-            if (!isInCallForThikr) {
-                try {
-                    AudioManager voipCheckAm2 = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
-                    if (voipCheckAm2 != null && voipCheckAm2.getMode() == AudioManager.MODE_IN_COMMUNICATION) {
-                        isInCallForThikr = true;
-                    }
-                } catch (Exception e) {
-                    Log.d(TAG, "Cannot check audio mode for thikr");
-                }
-            }
+            // ✅ إصلاح: شلنا فحص وضع الصوت العام (AudioManager.MODE_IN_COMMUNICATION) اللي كان
+            // مضاف هنا - ده فحص على مستوى النظام كله (أي حاجة، مش بس مكالمة حقيقية) وعرضة
+            // لاكتشاف خاطئ (بلوتوث، تطبيقات تانية، ظروف عابرة)، وكان بيأجل الذكر العام لـ١٠
+            // دقايق ثابتة كل ما يغلط، بغض النظر عن المدة اللي المستخدم محددها فعليًا.
+            // ThikrMediaPlayerService عنده فحص مكالمات موثوق وقت التشغيل نفسه (بيغطي مكالمات
+            // النت كمان)، فمفيش داعي لفحص إضافي حساس هنا قبل ما نبدأ حتى
             if (isInCallForThikr) {
                 Log.d(TAG, "Call in progress, scheduling thikr after 10 min");
                 android.app.AlarmManager alarmManager =
