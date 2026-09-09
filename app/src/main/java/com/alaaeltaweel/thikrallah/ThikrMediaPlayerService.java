@@ -202,12 +202,6 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
     // (زي واتساب) ياخد ويسيب التركيز من غير أي علاقة بتشغيلنا - في الحالة دي متعملش حاجة
     private volatile int lastFocusRequestResult = AudioManager.AUDIOFOCUS_REQUEST_FAILED;
 
-    // ✅ رجّعنا الحقل ده (كان اتشال بالغلط وبقى متغير محلي): لازم نحتفظ بنفس كائن الطلب ده
-    // عشان نقدر نلغي التركيز الصوتي بيه صح بعد كده - إلغاء التركيز بطريقة قديمة مش مرتبطة
-    // بنفس الطلب ده كان بيخلي الأندرويد مايرجّعش التركيز فعليًا للتطبيق التاني (زي انستا)،
-    // فصوته كان فاضل مكتوم من غير رجوع - وده كان ممكن كمان يأثر على طلبات التركيز الجاية بتاعتنا احنا
-    private AudioFocusRequest mFocusRequest;
-
     // ✅ لمنع مؤقت تدرّج الصوت أو استرجاع الـ audio focus من إرجاع الصوت لوحده وقت الكتم بالقلب/زرار الصوت
     private boolean isMutedByFlip = false;
     // ✅ نسخة static عشان DuaPlayerHelper يقدر يعرف هل الأذان كان مكتوم، ويورّث نفس الحالة للدعاء
@@ -450,13 +444,24 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
                     }
 
-                    if ((state == TelephonyManager.CALL_STATE_RINGING ||
+                    if (state == TelephonyManager.CALL_STATE_RINGING ||
 
-                            state == TelephonyManager.CALL_STATE_OFFHOOK)
-                            // ✅ إصلاح: نفس المكالمة اللي بدأ الأذان مكتوم بسببها متوقفوش تاني
-                            && !athanIntentionallyMutedForExistingCall) {
+                            state == TelephonyManager.CALL_STATE_OFFHOOK) {
 
-                        handleCallInterruption("real call - PhoneStateListener");
+                        if (player != null && player.isPlaying()) {
+
+                            player.stop();
+
+                            stopService(new Intent(ThikrMediaPlayerService.this,
+
+                                    com.alaaeltaweel.thikrallah.Notification.ChatHeadService.class));
+
+                            // ✅ من غير السطر ده، شاشة الأذان كانت مالهاش خبر إن الأذان اتوقف بسبب مكالمة فبتفضل مفتوحة
+                            sendBroadcast(new Intent("com.alaaeltaweel.thikrallah.ATHAN_COMPLETE"));
+
+                            stopSelf();
+
+                        }
 
                     }
 
@@ -465,9 +470,6 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
             }, PhoneStateListener.LISTEN_CALL_STATE);
 
         }
-
-        // ✅ بدء مراقبة وضع الصوت لاكتشاف مكالمات النت (واتساب/ماسنجر) بغض النظر عن التطبيق
-        voipCallCheckHandler.postDelayed(voipCallCheckRunnable, 1000);
 
     }
 
@@ -694,15 +696,6 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
     public int onStartCommand(Intent intent, int flags, int startId) {
 
-        // ✅ حماية من كراش "توقف التطبيق" لو الإشعار وصل ببيانات فاضية لأي سبب
-        if (intent.getExtras() == null) {
-
-            Timber.e("onStartCommand received an intent with null extras - ignoring safely");
-
-            return Service.START_NOT_STICKY;
-
-        }
-
         String incomingDataType = intent.getExtras().getString("com.alaaeltaweel.thikrallah.datatype", null);
 
         Timber.d("ThikrMediaPlayerService onStartCommand");
@@ -784,6 +777,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
                 this.resetPlayer();
 
                 this.stopForeground(true);
+                if (mediaSession != null) { try { mediaSession.setActive(false); } catch (Exception ignored) {} } // ✅ نقفل كارت التحكم من الشاشة المقفولة/المكالمة عشان ميفضلش عالق
 
                 this.stopSelf();
 
@@ -1095,18 +1089,9 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
     public int getAudioFocusRequestType() {
 
-        // ✅ إصلاح: التعليق القديم هنا كان بيقول إننا "رجّعنا الذكر العام لنوعه الأصلي
-        // (تركيز مؤقت)" - ده غلط. راجعت النسخة الأصلية الحقيقية اللي كانت شغالة كويس،
-        // ولقيتها بتستخدم تركيز دائم (زي الأذان والإقامة بالظبط)، مش مؤقت. رجّعناه صح دلوقتي.
-        // السبب: تركيز دائم بياخد أولوية أعلى من التطبيقات التانية (انستا/يوتيوب/فيس) ويقدر
-        // يقاطعها فورًا من غير ما يدخل حالة "استنى" أو "مؤجل" اللي ممكن تمنعه يشتغل في معاده.
-        // ملحوظة: التطبيقات التانية هتستقبل "فقدان تركيز دائم" مش "مؤقت"، فبعضها (زي يوتيوب)
-        // ممكن يوقف الفيديو تمامًا بدل ما يخفّت بس، ومحتاج المستخدم يشغّله تاني يدوي بعد كده
-        // ✅ إصلاح كراش: getThikrType() ممكن ترجع null لو الخدمة اتنادت في توقيت غلط
-        if (this.getThikrType() == null) {
+        if (this.getThikrType().equalsIgnoreCase(MainActivity.DATA_TYPE_GENERAL_THIKR)) {
 
-            return AudioManager.AUDIOFOCUS_GAIN;
-
+            return AudioManager.AUDIOFOCUS_GAIN_TRANSIENT;
         }
 
         return AudioManager.AUDIOFOCUS_GAIN;
@@ -1117,12 +1102,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
     private int getStreamType() {
 
-        // ✅ إصلاح كراش: getThikrType() ممكن ترجع null لو الخدمة اتنادت في توقيت غلط
-        if (this.getThikrType() == null) {
-
-            return AudioManager.STREAM_MUSIC;
-
-        } else if (this.getThikrType().equalsIgnoreCase(MainActivity.DATA_TYPE_GENERAL_THIKR)) {
+        if (this.getThikrType().equalsIgnoreCase(MainActivity.DATA_TYPE_GENERAL_THIKR)) {
 
             return AudioManager.STREAM_NOTIFICATION;
 
@@ -1198,10 +1178,6 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
         // ✅ نحفظها كمان على مستوى الكلاس عشان حالة "الإيقاف اليدوي" تقدر توصلها،
         // لأن this.isUserAction ممكن تتغير لو وصلت إشارة تانية (زي إشارة الإيقاف نفسها) قبل ما نستخدمها
         this.currentPlaybackIsUserAction = isUserActionForThisPlay;
-
-        // ✅ نصفّر العلامة دي مع كل تشغيل جديد - هترفع تاني بس لو فعلاً لقينا مكالمة شغالة
-        // بالفعل وقت البدء، عشان متفضلش شايلة قيمة قديمة من جلسة سابقة خالص
-        athanIntentionallyMutedForExistingCall = false;
 
 
         int fadeDuration = 0;
@@ -1340,13 +1316,13 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
                 int ret = requestAudioFocus();
 
-                // ✅ startPlayerIfAllowed() بقت هي المكان الوحيد اللي بيقرر: يشغّل عادي،
-                // ولا يشغّل مكتوم بسبب مكالمة شغالة، ولا يرفض - كل القرار من مكان واحد بس
-                startPlayerIfAllowed();
+                if (ret == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
 
-                updateActions();
+                    Timber.d("audio focus request granted.");
 
-                if (ret == AudioManager.AUDIOFOCUS_REQUEST_GRANTED && !athanIntentionallyMutedForExistingCall) {
+                    startPlayerIfAllowed();
+
+                    updateActions();
 
                     if (fadeDuration > 0 && getThikrType().contains(MainActivity.DATA_TYPE_ATHAN)) {
 
@@ -1394,7 +1370,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
                     }
 
-                } else if (!athanIntentionallyMutedForExistingCall) {
+                } else {
 
                     Timber.d("audio focus request denied.");
 
@@ -1454,10 +1430,11 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
                 Log.d(TAG, "requestAudioFocus returned " + ret);
 
-                // ✅ startPlayerIfAllowed() بقت هي المكان الوحيد اللي بيقرر يشغل عادي/مكتوم/يرفض
-                startPlayerIfAllowed();
+                if (ret == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
 
-                if (ret == AudioManager.AUDIOFOCUS_REQUEST_GRANTED && !athanIntentionallyMutedForExistingCall) {
+                    Log.d(TAG, "calling  startPlayerIfAllowed ");
+
+                    startPlayerIfAllowed();
 
                     setVolume();
 
@@ -1625,7 +1602,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
                     .build();
 
-            mFocusRequest = new AudioFocusRequest.Builder(this.getAudioFocusRequestType())
+            AudioFocusRequest mFocusRequest = new AudioFocusRequest.Builder(this.getAudioFocusRequestType())
 
                     .setAcceptsDelayedFocusGain(true)
 
@@ -1665,9 +1642,6 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
         Timber.d("ondestroy called");
 
-        // ✅ إيقاف مراقبة وضع الصوت (اكتشاف مكالمات النت) لما الخدمة تتقفل خالص
-        voipCallCheckHandler.removeCallbacks(voipCallCheckRunnable);
-
         // ✅ تنظيف حساس القلب لو الخدمة اتقفلت خالص
         if (flipSensorManager != null) {
             flipSensorManager.unregisterListener(this);
@@ -1695,17 +1669,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
         }
 
-        // ✅ لازم نلغي التركيز الصوتي بنفس طريقة الطلب بالظبط - وإلا الأندرويد مايرجّعش
-        // التركيز فعليًا للتطبيق التاني (زي انستا)، وصوته يفضل مكتوم من غير رجوع
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O && mFocusRequest != null) {
-
-            am.abandonAudioFocusRequest(mFocusRequest);
-
-        } else {
-
-            am.abandonAudioFocus(this);
-
-        }
+        am.abandonAudioFocus(this);
 
         this.sendMessageToUI(MSG_CURRENT_PLAYING, -99);
 
@@ -2144,44 +2108,9 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
             case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
     Timber.d("transient loss of focus");
     if (this.getThikrType() != null && this.getThikrType().contains(MainActivity.DATA_TYPE_ATHAN)) {
-
-        // ✅ نفرق هنا بين قطع بسبب مكالمة فعلية (عادية أو إنترنت زي واتساب) وقطع بسبب
-        // صوت قصير (زي نغمة إشعار). لو مكالمة فعلية، نوقف الأذان فورًا ونقفل الشاشة معاه -
-        // إكماله بعد دقايق من نهاية المكالمة مش منطقي. لو مجرد إشعار، نكمل تشغيل عادي
-        boolean isRealCall = false;
-        try {
-            android.telephony.TelephonyManager tm =
-                    (android.telephony.TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-            if (tm != null && tm.getCallState() != android.telephony.TelephonyManager.CALL_STATE_IDLE) {
-                isRealCall = true;
-            }
-        } catch (Exception ignored) {}
-        if (!isRealCall) {
-            try {
-                if (am != null && am.getMode() == AudioManager.MODE_IN_COMMUNICATION) {
-                    isRealCall = true;
-                }
-            } catch (Exception ignored) {}
-        }
-
-        if (isRealCall) {
-            Timber.d("Athan interrupted by a real call (regular or internet) - stopping fully instead of pause/resume");
-            if (isPlaying()) {
-                try { player.stop(); } catch (Exception ignored) {}
-            }
-            isAthanSoundActive = false;
-            this.resetPlayer();
-            this.stopForeground(true);
-            if (mediaSession != null) { try { mediaSession.setActive(false); } catch (Exception ignored) {} }
-            // ✅ من غير السطر ده، شاشة الأذان كانت مالهاش خبر إن الأذان خلص فبتفضل مفتوحة
-            sendBroadcast(new Intent("com.alaaeltaweel.thikrallah.ATHAN_COMPLETE"));
-            this.stopSelf();
-            break;
-        }
-
         // ✅ الأذان أهم من إنه يفضل واقف بسبب صوت إشعار قصير (زي واتساب) -
         // بنكمّل تشغيل عادي بدل ما نستنى AUDIOFOCUS_GAIN اللي مش مضمون يرجع
-        Timber.d("transient loss but this is athan and not a real call - ignoring and continuing playback");
+        Timber.d("transient loss but this is athan - ignoring and continuing playback");
         break;
     }
     if (isPlaying()) {
@@ -2303,71 +2232,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
         Timber.d("request audio focus return code is %s", ret);
 
-        boolean isAthanType = this.getThikrType() != null && this.getThikrType().contains(MainActivity.DATA_TYPE_ATHAN);
-
-        boolean isGeneralThikrType = this.getThikrType() != null && this.getThikrType().equalsIgnoreCase(MainActivity.DATA_TYPE_GENERAL_THIKR);
-
-        // ✅ الذكر العام لازم مايشتغلش خالص وقت مكالمة شغالة (عادية أو نت) - بغض النظر إن
-        // التركيز الصوتي الدائم بتاعه ممكن يتوافق عليه رغم المكالمة (زي ما بيحصل مع الأذان)،
-        // هنا بنفرض إننا نتجاهل الموافقة دي ومنشغلش خالص، لأن الذكر العام (على عكس الأذان)
-        // مالوش داعي يقاطع مكالمة، ومحاولته الجاية بعد 10 دقايق كفاية
-        if (isGeneralThikrType && isCallCurrentlyActive()) {
-
-            Timber.d("general thikr - call is active, skipping this occurrence entirely (will try again next cycle)");
-
-            // ✅ إصلاح: كنا بنرجع من غير ما ننضف - النتيجة إن الخدمة كانت بتفضل عالقة في
-            // الخلفية ماسكة التركيز الصوتي، وده كان ممكن يمنع أو يأخر الذكر اللي بعده.
-            // دلوقتي بنسيب التركيز ونقفل الخدمة نظيف زي أي مرة تانية بترفض تشتغل فيها
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O && mFocusRequest != null) {
-                am.abandonAudioFocusRequest(mFocusRequest);
-            } else if (am != null) {
-                am.abandonAudioFocus(this);
-            }
-
-            this.stopForeground(true);
-
-            if (mediaSession != null) { try { mediaSession.setActive(false); } catch (Exception ignored) {} }
-
-            this.stopSelf();
-
-            return;
-
-        }
-
-        // ✅ بنفحص المكالمة **بغض النظر عن نتيجة التركيز الصوتي** - لأن الأذان بياخد أولوية
-        // عالية وممكن الأندرويد يوافقله على التركيز حتى لو فيه مكالمة شغالة بالفعل، وده كان
-        // بيخلي الأذان يشتغل بصوت عادي غلط وقت المكالمة. المكان ده بقى المصدر الوحيد لهذا القرار
-        boolean callAlreadyActive = isAthanType && isCallCurrentlyActive();
-
-        if (callAlreadyActive && player != null) {
-
-            Timber.d("call already active - starting athan MUTED regardless of focus result, so it can complete normally");
-
-            athanIntentionallyMutedForExistingCall = true;
-
-            try {
-
-                isMutedByFlip = true;
-
-                lastAthanWasMuted = true;
-
-                this.play_count++;
-
-                sendMessageToUI(MSG_CURRENT_PLAYING, currentPlaying);
-
-                player.setVolume(0f, 0f);
-
-                player.start();
-
-                this.updateActions();
-
-            } catch (Exception e) {
-
-                Timber.e(e, "athan muted-for-call start failed");
-
-            }
-
-        } else if (ret == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+        if (ret == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
 
             Timber.d("request audio focus granted");
 
@@ -2381,18 +2246,6 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
             boolean isScreenOff = screenCheckPm != null && !screenCheckPm.isInteractive();
             if (isScreenOff) {
                 Timber.d("Screen is off - delaying playback start slightly to let device wake up fully");
-                PowerManager.WakeLock delayWakeLock = null;
-                try {
-                    delayWakeLock = screenCheckPm.newWakeLock(
-                            PowerManager.PARTIAL_WAKE_LOCK, "Thikrallah:delayedStartWakeLock");
-                    delayWakeLock.acquire(2000);
-                } catch (Exception e) {
-                    // ✅ إصلاح: لو صلاحية الاستيقاظ مش متاحة أو حصل أي خطأ في حجز القفل،
-                    // ما ينفعش نخلي ده يمنع الذكر من الشغل خالص - نكمل من غير قفل بدل ما نوقف هنا
-                    Timber.e(e, "could not acquire delayed-start wake lock - continuing without it");
-                    delayWakeLock = null;
-                }
-                final PowerManager.WakeLock finalDelayWakeLock = delayWakeLock;
                 new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
                     if (player != null) {
                         try {
@@ -2402,7 +2255,6 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
                             Timber.e(e, "delayed player.start failed");
                         }
                     }
-                    if (finalDelayWakeLock != null && finalDelayWakeLock.isHeld()) finalDelayWakeLock.release();
                 }, 400);
             } else {
 
@@ -2416,24 +2268,6 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
         } else {
 
             Log.d(TAG, "audio focused request denied");
-
-            // ✅ حالة نادرة: التركيز اترفض لسبب تاني غير مكالمة (زي تطبيق تاني ماسك تركيز حصري)
-            // برضه نشغّل الأذان مكتوم عشان الشاشة تقفل طبيعي بدل ما تفضل معلقة
-            if (isAthanType && player != null) {
-                Timber.d("athan focus denied (not a detected call) - starting playback MUTED anyway so it can complete normally");
-                try {
-                    athanIntentionallyMutedForExistingCall = true;
-                    isMutedByFlip = true;
-                    lastAthanWasMuted = true;
-                    this.play_count++;
-                    sendMessageToUI(MSG_CURRENT_PLAYING, currentPlaying);
-                    player.setVolume(0f, 0f);
-                    player.start();
-                    this.updateActions();
-                } catch (Exception e) {
-                    Timber.e(e, "athan fallback start failed");
-                }
-            }
 
         }
 
@@ -2474,30 +2308,6 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
             player = new MediaPlayer();
 
             player.setWakeMode(this, PowerManager.PARTIAL_WAKE_LOCK);
-
-            // ✅ من غير الميستمع ده، لو حصل خطأ فعلي في تشغيل الصوت (زي تعارض مع مكالمة
-            // واتساب شغالة بتاخد الـ audio session) كان onCompletion مبيتنداش خالص،
-            // فمفيش حد بيبعت ATHAN_COMPLETE وشاشة الأذان تفضل معلقة لحد الـ safety net
-            // بتاع 10 دقايق. هنا بنعامل الخطأ زي ما لو الأذان خلص عادي عشان الشاشة تقفل فورًا
-            player.setOnErrorListener((mp, what, extra) -> {
-                Timber.e("MediaPlayer error: what=%s extra=%s thikrType=%s", what, extra, getThikrType());
-
-                if (getThikrType() != null && getThikrType().contains(MainActivity.DATA_TYPE_ATHAN)) {
-                    isAthanSoundActive = false;
-                    sendBroadcast(new Intent("com.alaaeltaweel.thikrallah.ATHAN_COMPLETE"));
-                    this.resetPlayer();
-                    this.stopForeground(true);
-                    if (mediaSession != null) { try { mediaSession.setActive(false); } catch (Exception ignored) {} }
-                    this.stopSelf();
-                } else {
-                    this.resetPlayer();
-                    this.stopForeground(true);
-                    if (mediaSession != null) { try { mediaSession.setActive(false); } catch (Exception ignored) {} }
-                    this.stopSelf();
-                }
-
-                return true; // ✅ عشان مايتنداش onCompletion كمان على نفس الخطأ
-            });
 
             am = (AudioManager) this.getApplicationContext().getSystemService(Context.AUDIO_SERVICE);
 
@@ -2705,116 +2515,6 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
     @androidx.annotation.RequiresApi(api = Build.VERSION_CODES.S)
 
-    // ✅ بيتأكد هل فيه مكالمة شغالة بالفعل دلوقتي (عادية أو نت) - بنستخدمها وقت بدء الأذان
-    // عشان لو لقينا مكالمة شغالة من الأساس، نبدأ الأذان مكتوم بدل ما نفشل نشغّله خالص
-    // ✅ true لو الأذان بدأ مكتوم بسبب مكالمة كانت شغالة بالفعل من الأول - عشان مراقبة
-    // وضع الصوت (اللي بتوقف الأذان لو مكالمة جديدة جت وقته) متلخبطش بين "مكالمة قديمة
-    // إحنا قررنا نكمل معاها" و"مكالمة جديدة فعلاً لازم توقف الأذان"
-    private volatile boolean athanIntentionallyMutedForExistingCall = false;
-
-    private boolean isCallCurrentlyActive() {
-
-        try {
-
-            android.telephony.TelephonyManager tm =
-                    (android.telephony.TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-
-            if (tm != null && tm.getCallState() != android.telephony.TelephonyManager.CALL_STATE_IDLE) {
-
-                return true;
-
-            }
-
-        } catch (Exception ignored) {
-
-        }
-
-        try {
-
-            AudioManager am2 = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-
-            if (am2 != null && am2.getMode() == AudioManager.MODE_IN_COMMUNICATION) {
-
-                return true;
-
-            }
-
-        } catch (Exception ignored) {
-
-        }
-
-        return false;
-
-    }
-
-    // ✅ دالة موحدة تتنفذ لما نكتشف مكالمة (عادية أو نت) وقت ما أي صوت شغال - من غير شرط
-    // "isPlaying" اللي كان بيمنع وصول إشعار قفل الشاشة لو المكالمة جت في لحظة الصوت مش شغال
-    // فيها بالظبط (زي لحظة تحويل بين جزئين من الأذان)، وده كان سبب تعليق الشاشة للأبد
-    private void handleCallInterruption(String source) {
-
-        Timber.d("call interruption detected (%s) - stopping playback fully", source);
-
-        if (player != null) {
-
-            try {
-
-                if (player.isPlaying()) {
-
-                    player.stop();
-
-                }
-
-            } catch (Exception ignored) {
-
-            }
-
-        }
-
-        isAthanSoundActive = false;
-
-        stopService(new Intent(ThikrMediaPlayerService.this,
-
-                com.alaaeltaweel.thikrallah.Notification.ChatHeadService.class));
-
-        // ✅ من غير السطر ده، شاشة الأذان كانت مالهاش خبر إن الأذان اتوقف بسبب مكالمة فبتفضل مفتوحة
-        sendBroadcast(new Intent("com.alaaeltaweel.thikrallah.ATHAN_COMPLETE"));
-
-        ThikrMediaPlayerService.this.stopSelf();
-
-    }
-
-    // ✅ مكالمات النت (واتساب/ماسنجر/أي تطبيق مكالمات) مش بتظهر في TelephonyManager خالص -
-    // النظام بيراقب بس مكالمات الشبكة العادية. عشان نكتشف مكالمة نت، بنراقب "وضع الصوت"
-    // في الجهاز نفسه، اللي بيتغيّر فعليًا وقت أي مكالمة صوتية/فيديو نت شغالة بغض النظر عن
-    // التطبيق - ده مختلف تمامًا عن مجرد صوت تنبيه رسالة عادية، فمش هيتلخبط مع إصلاح واتساب
-    private final Handler voipCallCheckHandler = new Handler(Looper.getMainLooper());
-
-    private final Runnable voipCallCheckRunnable = new Runnable() {
-
-        @Override
-
-        public void run() {
-
-            AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-
-            int mode = audioManager.getMode();
-
-            if ((mode == AudioManager.MODE_IN_COMMUNICATION || mode == AudioManager.MODE_IN_CALL)
-
-                    && !athanIntentionallyMutedForExistingCall) {
-
-                handleCallInterruption("internet/VoIP call - detected via audio mode");
-
-                return; // الخدمة هتتوقف، مفيش داعي نكمل نراقب
-
-            }
-
-            voipCallCheckHandler.postDelayed(this, 1000);
-
-        }
-
-    };
-
     private class MyCallStateCallback extends android.telephony.TelephonyCallback
 
             implements android.telephony.TelephonyCallback.CallStateListener {
@@ -2835,14 +2535,26 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
             }
 
-            if ((state == TelephonyManager.CALL_STATE_RINGING ||
+            if (state == TelephonyManager.CALL_STATE_RINGING ||
 
-                    state == TelephonyManager.CALL_STATE_OFFHOOK)
-                    // ✅ إصلاح: لو الأذان بدأ مكتوم من الأساس بسبب مكالمة كانت شغالة بالفعل،
-                    // نفس المكالمة دي متوقفش الأذان تاني - يكمل مكتوم لحد ما وقته يخلص
-                    && !athanIntentionallyMutedForExistingCall) {
+                    state == TelephonyManager.CALL_STATE_OFFHOOK) {
 
-                handleCallInterruption("real call - TelephonyCallback");
+                if (player != null && player.isPlaying()) {
+
+                    player.stop();
+
+                    isAthanSoundActive = false;
+
+                    stopService(new Intent(ThikrMediaPlayerService.this,
+
+                            com.alaaeltaweel.thikrallah.Notification.ChatHeadService.class));
+
+                    // ✅ من غير السطر ده، شاشة الأذان كانت مالهاش خبر إن الأذان اتوقف بسبب مكالمة فبتفضل مفتوحة
+                    sendBroadcast(new Intent("com.alaaeltaweel.thikrallah.ATHAN_COMPLETE"));
+
+                    ThikrMediaPlayerService.this.stopSelf();
+
+                }
 
             }
 

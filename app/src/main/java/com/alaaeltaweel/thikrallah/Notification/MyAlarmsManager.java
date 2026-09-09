@@ -169,44 +169,14 @@ public class MyAlarmsManager {
             long storedNextTime = sharedPrefs.getLong("next_general_thikr_scheduled_time", 0);
             String storedInterval = sharedPrefs.getString("next_general_thikr_scheduled_interval", "");
             boolean intervalChanged = !RandomReminderInterval.equals(storedInterval);
-            // ✅ لازم نعيد الحساب برضه لو المستخدم غيّر وقت الراحة نفسه (بداية أو نهاية أو تفعيله)،
-            // مش بس لما الفاصل الزمني يتغير - وإلا الميعاد المجدول بيفضل زي ما هو من غير ما ياخد
-            // الإعداد الجديد في الاعتبار
-            String currentQuietSignature = sharedPrefs.getBoolean("quiet_time_choice", true)
-                    + "_" + sharedPrefs.getString("quiet_time_start", "22:00")
-                    + "_" + sharedPrefs.getString("quiet_time_end", "22:00");
-            String storedQuietSignature = sharedPrefs.getString("next_general_thikr_scheduled_quiet_signature", "");
-            boolean quietTimeSettingsChanged = !currentQuietSignature.equals(storedQuietSignature);
 
-            if (storedNextTime > now.getTimeInMillis() && !intervalChanged && !quietTimeSettingsChanged) {
+            if (storedNextTime > now.getTimeInMillis() && !intervalChanged) {
                 Log.d("MyAlarmsManager", "General thikr already scheduled, skipping reschedule");
             } else {
                 alarmMgr.cancel(pendingIntentGeneral);
                 Calendar calendar1 = Calendar.getInstance();
-                // ✅ إصلاح دقة التوقيت: لو ده احتساب "المعاد الجاي" بعد ما الذكر اللي فات شغل فعلاً
-                // (يعني مفيش تغيير في الفاصل الزمني ولا في إعدادات وقت الراحة، بس المعاد القديم
-                // عدّى)، لازم ناخد أساس الحساب من "المعاد المفروض" الأصلي مش من الوقت الفعلي دلوقتي.
-                // لو حسبنا من "دلوقتي" كل مرة، أي تأخير بسيط من الجهاز (حتى ثواني أو دقايق بسبب
-                // توفير الطاقة) بيتحول لزيادة فعلية في الفاصل الزمني، وبيبعد المعاد الجاي عن نهاية
-                // فترة الراحة أو عن الشبكة الزمنية الصح.
-                boolean isNaturalContinuation = storedNextTime > 0
-                        && storedNextTime <= now.getTimeInMillis()
-                        && !intervalChanged && !quietTimeSettingsChanged;
-                Date anchor = isNaturalContinuation ? new Date(storedNextTime) : dat;
-                calendar1.setTime(anchor);
+             calendar1.setTime(dat);
              calendar1.add(Calendar.MINUTE, Integer.parseInt(RandomReminderInterval));
-
-                // ✅ إصلاح: لو الجهاز كان مقفول/متوقف لفترة طويلة، المعاد المحسوب من الشبكة
-                // الأصلية ممكن يفضل في الماضي (معاد قديم + فاصل واحد لسه أقل من الوقت الحالي).
-                // بدل ما نسيبه يشتغل فورًا ويسبب سلسلة أذكار متلاحقة لحد ما يلحق الوقت الحالي،
-                // نكمل نضيف نفس الفاصل لحد ما نوصل للمستقبل - وده كمان بيحافظ على نفس الشبكة
-                // الزمنية الأصلية (نفس دقايق الساعة بالظبط) بدل ما يتفصل عنها
-                int catchUpIntervalMin = Integer.parseInt(RandomReminderInterval);
-                if (catchUpIntervalMin > 0) {
-                    while (!calendar1.getTime().after(now.getTime())) {
-                        calendar1.add(Calendar.MINUTE, catchUpIntervalMin);
-                    }
-                }
             
                 // ✅ لو دلوقتي (وقت الحساب نفسه) واقع جوه فترة الراحة، اقفز لآخرها فورًا
                 boolean quietTimeChoice = sharedPrefs.getBoolean("quiet_time_choice", true);
@@ -242,7 +212,6 @@ public class MyAlarmsManager {
                 sharedPrefs.edit()
                         .putLong("next_general_thikr_scheduled_time", calendar1.getTimeInMillis())
                         .putString("next_general_thikr_scheduled_interval", RandomReminderInterval)
-                        .putString("next_general_thikr_scheduled_quiet_signature", currentQuietSignature)
                         .apply();
             }
         } else {
@@ -485,16 +454,7 @@ private void setAlarmClockHighPriority(long timeInMilliseconds, PendingIntent op
         double latitude = Double.parseDouble(MainActivity.getLatitude(context));
         double longitude = Double.parseDouble(MainActivity.getLongitude(context));
         if (latitude == 0 && longitude == 0) {
-            // ✅ إصلاح: بدل ما نرجع بصمت (كل إنذارات الصلاة كانت بتتجمد من غير أي تنبيه)،
-            // نسجل تحذير واضح ونحفظ فلاج عشان أي شاشة في التطبيق تقدر تتحقق منه وتنبه المستخدم
-            Log.w(TAG, "updateAllPrayerAlarms: location not set yet (lat/lon = 0,0) - prayer alarms NOT scheduled");
-            if (sharedPrefs != null) {
-                sharedPrefs.edit().putBoolean("location_not_set_warning", true).apply();
-            }
             return;
-        }
-        if (sharedPrefs != null) {
-            sharedPrefs.edit().putBoolean("location_not_set_warning", false).apply();
         }
         updatePrayerAlarms(requestCodeAthan1, requestCodePreAthan1, requestCodeSilentOn1, requestCodeSilentOff1, requestCodeIqama1, "isFajrReminder", 0, MainActivity.DATA_TYPE_ATHAN1, "fajr");
         updatePrayerAlarms(requestCodeAthan2, requestCodePreAthan2, requestCodeSilentOn2, requestCodeSilentOff2, requestCodeIqama2, "isDuhrReminder", 2, MainActivity.DATA_TYPE_ATHAN2, "dhuhr");
@@ -602,7 +562,7 @@ if (isAthanReminder && isSilentModeEnabled) {
     calendarSilentOnToday.set(Calendar.MINUTE, Integer.parseInt(prayerTimes[prayerPosition].split(":", 3)[1]));
     calendarSilentOnToday.set(Calendar.SECOND, 0);
     calendarSilentOnToday.add(Calendar.MINUTE, iqamaMinutesForSilent);
-    calendarSilentOnToday.add(Calendar.SECOND, 30); // ✅ هامش بسيط عشان صوت الإقامة ياخد فرصته الأول قبل ما الصمت يتفعل
+    calendarSilentOnToday.add(Calendar.SECOND, 60); // ✅ هامش بسيط عشان صوت الإقامة ياخد فرصته الأول قبل ما الصمت يتفعل
 
     Calendar calendarSilentOffToday = (Calendar) calendarSilentOnToday.clone();
     calendarSilentOffToday.add(Calendar.MINUTE, silentDurationMinutes);

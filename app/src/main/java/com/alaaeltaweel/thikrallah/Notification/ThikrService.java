@@ -67,9 +67,7 @@ public class ThikrService extends IntentService  {
     String TAG = "ThikrService";
     private final static int NOTIFICATION_ID_GENERIC_FOREGROUND=50;
     private final static int NOTIFICATION_ID_MORNING_NIGHT_THIKR=200;
-    private final static int NOTIFICATION_ID_NIGHT_THIKR=250;
     private final static int NOTIFICATION_ID_QURAN_THIKR=400;
-    private final static int NOTIFICATION_ID_QURAN_THIKR_KAHF=401;
     private final static int NOTIFICATION_ID_QURAN_DOWNLOAD_NEEDED=500;
     private AudioManager am;
     private Intent calling_intent;
@@ -114,12 +112,6 @@ private PhoneStateListener phoneStateListener;
     private void registerCallListener() {
         TelephonyManager tm = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
         if (tm == null) return;
-        // ✅ إصلاح تسريب المستمعين: لو فيه مستمع قديم مسجل من نداء سابق لـ onHandleIntent،
-        // لازم نلغيه الأول قبل ما نسجل واحد جديد - وإلا هيتراكموا مستمعين شغالين مع بعض
-        if (phoneStateListener != null) {
-            tm.listen(phoneStateListener, PhoneStateListener.LISTEN_NONE);
-            phoneStateListener = null;
-        }
         phoneStateListener = new PhoneStateListener() {
             @Override
             public void onCallStateChanged(int state, String phoneNumber) {
@@ -364,7 +356,7 @@ private PhoneStateListener phoneStateListener;
                     manager.createNotificationChannel(chan);
                     mBuilder.setChannelId(NOTIFICATION_CHANNEL_ID);
                 }
-                mNotificationManager.notify(NOTIFICATION_ID_NIGHT_THIKR, mBuilder.build());
+                mNotificationManager.notify(NOTIFICATION_ID_MORNING_NIGHT_THIKR, mBuilder.build());
 			}else{
 				if (!isInCall()) {
 				sharedPrefs.edit().putString("com.alaaeltaweel.thikrallah.datatype", MainActivity.DATA_TYPE_NIGHT_THIKR).apply();
@@ -560,7 +552,7 @@ private PhoneStateListener phoneStateListener;
                     manager.createNotificationChannel(chan);
                     mBuilder.setChannelId(NOTIFICATION_CHANNEL_ID);
                 }
-                mNotificationManager.notify(NOTIFICATION_ID_QURAN_THIKR_KAHF, mBuilder.build());
+                mNotificationManager.notify(NOTIFICATION_ID_QURAN_THIKR, mBuilder.build());
             }else{
 
                 sharedPrefs.edit().putString("com.alaaeltaweel.thikrallah.datatype", MainActivity.DATA_TYPE_QURAN_MULK).apply();
@@ -624,7 +616,7 @@ private PhoneStateListener phoneStateListener;
                             NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
                             NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this);
                             mBuilder.setContentTitle(this.getString(R.string.my_app_name))
-                                    .setContentText(this.getString(R.string.surat_alkahf))
+                                    .setContentText(this.getString(R.string.surat_almulk))
                                     .setSmallIcon(R.drawable.ic_launcher)
                                     .setAutoCancel(true);
 
@@ -633,7 +625,7 @@ private PhoneStateListener phoneStateListener;
                             mBuilder.setSound(soundUri,AudioManager.STREAM_NOTIFICATION);
                             Intent launchAppIntent = new Intent(this, PagerActivity.class);
                             launchAppIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                            launchAppIntent.putExtra("page", 293);
+                            launchAppIntent.putExtra("page", 562);
 
                             PendingIntent launchAppPendingIntent = PendingIntent.getActivity(this,
                                     8588, launchAppIntent, PendingIntent.FLAG_ONE_SHOT|PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE
@@ -652,7 +644,7 @@ private PhoneStateListener phoneStateListener;
                                 manager.createNotificationChannel(chan);
                                 mBuilder.setChannelId(NOTIFICATION_CHANNEL_ID);
                             }
-                            mNotificationManager.notify(NOTIFICATION_ID_QURAN_THIKR_KAHF, mBuilder.build());
+                            mNotificationManager.notify(NOTIFICATION_ID_QURAN_THIKR, mBuilder.build());
                         }
 
                     }
@@ -1229,11 +1221,11 @@ private PhoneStateListener phoneStateListener;
 			Date dateCompareOne = parseDate(quiet_time_start);
 			Date dateCompareTwo = parseDate(quiet_time_end);
 			if (dateCompareOne.after(dateCompareTwo)){
-				if (!(!date.before(dateCompareTwo) && dateCompareOne.after(date))) {
+				if (!(dateCompareTwo.before( date ) && dateCompareOne.after(date))) {
 					return true;
 				}
 			}else{
-				if (!date.before(dateCompareOne) && dateCompareTwo.after(date)) {
+				if (dateCompareOne.before( date ) && dateCompareTwo.after(date)) {
 					return true;
 				}
 			}
