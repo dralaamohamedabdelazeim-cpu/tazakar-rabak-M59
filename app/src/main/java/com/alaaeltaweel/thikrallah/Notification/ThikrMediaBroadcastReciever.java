@@ -29,9 +29,18 @@ public class ThikrMediaBroadcastReciever extends BroadcastReceiver {
             String intentAction = intent.getAction();
             data=new Bundle();
             Log.d(TAG,"onReceive called");
-            data.putAll(intent.getExtras());
+            // ✅ حماية من كراش "توقف التطبيق" لو الإشعار وصل ببيانات فاضية لأي سبب
+            if (intent.getExtras() != null) {
+                data.putAll(intent.getExtras());
+            }
             data.putBoolean("isUserAction",true);
-            Log.i("mediastyle", intentAction.toString() + " happended");
+            // ✅ إصلاح كراش: intentAction ممكن تكون null لو الإشعار وصل من غير action محدد
+            if (intentAction != null) {
+                Log.i("mediastyle", intentAction + " happended");
+            } else {
+                Log.i("mediastyle", "onReceive called with null action");
+                return;
+            }
             if (Intent.ACTION_MEDIA_BUTTON.equals(intent.getAction())) {
 
                 final KeyEvent event = intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT);
@@ -108,4 +117,4 @@ public class ThikrMediaBroadcastReciever extends BroadcastReceiver {
         }
 
     }
-}
+    }
