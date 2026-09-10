@@ -869,7 +869,6 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
         if (this.getThikrType().contains(MainActivity.DATA_TYPE_ATHAN)) {
 
-            this.updateAllAlarms();
 
         }
 
