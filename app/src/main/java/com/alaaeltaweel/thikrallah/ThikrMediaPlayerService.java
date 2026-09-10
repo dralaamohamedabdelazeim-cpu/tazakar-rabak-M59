@@ -2298,30 +2298,18 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
         Timber.d("startPlayerIfAllowed called");
 
-        int ret = requestAudioFocus();
+        boolean isAthanTypeEarlyCheck = this.getThikrType() != null && this.getThikrType().contains(MainActivity.DATA_TYPE_ATHAN);
 
-        Timber.d("request audio focus return code is %s", ret);
+        boolean isGeneralThikrTypeEarlyCheck = this.getThikrType() != null && this.getThikrType().equalsIgnoreCase(MainActivity.DATA_TYPE_GENERAL_THIKR);
 
-        boolean isAthanType = this.getThikrType() != null && this.getThikrType().contains(MainActivity.DATA_TYPE_ATHAN);
+        // ✅ إصلاح: نقلنا الفحص ده لقبل طلب التركيز الصوتي خالص - قبل كده كان التطبيق بيطلب
+        // تركيز دائم وقوي الأول (يقدر يقاطع حتى مكالمة شغالة لحظيًا)، وبعدين يكتشف المكالمة
+        // ويسيب التركيز. اللمسة اللحظية دي (حتى لو اتلغت فورًا) كانت بتسبب قطع بسيط في صوت
+        // مكالمات البلوتوث. دلوقتي الذكر العام مايحاولش ياخد أي تركيز خالص لو فيه مكالمة شغالة،
+        // فمفيش أي احتكاك مع نظام الصوت وقت المكالمة من الأساس - نفس سلوك الأصلي قبل التعديلات
+        if (isGeneralThikrTypeEarlyCheck && isCallCurrentlyActive()) {
 
-        boolean isGeneralThikrType = this.getThikrType() != null && this.getThikrType().equalsIgnoreCase(MainActivity.DATA_TYPE_GENERAL_THIKR);
-
-        // ✅ الذكر العام لازم مايشتغلش خالص وقت مكالمة شغالة (عادية أو نت) - بغض النظر إن
-        // التركيز الصوتي الدائم بتاعه ممكن يتوافق عليه رغم المكالمة (زي ما بيحصل مع الأذان)،
-        // هنا بنفرض إننا نتجاهل الموافقة دي ومنشغلش خالص، لأن الذكر العام (على عكس الأذان)
-        // مالوش داعي يقاطع مكالمة، ومحاولته الجاية بعد 10 دقايق كفاية
-        if (isGeneralThikrType && isCallCurrentlyActive()) {
-
-            Timber.d("general thikr - call is active, skipping this occurrence entirely (will try again next cycle)");
-
-            // ✅ إصلاح: كنا بنرجع من غير ما ننضف - النتيجة إن الخدمة كانت بتفضل عالقة في
-            // الخلفية ماسكة التركيز الصوتي، وده كان ممكن يمنع أو يأخر الذكر اللي بعده.
-            // دلوقتي بنسيب التركيز ونقفل الخدمة نظيف زي أي مرة تانية بترفض تشتغل فيها
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O && mFocusRequest != null) {
-                am.abandonAudioFocusRequest(mFocusRequest);
-            } else if (am != null) {
-                am.abandonAudioFocus(this);
-            }
+            Timber.d("general thikr - call is active, skipping this occurrence entirely without touching audio focus at all");
 
             this.stopForeground(true);
 
@@ -2332,6 +2320,14 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
             return;
 
         }
+
+        int ret = requestAudioFocus();
+
+        Timber.d("request audio focus return code is %s", ret);
+
+        boolean isAthanType = isAthanTypeEarlyCheck;
+
+        boolean isGeneralThikrType = isGeneralThikrTypeEarlyCheck;
 
         // ✅ بنفحص المكالمة **بغض النظر عن نتيجة التركيز الصوتي** - لأن الأذان بياخد أولوية
         // عالية وممكن الأندرويد يوافقله على التركيز حتى لو فيه مكالمة شغالة بالفعل، وده كان
