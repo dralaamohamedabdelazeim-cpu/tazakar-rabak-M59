@@ -869,6 +869,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
         if (this.getThikrType().contains(MainActivity.DATA_TYPE_ATHAN)) {
 
+            this.updateAllAlarms();
 
         }
 
@@ -2793,6 +2794,17 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
         @Override
 
         public void run() {
+
+            // ✅ لو مفيش صوت أذان/ذكر شغال فعليًا دلوقتي، وقف المراقبة خالص من هنا - من غيرها
+            // كانت المراقبة بتفضل شغالة للأبد حتى بعد ما الأذان يخلص، وبتتدخل غلط في مكالمات
+            // حقيقية مالهاش أي علاقة بالتطبيق (زي قطع صوت مكالمة بلوتوث)
+            if (player == null || !player.isPlaying()) {
+
+                Timber.d("voip poller: nothing is playing anymore - stopping the watch");
+
+                return;
+
+            }
 
             AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
 
