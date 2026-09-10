@@ -31,7 +31,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:text="(صدقة جارية)   إهداءً إلى روح والدي الحبيب\nمحمد عبد العظيم طرفايه الطويل\nرحمه الله وأسكنه فسيح جناته"
+        android:text="(صدقة جارية)   إهداءً إلى روح والدتي ووالدي الحبيب\nمحمد عبد العظيم طرفايه الطويل\nرحمه الله وأسكنه فسيح جناته"
         android:textColor="#FFD700"
         android:textSize="16sp"
         android:textStyle="bold"
