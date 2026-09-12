@@ -46,7 +46,7 @@ public class AthanScreenActivity extends AppCompatActivity {
     public static volatile boolean hasOpenedSuccessfully = false;
     private Runnable showReturnNotifRunnable; // ✅ لتأجيل إشعار الرجوع ومنع الفلاش السريع
 
-    private static final int AUTO_DISMISS_DELAY  = 4 * 60 * 1000;
+    private static final int AUTO_DISMISS_DELAY  = 10 * 60 * 1000;
     private static final int SLIDESHOW_INTERVAL  = 30 * 1000; // 30 ثانية
     private static final String TAG = "AthanScreenActivity";
     // ✅ معرّف جديد (v2) عشان إعداد "بدون صوت" يتطبق حتى على اللي مثبتين التطبيق بالفعل
