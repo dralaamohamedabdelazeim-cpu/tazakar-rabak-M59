@@ -40,6 +40,8 @@ import com.alaaeltaweel.thikrallah.WakeUpActivity;
 import com.alaaeltaweel.thikrallah.R;
 
 import android.media.AudioManager;
+import android.os.Handler;
+import android.os.Looper;
 
 import com.alaaeltaweel.thikrallah.ThikrMediaPlayerService;
 
@@ -47,9 +49,8 @@ import com.alaaeltaweel.thikrallah.ThikrMediaPlayerService;
 public class ThikrAlarmReceiver extends BroadcastReceiver {
     String TAG = "ThikrAlarmReceiver";
 
-    // ✅ فحص موحّد لوجود مكالمة شغالة فعلاً (عادية أو نت) - نفس الفحص المُجرَّب والموثوق
-    // اللي في ThikrService. بنستخدمه بدل طلب حجز صوت مؤقت عشان مانلغيش صوت التنبيه لمجرد
-    // إشعار عابر من تطبيق تاني بيتزامن معانا في نفس اللحظة
+    // ✅ فحص موحّد لوجود مكالمة شغالة فعلاً (عادية أو نت) - بنستخدمه بدل طلب حجز صوت مؤقت
+    // عشان مانلغيش صوت التنبيه لمجرد إشعار عابر من تطبيق تاني بيتزامن معانا في نفس اللحظة
     private boolean isActualCallInProgress(Context context) {
 
         try {
@@ -85,7 +86,7 @@ public class ThikrAlarmReceiver extends BroadcastReceiver {
         wakeLock.acquire(60 * 1000L);
 
 if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
-            AthanScreenActivity.stopDua(context);
+            DuaPlayerHelper.stopDua(context);
             if (wakeLock != null && wakeLock.isHeld()) wakeLock.release();
             return;
 }
@@ -169,33 +170,60 @@ if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
             Calendar lastCal = Calendar.getInstance();
             lastCal.setTimeInMillis(lastAthanTime);
             Calendar nowCal = Calendar.getInstance();
-            if (lastAthanTime > 0 &&
+
+            // ✅ [مؤقت للاختبار] زرار اختبار الأذان من التطبيق - يتجاوز المنع دايمًا
+            boolean isTestTrigger = data.getBoolean("isTestTrigger", false);
+
+            if (!isTestTrigger && lastAthanTime > 0 &&
                 lastCal.get(Calendar.DAY_OF_YEAR) == nowCal.get(Calendar.DAY_OF_YEAR) &&
                 lastCal.get(Calendar.YEAR) == nowCal.get(Calendar.YEAR)) {
                 Log.d(TAG, "Athan already played today, skipping: " + dataType);
                 return;
             }
-            prefs.edit().putLong("last_athan_time_" + dataType, nowMs).commit();
+            // ✅ زرار الاختبار ميسجلش نفسه كـ"آخر أذان شغل"، عشان الأذان الحقيقي المجدول لنفس اليوم يفضل يشتغل عادي في معاده
+            if (!isTestTrigger) {
+                prefs.edit().putLong("last_athan_time_" + dataType, nowMs).commit();
+            }
 
-            // ✅ تحقق من وجود مكالمة (عادية أو نت) وابعت الحالة للشاشة
-            boolean isInCall = isActualCallInProgress(context);
-
-            // ✅ شغّل صوت الأذان مباشرة من المنبه نفسه - مستقل عن نجاح فتح الشاشة
-            // القفل ده مشترك مع AthanScreenActivity عشان الصوت ميتكررش لو الشاشة فتحت بعده
-            if (!isInCall) {
-                SharedPreferences soundPrefs = PreferenceManager.getDefaultSharedPreferences(context);
-                soundPrefs.edit().putLong("athan_sound_triggered_" + dataType, nowMs).commit();
-
-                Bundle soundData = new Bundle();
-                soundData.putInt("ACTION", ThikrMediaPlayerService.MEDIA_PLAYER_PLAY);
-                soundData.putString("com.alaaeltaweel.thikrallah.datatype", dataType);
-                soundData.putBoolean("isUserAction", false);
-                Intent soundIntent = new Intent(context, ThikrService.class).putExtras(soundData);
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    context.startForegroundService(soundIntent);
-                } else {
-                    context.startService(soundIntent);
+            // ✅ تحقق من وجود مكالمة وابعت الحالة للشاشة
+            boolean isInCall = false;
+            try {
+                TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+                if (tm != null && tm.getCallState() != TelephonyManager.CALL_STATE_IDLE) {
+                    isInCall = true;
                 }
+            } catch (SecurityException e) {
+                Log.d(TAG, "Cannot check call state");
+            }
+            // ✅ فحص إضافي لمكالمات الإنترنت (واتساب/ماسنجر/إلخ) - TelephonyManager مبيكتشفهاش
+            if (!isInCall) {
+                try {
+                    AudioManager voipCheckAm = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+                    if (voipCheckAm != null && voipCheckAm.getMode() == AudioManager.MODE_IN_COMMUNICATION) {
+                        isInCall = true;
+                    }
+                } catch (Exception e) {
+                    Log.d(TAG, "Cannot check audio mode");
+                }
+            }
+
+            // ✅ إصلاح: كنا بنبعت أمر تشغيل الصوت بس لو مفيش مكالمة، وبنسيب حالة المكالمة
+            // بالكامل على نجاح فتح شاشة الأذان (اللي مش مضمون ينجح من الخلفية، عشان كده
+            // أصلاً محتاجين نظام احتياطي نافذة عائمة تحت). دلوقتي ThikrMediaPlayerService
+            // عنده نظام داخلي موثوق بيقرر لوحده يشغل عادي أو مكتوم حسب المكالمة - فمفيش داعي
+            // نخلي "الصوت يشتغل أصلاً" معتمد على نجاح فتح الشاشة. نبعت الأمر دايمًا ونسيبه هو يقرر
+            SharedPreferences soundPrefs = PreferenceManager.getDefaultSharedPreferences(context);
+            soundPrefs.edit().putLong("athan_sound_triggered_" + dataType, nowMs).commit();
+
+            Bundle soundData = new Bundle();
+            soundData.putInt("ACTION", ThikrMediaPlayerService.MEDIA_PLAYER_PLAY);
+            soundData.putString("com.alaaeltaweel.thikrallah.datatype", dataType);
+            soundData.putBoolean("isUserAction", false);
+            Intent soundIntent = new Intent(context, ThikrService.class).putExtras(soundData);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(soundIntent);
+            } else {
+                context.startService(soundIntent);
             }
 
             Intent athanIntent = new Intent(context, AthanScreenActivity.class);
@@ -205,8 +233,47 @@ if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
                     Intent.FLAG_ACTIVITY_CLEAR_TOP |
                     Intent.FLAG_ACTIVITY_SINGLE_TOP);
 
-            context.startActivity(athanIntent);
-            
+            // ✅ محاولة فتح الشاشة مباشرة - بتنجح غالبًا لو النظام سامح بالفتح من الخلفية
+            try {
+                context.startActivity(athanIntent);
+            } catch (Exception e) {
+                Log.e(TAG, "Direct startActivity for athan screen failed: " + e.getMessage());
+            }
+
+            // ✅ ضمان فتح الشاشة حتى لو النظام منع الفتح المباشر (قيود Android 10+ على فتح Activity من الخلفية)
+            // ده نفس الأسلوب اللي بيشتغل بثبات مع تنبيه ما قبل الأذان والإقامة
+            showAthanFullScreenNotification(context, athanIntent, dataType);
+
+            // ✅ خط دفاع إضافي مستقل - نافذة عائمة، بس بس لو الشاشة العادية فعلاً فشلت تفتح.
+            // بدل ما نشغلها فورًا كل مرة (وده كان بيعمل إشعار زيادة يظهر ويختفي بسرعة حتى
+            // لو الشاشة فتحت تمام)، بنستنى شوية ونتأكد إن AthanScreenActivity معملتش onResume
+            // فعلاً - ولو فتحت، منشغلش النافذة العائمة خالص.
+            final Context appContext = context.getApplicationContext();
+            final Bundle overlayData = data;
+            final PendingResult pendingResult = goAsync();
+            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                try {
+                    if (!com.alaaeltaweel.thikrallah.Notification.AthanScreenActivity.hasOpenedSuccessfully) {
+                        Log.d(TAG, "Real athan screen did not open in time - starting overlay fallback");
+                        Intent overlayIntent = new Intent(appContext, com.alaaeltaweel.thikrallah.Notification.AthanOverlayService.class);
+                        overlayIntent.putExtras(overlayData);
+                        try {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                appContext.startForegroundService(overlayIntent);
+                            } else {
+                                appContext.startService(overlayIntent);
+                            }
+                        } catch (Exception e) {
+                            Log.e(TAG, "Failed to start athan overlay fallback: " + e.getMessage());
+                        }
+                    } else {
+                        Log.d(TAG, "Real athan screen opened successfully - overlay fallback not needed");
+                    }
+                } finally {
+                    pendingResult.finish();
+                }
+            }, 2500);
+
         } else {
 
             // ✅ الأذكار العادية — لا تشتغل أثناء المكالمات (فحص المكالمة الأول)
@@ -219,8 +286,14 @@ if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
             } catch (SecurityException e) {
                 Log.d(TAG, "Cannot check call state");
             }
+            // ✅ إصلاح: شلنا فحص وضع الصوت العام (AudioManager.MODE_IN_COMMUNICATION) اللي كان
+            // مضاف هنا - ده فحص على مستوى النظام كله (أي حاجة، مش بس مكالمة حقيقية) وعرضة
+            // لاكتشاف خاطئ (بلوتوث، تطبيقات تانية، ظروف عابرة)، وكان بيأجل الذكر العام لـ١٠
+            // دقايق ثابتة كل ما يغلط، بغض النظر عن المدة اللي المستخدم محددها فعليًا.
+            // ThikrMediaPlayerService عنده فحص مكالمات موثوق وقت التشغيل نفسه (بيغطي مكالمات
+            // النت كمان)، فمفيش داعي لفحص إضافي حساس هنا قبل ما نبدأ حتى
             if (isInCallForThikr) {
-                Log.d(TAG, "Call in progress, scheduling thikr after 15 min");
+                Log.d(TAG, "Call in progress, scheduling thikr after 10 min");
                 android.app.AlarmManager alarmManager =
                     (android.app.AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
                 android.app.PendingIntent pendingIntent = android.app.PendingIntent.getBroadcast(
@@ -229,10 +302,19 @@ if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
                     new Intent(context, ThikrAlarmReceiver.class).putExtras(data),
                     android.app.PendingIntent.FLAG_UPDATE_CURRENT |
                     android.app.PendingIntent.FLAG_IMMUTABLE);
+                long retryTime = System.currentTimeMillis() + (10 * 60 * 1000);
                 alarmManager.setExactAndAllowWhileIdle(
                     android.app.AlarmManager.RTC_WAKEUP,
-                    System.currentTimeMillis() + (10 * 60 * 1000),
+                    retryTime,
                     pendingIntent);
+                // ✅ إصلاح: لازم نحدّث معاد الذكر العام المخزّن عند MyAlarmsManager بنفس الميعاد ده -
+                // وإلا هو مالوش أي فكرة إن الميعاد الأساسي اتخطى بسبب المكالمة، وحسابه للميعاد
+                // اللي بعده هيتلخبط (يحسبه من ميعاد قديم فات، بدل ما يكمّل من الميعاد الجديد ده)
+                if (MainActivity.DATA_TYPE_GENERAL_THIKR.equals(dataType)) {
+                    PreferenceManager.getDefaultSharedPreferences(context).edit()
+                            .putLong("next_general_thikr_scheduled_time", retryTime)
+                            .apply();
+                }
                 return;
             }
             
@@ -265,7 +347,6 @@ if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
 
         if (wakeLock != null && wakeLock.isHeld()) wakeLock.release();
     }
-    
 private void showPreAthanNotification(Context context, String prayerKey) {
     // تحويل الـ key لاسم عربي للعرض
     String prayerNameAr;
@@ -282,7 +363,9 @@ private void showPreAthanNotification(Context context, String prayerKey) {
     android.net.Uri soundUri = android.net.Uri.parse(
         "android.resource://" + context.getPackageName() + "/" + soundRes);
 
+    AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
     boolean canPlaySound = !isActualCallInProgress(context);
+    
     String channelId = "pre_athan_reminder_v2_" + prayerKey;
     NotificationManager notificationManager =
             (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -328,7 +411,55 @@ PendingIntent pendingIntent = PendingIntent.getBroadcast(context, prayerKey.hash
     PreferenceManager.getDefaultSharedPreferences(context).edit()
                 .putLong("last_pre_athan_play_time", System.currentTimeMillis()).apply();
         notificationManager.notify(prayerKey.hashCode(), builder.build());
+        if (audioManager != null && canPlaySound) {
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                audioManager.abandonAudioFocus(null); // ✅ رجّع الميكروفون بعد ما صوت التنبيه يخلص
+                notificationManager.cancel(prayerKey.hashCode()); // ✅ قفل الإشعار تلقائي بعد ما الصوت يخلص
+            }, 30000);
+        }
 }
+
+    // ✅ إشعار full-screen بيضمن فتح شاشة الأذان حتى لو منعت قيود الأندرويد فتحها مباشرة من الخلفية
+    // نفس القناة والـ ID اللي بتستخدمهم AthanScreenActivity في "showReturnToAthanNotification"
+    // عشان لو الشاشة فتحت فعلاً (onResume) هيتقفل الإشعار ده تلقائي
+    private void showAthanFullScreenNotification(Context context, Intent athanIntent, String dataType) {
+        String channelId = "athan_screen_channel";
+        int notifId = 774411;
+
+        NotificationManager nm =
+                (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        if (nm == null) return;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = nm.getNotificationChannel(channelId);
+            if (channel == null) {
+                channel = new NotificationChannel(channelId, "شاشة الأذان", NotificationManager.IMPORTANCE_HIGH);
+                channel.setSound(null, null); // ✅ الصوت شغال بالفعل من ThikrMediaPlayerService، الإشعار ده بس لفتح الشاشة
+                nm.createNotificationChannel(channel);
+            }
+        }
+
+        int piFlags = PendingIntent.FLAG_UPDATE_CURRENT;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            piFlags |= PendingIntent.FLAG_IMMUTABLE;
+        }
+        PendingIntent fullScreenPendingIntent = PendingIntent.getActivity(
+                context, dataType.hashCode() + 4444, athanIntent, piFlags);
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, channelId)
+                .setSmallIcon(R.drawable.ic_launcher)
+                .setContentTitle("حان وقت الأذان")
+                .setContentText("اضغط لفتح شاشة الأذان")
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setAutoCancel(true)
+                .setOngoing(true)
+                .setSound(null)
+                .setContentIntent(fullScreenPendingIntent)
+                .setFullScreenIntent(fullScreenPendingIntent, true);
+
+        nm.notify(notifId, builder.build());
+    }
 
     private boolean isAthanType(String dataType) {
         if (dataType == null) return false;
@@ -359,7 +490,8 @@ PendingIntent pendingIntent = PendingIntent.getBroadcast(context, prayerKey.hash
     android.net.Uri soundUri = android.net.Uri.parse(
         "android.resource://" + context.getPackageName() + "/" + soundRes);
 
-         boolean canPlayIqamaSound = !isActualCallInProgress(context);
+         AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+boolean canPlayIqamaSound = !isActualCallInProgress(context);
         
     String channelId = "iqama_channel_v2_s" + soundChoice;
     NotificationManager nm =
@@ -402,5 +534,11 @@ PendingIntent pi = PendingIntent.getBroadcast(context, prayerKey.hashCode() + 22
         PreferenceManager.getDefaultSharedPreferences(context).edit()
                 .putLong("last_iqama_play_time", System.currentTimeMillis()).apply();
     nm.notify(("iqama_" + prayerKey).hashCode(), builder.build());
+        if (audioManager != null && canPlayIqamaSound) {
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                audioManager.abandonAudioFocus(null); // ✅ رجّع الميكروفون بعد ما صوت الإقامة يخلص
+                nm.cancel(("iqama_" + prayerKey).hashCode()); // ✅ قفل الإشعار تلقائي بعد ما الصوت يخلص
+            }, 30000);
+        }
     }
 }
