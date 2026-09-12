@@ -27,7 +27,7 @@ jobs:
 
       - name: Update version name
         run: |
-          NEW_VERSION_CODE=$((${{ github.run_number }} + 1000))
+          NEW_VERSION_CODE=$((${{ github.run_number }} + 1700))
           sed -i "s/versionName \".*\"/versionName \"$NEW_VERSION_CODE\"/" app/build.gradle
           sed -i "s/versionCode .*/versionCode $NEW_VERSION_CODE/" app/build.gradle
 
