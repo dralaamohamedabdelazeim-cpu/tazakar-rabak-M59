@@ -200,23 +200,22 @@ if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
             // ✅ تحقق من وجود مكالمة (عادية أو نت) وابعت الحالة للشاشة
             boolean isInCall = isActualCallInProgress(context);
 
-            // ✅ إصلاح: كنا بنبعت أمر تشغيل الصوت بس لو مفيش مكالمة، وبنسيب حالة المكالمة
-            // بالكامل على نجاح فتح شاشة الأذان (اللي مش مضمون ينجح من الخلفية، عشان كده
-            // أصلاً محتاجين نظام احتياطي نافذة عائمة تحت). دلوقتي ThikrMediaPlayerService
-            // عنده نظام داخلي موثوق بيقرر لوحده يشغل عادي أو مكتوم حسب المكالمة - فمفيش داعي
-            // نخلي "الصوت يشتغل أصلاً" معتمد على نجاح فتح الشاشة. نبعت الأمر دايمًا ونسيبه هو يقرر
-            SharedPreferences soundPrefs = PreferenceManager.getDefaultSharedPreferences(context);
-            soundPrefs.edit().putLong("athan_sound_triggered_" + dataType, nowMs).commit();
+            // ✅ شغّل صوت الأذان مباشرة من المنبه نفسه - مستقل عن نجاح فتح الشاشة
+            // القفل ده مشترك مع AthanScreenActivity عشان الصوت ميتكررش لو الشاشة فتحت بعده
+            if (!isInCall) {
+                SharedPreferences soundPrefs = PreferenceManager.getDefaultSharedPreferences(context);
+                soundPrefs.edit().putLong("athan_sound_triggered_" + dataType, nowMs).commit();
 
-            Bundle soundData = new Bundle();
-            soundData.putInt("ACTION", ThikrMediaPlayerService.MEDIA_PLAYER_PLAY);
-            soundData.putString("com.alaaeltaweel.thikrallah.datatype", dataType);
-            soundData.putBoolean("isUserAction", false);
-            Intent soundIntent = new Intent(context, ThikrService.class).putExtras(soundData);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(soundIntent);
-            } else {
-                context.startService(soundIntent);
+                Bundle soundData = new Bundle();
+                soundData.putInt("ACTION", ThikrMediaPlayerService.MEDIA_PLAYER_PLAY);
+                soundData.putString("com.alaaeltaweel.thikrallah.datatype", dataType);
+                soundData.putBoolean("isUserAction", false);
+                Intent soundIntent = new Intent(context, ThikrService.class).putExtras(soundData);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(soundIntent);
+                } else {
+                    context.startService(soundIntent);
+                }
             }
 
             Intent athanIntent = new Intent(context, AthanScreenActivity.class);
@@ -279,14 +278,8 @@ if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
             } catch (SecurityException e) {
                 Log.d(TAG, "Cannot check call state");
             }
-            // ✅ إصلاح: شلنا فحص وضع الصوت العام (AudioManager.MODE_IN_COMMUNICATION) اللي كان
-            // مضاف هنا - ده فحص على مستوى النظام كله (أي حاجة، مش بس مكالمة حقيقية) وعرضة
-            // لاكتشاف خاطئ (بلوتوث، تطبيقات تانية، ظروف عابرة)، وكان بيأجل الذكر العام لـ١٠
-            // دقايق ثابتة كل ما يغلط، بغض النظر عن المدة اللي المستخدم محددها فعليًا.
-            // ThikrMediaPlayerService عنده فحص مكالمات موثوق وقت التشغيل نفسه (بيغطي مكالمات
-            // النت كمان)، فمفيش داعي لفحص إضافي حساس هنا قبل ما نبدأ حتى
             if (isInCallForThikr) {
-                Log.d(TAG, "Call in progress, scheduling thikr after 10 min");
+                Log.d(TAG, "Call in progress, scheduling thikr after 15 min");
                 android.app.AlarmManager alarmManager =
                     (android.app.AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
                 android.app.PendingIntent pendingIntent = android.app.PendingIntent.getBroadcast(
@@ -295,19 +288,10 @@ if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
                     new Intent(context, ThikrAlarmReceiver.class).putExtras(data),
                     android.app.PendingIntent.FLAG_UPDATE_CURRENT |
                     android.app.PendingIntent.FLAG_IMMUTABLE);
-                long retryTime = System.currentTimeMillis() + (10 * 60 * 1000);
                 alarmManager.setExactAndAllowWhileIdle(
                     android.app.AlarmManager.RTC_WAKEUP,
-                    retryTime,
+                    System.currentTimeMillis() + (10 * 60 * 1000),
                     pendingIntent);
-                // ✅ إصلاح: لازم نحدّث معاد الذكر العام المخزّن عند MyAlarmsManager بنفس الميعاد ده -
-                // وإلا هو مالوش أي فكرة إن الميعاد الأساسي اتخطى بسبب المكالمة، وحسابه للميعاد
-                // اللي بعده هيتلخبط (يحسبه من ميعاد قديم فات، بدل ما يكمّل من الميعاد الجديد ده)
-                if (MainActivity.DATA_TYPE_GENERAL_THIKR.equals(dataType)) {
-                    PreferenceManager.getDefaultSharedPreferences(context).edit()
-                            .putLong("next_general_thikr_scheduled_time", retryTime)
-                            .apply();
-                }
                 return;
             }
             
