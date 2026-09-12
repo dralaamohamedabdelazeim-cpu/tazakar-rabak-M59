@@ -62,6 +62,18 @@ public class ThikrAlarmReceiver extends BroadcastReceiver {
             Log.d(TAG, "Cannot check call state");
         }
 
+        // ✅ تطبيقات مكالمات النت الحديثة (زي واتساب) بتسجل نفسها كمكالمة "مُدارة ذاتيًا" مع
+        // النظام - ده بيظهر هنا حتى لو وضع الصوت (MODE_IN_COMMUNICATION) ملحقش يتغير
+        try {
+            android.telecom.TelecomManager telecomManager =
+                    (android.telecom.TelecomManager) context.getSystemService(Context.TELECOM_SERVICE);
+            if (telecomManager != null && telecomManager.isInCall()) {
+                return true;
+            }
+        } catch (Exception e) {
+            Log.d(TAG, "Cannot check telecom call state");
+        }
+
         try {
             AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
             if (audioManager != null && audioManager.getMode() == AudioManager.MODE_IN_COMMUNICATION) {
@@ -185,27 +197,8 @@ if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
                 prefs.edit().putLong("last_athan_time_" + dataType, nowMs).commit();
             }
 
-            // ✅ تحقق من وجود مكالمة وابعت الحالة للشاشة
-            boolean isInCall = false;
-            try {
-                TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
-                if (tm != null && tm.getCallState() != TelephonyManager.CALL_STATE_IDLE) {
-                    isInCall = true;
-                }
-            } catch (SecurityException e) {
-                Log.d(TAG, "Cannot check call state");
-            }
-            // ✅ فحص إضافي لمكالمات الإنترنت (واتساب/ماسنجر/إلخ) - TelephonyManager مبيكتشفهاش
-            if (!isInCall) {
-                try {
-                    AudioManager voipCheckAm = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
-                    if (voipCheckAm != null && voipCheckAm.getMode() == AudioManager.MODE_IN_COMMUNICATION) {
-                        isInCall = true;
-                    }
-                } catch (Exception e) {
-                    Log.d(TAG, "Cannot check audio mode");
-                }
-            }
+            // ✅ تحقق من وجود مكالمة (عادية أو نت) وابعت الحالة للشاشة
+            boolean isInCall = isActualCallInProgress(context);
 
             // ✅ إصلاح: كنا بنبعت أمر تشغيل الصوت بس لو مفيش مكالمة، وبنسيب حالة المكالمة
             // بالكامل على نجاح فتح شاشة الأذان (اللي مش مضمون ينجح من الخلفية، عشان كده
