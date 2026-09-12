@@ -2142,43 +2142,14 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
     Timber.d("transient loss of focus");
     if (this.getThikrType() != null && this.getThikrType().contains(MainActivity.DATA_TYPE_ATHAN)) {
 
-        // ✅ نفرق هنا بين قطع بسبب مكالمة فعلية (عادية أو إنترنت زي واتساب) وقطع بسبب
-        // صوت قصير (زي نغمة إشعار). لو مكالمة فعلية، نوقف الأذان فورًا ونقفل الشاشة معاه -
-        // إكماله بعد دقايق من نهاية المكالمة مش منطقي. لو مجرد إشعار، نكمل تشغيل عادي
-        boolean isRealCall = false;
-        try {
-            android.telephony.TelephonyManager tm =
-                    (android.telephony.TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-            if (tm != null && tm.getCallState() != android.telephony.TelephonyManager.CALL_STATE_IDLE) {
-                isRealCall = true;
-            }
-        } catch (Exception ignored) {}
-        if (!isRealCall) {
-            try {
-                if (am != null && am.getMode() == AudioManager.MODE_IN_COMMUNICATION) {
-                    isRealCall = true;
-                }
-            } catch (Exception ignored) {}
-        }
+        // ✅ منطق واحد بسيط: أي انقطاع فوري في التركيز الصوتي وقت ما الأذان شغال = وقف
+        // وقفل على طول، من غير أي محاولة "تأكد هل دي مكالمة فعلاً؟" - المحاولة دي كانت
+        // بتعتمد على فحص وضع الصوت اللي مش موثوق مع كل تطبيقات مكالمات النت، فكانت بتخلي
+        // الأذان يكمل يشتغل بصوت فوق مكالمات حقيقية بدل ما يقفل
+        Timber.d("Athan interrupted (transient focus loss) - stopping and closing immediately");
 
-        if (isRealCall) {
-            Timber.d("Athan interrupted by a real call (regular or internet) - stopping fully instead of pause/resume");
-            if (isPlaying()) {
-                try { player.stop(); } catch (Exception ignored) {}
-            }
-            isAthanSoundActive = false;
-            this.resetPlayer();
-            this.stopForeground(true);
-            if (mediaSession != null) { try { mediaSession.setActive(false); } catch (Exception ignored) {} }
-            // ✅ من غير السطر ده، شاشة الأذان كانت مالهاش خبر إن الأذان خلص فبتفضل مفتوحة
-            sendBroadcast(new Intent("com.alaaeltaweel.thikrallah.ATHAN_COMPLETE"));
-            this.stopSelf();
-            break;
-        }
+        handleCallInterruption("transient audio focus loss while athan playing");
 
-        // ✅ الأذان أهم من إنه يفضل واقف بسبب صوت إشعار قصير (زي واتساب) -
-        // بنكمّل تشغيل عادي بدل ما نستنى AUDIOFOCUS_GAIN اللي مش مضمون يرجع
-        Timber.d("transient loss but this is athan and not a real call - ignoring and continuing playback");
         break;
     }
     if (isPlaying()) {
@@ -2681,6 +2652,24 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
                     (android.telephony.TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
 
             if (tm != null && tm.getCallState() != android.telephony.TelephonyManager.CALL_STATE_IDLE) {
+
+                return true;
+
+            }
+
+        } catch (Exception ignored) {
+
+        }
+
+        // ✅ تطبيقات مكالمات النت الحديثة (زي واتساب) بتسجل نفسها كمكالمة "مُدارة ذاتيًا" مع
+        // النظام عشان تتكامل صح (بلوتوث، عدم الإزعاج، إلخ) - ده بيظهر هنا حتى لو وضع الصوت
+        // نفسه (MODE_IN_COMMUNICATION) ملحقش يتغير أو التطبيق مبيغيروش أصلاً
+        try {
+
+            android.telecom.TelecomManager telecomManager =
+                    (android.telecom.TelecomManager) getSystemService(Context.TELECOM_SERVICE);
+
+            if (telecomManager != null && telecomManager.isInCall()) {
 
                 return true;
 
