@@ -220,7 +220,13 @@ public class ChatHeadService extends Service implements View.OnTouchListener {
 			}
 
 		} else {
-			Log.d(TAG, "not reminder type 1 or 3? what then? It is: " + reminderType);
+			Log.d(TAG, "not reminder type 1 or 3 - showing as plain notification instead: " + reminderType);
+			// ✅ النص الحقيقي كان جاي أصلاً مع الطلب، بس الكود كان مش بياخده هنا، فكان دايمًا
+			// يرجع للنص الاحتياطي (اللي طلع إنجليزي لعدم وجود ترجمة عربية محفوظة له)
+			String thikrText = intent.getStringExtra("thikr");
+			if (thikrText != null) {
+				this.thikr = thikrText;
+			}
 			startnotification();
 			this.stopSelf();
 		}
