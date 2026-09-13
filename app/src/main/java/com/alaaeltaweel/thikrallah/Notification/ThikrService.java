@@ -22,7 +22,6 @@ import android.os.Vibrator;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.telephony.TelephonyManager;
-import android.telephony.PhoneStateListener;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -72,7 +71,6 @@ public class ThikrService extends IntentService  {
     private final static int NOTIFICATION_ID_QURAN_THIKR_KAHF=401;
     private final static int NOTIFICATION_ID_QURAN_DOWNLOAD_NEEDED=500;
     private AudioManager am;
-    private Intent calling_intent;
     Context mcontext;
     @Inject PageProvider quranPageProvider;
     QuranSettings quransettings;
@@ -105,52 +103,7 @@ public class ThikrService extends IntentService  {
         return false;
     }
 }
-private PhoneStateListener phoneStateListener;
-    private boolean pendingThikrAfterCall = false;
-    // ✅ بيحفظ نوع التذكير اللي اتأجل بسبب المكالمة - عشان رقم إعادة المحاولة يبقى
-    // مخصص لكل نوع، ومايحصلش تضارب أو مسح لتذكير تاني لو نوعين مختلفين اتأجلوا بنفس المكالمة
-    private String pendingThikrDataType = "";
 
-    private void registerCallListener() {
-        TelephonyManager tm = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-        if (tm == null) return;
-        // ✅ إصلاح تسريب المستمعين: لو فيه مستمع قديم مسجل من نداء سابق لـ onHandleIntent،
-        // لازم نلغيه الأول قبل ما نسجل واحد جديد - وإلا هيتراكموا مستمعين شغالين مع بعض
-        if (phoneStateListener != null) {
-            tm.listen(phoneStateListener, PhoneStateListener.LISTEN_NONE);
-            phoneStateListener = null;
-        }
-        phoneStateListener = new PhoneStateListener() {
-            @Override
-            public void onCallStateChanged(int state, String phoneNumber) {
-                if (state == TelephonyManager.CALL_STATE_IDLE && pendingThikrAfterCall) {
-                    pendingThikrAfterCall = false;
-                    android.app.AlarmManager alarmMgr =
-                        (android.app.AlarmManager) getSystemService(Context.ALARM_SERVICE);
-                    Intent retry = new Intent(getApplicationContext(), ThikrAlarmReceiver.class);
-                    if (calling_intent != null && calling_intent.getExtras() != null) {
-                        retry.putExtras(calling_intent.getExtras());
-                    }
-                    // ✅ رقم مخصص لكل نوع تذكير (بدل رقم ثابت واحد) - عشان لو نوعين مختلفين
-                    // اتأجلوا بنفس المكالمة، كل واحد فيهم يفضل له محاولة إعادة منفصلة، مايمسحش التاني
-                    android.app.PendingIntent pi = android.app.PendingIntent.getBroadcast(
-                        getApplicationContext(), pendingThikrDataType.hashCode() + 9999, retry,
-                        android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
-                    alarmMgr.setExactAndAllowWhileIdle(
-                        android.app.AlarmManager.RTC_WAKEUP,
-                        System.currentTimeMillis() + 3000, pi);
-                }
-            }
-        };
-        tm.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
-    }
-
-    private void unregisterCallListener() {
-        TelephonyManager tm = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-        if (tm != null && phoneStateListener != null) {
-            tm.listen(phoneStateListener, PhoneStateListener.LISTEN_NONE);
-        }
-	}
 	@Override
 	protected void onHandleIntent(Intent intent) {
 
@@ -159,8 +112,6 @@ private PhoneStateListener phoneStateListener;
             showForegroundNotificationan(NOTIFICATION_ID_GENERIC_FOREGROUND);
         }
 
-         calling_intent=intent;
-		registerCallListener();
         mcontext=this.getApplicationContext();
         quransettings=QuranSettings.getInstance(mcontext);
         //update all alarms
@@ -261,9 +212,9 @@ private PhoneStateListener phoneStateListener;
                             this.startService(new Intent(this, ThikrMediaPlayerService.class).putExtras(data));
                         }
                     } else {
-                        Log.d(TAG, "Call in progress, will resume after call ends");
-                        pendingThikrAfterCall = true;
-                        pendingThikrDataType = MainActivity.DATA_TYPE_GENERAL_THIKR;
+                        // ✅ فيه مكالمة شغالة - دور الذكر ده عدى، مفيش داعي نأجله أو نعيد
+                        // محاولته، الجدولة العادية هي اللي هتشغّل اللي بعده في وقته
+                        Log.d(TAG, "Call in progress, skipping this general thikr occurrence entirely (its turn has passed)");
                     }
                 }
             } catch (Exception e) {
@@ -1289,6 +1240,5 @@ private PhoneStateListener phoneStateListener;
     public void onDestroy(){
 Log.d(TAG,"calling on destroy");
         super.onDestroy();
-  unregisterCallListener();
     }
 }
