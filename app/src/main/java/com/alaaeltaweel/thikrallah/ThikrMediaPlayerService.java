@@ -1166,13 +1166,13 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
         player.setOnCompletionListener(this);
 
-        int ret = requestAudioFocus();
+        // ✅ startPlayerIfAllowed() هي اللي بتتأكد الأول مفيش مكالمة شغالة، وبعدين تاخد
+        // التركيز الصوتي - عشان كده بطلنا نطلبه هنا تاني قبلها
+        int ret = startPlayerIfAllowed();
 
         if (ret == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
 
             Timber.d("audiofocus request granted");
-
-            startPlayerIfAllowed();
 
             setVolume();
 
@@ -1334,11 +1334,9 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
 
 
-                int ret = requestAudioFocus();
-
-                // ✅ startPlayerIfAllowed() بقت هي المكان الوحيد اللي بيقرر: يشغّل عادي،
-                // ولا يشغّل مكتوم بسبب مكالمة شغالة، ولا يرفض - كل القرار من مكان واحد بس
-                startPlayerIfAllowed();
+                // ✅ startPlayerIfAllowed() هي المكان الوحيد اللي بياخد التركيز الصوتي فعليًا
+                // (بعد ما تتأكد الأول مفيش مكالمة شغالة) - عشان كده بطلنا نطلبه هنا تاني قبلها
+                int ret = startPlayerIfAllowed();
 
                 updateActions();
 
@@ -1446,12 +1444,10 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
                 Log.d(TAG, "player prepared");
 
-                int ret = requestAudioFocus();
+                // ✅ startPlayerIfAllowed() هي المكان الوحيد اللي بتاخد التركيز الصوتي فعليًا
+                int ret = startPlayerIfAllowed();
 
                 Log.d(TAG, "requestAudioFocus returned " + ret);
-
-                // ✅ startPlayerIfAllowed() بقت هي المكان الوحيد اللي بيقرر يشغل عادي/مكتوم/يرفض
-                startPlayerIfAllowed();
 
                 if (ret == AudioManager.AUDIOFOCUS_REQUEST_GRANTED && !athanIntentionallyMutedForExistingCall) {
 
@@ -1589,17 +1585,15 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
         player.setOnCompletionListener(this);
 
-
-
-        int ret = requestAudioFocus();
+        // ✅ startPlayerIfAllowed() هي اللي بتتأكد الأول مفيش مكالمة شغالة، وبعدين تاخد
+        // التركيز الصوتي - عشان كده بطلنا نطلبه هنا تاني قبلها
+        int ret = startPlayerIfAllowed();
 
         Timber.d("audiofocus request return code is %s", ret);
 
         if (ret == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
 
             Timber.d("audiofocus request granted =%s", AudioManager.AUDIOFOCUS_REQUEST_GRANTED);
-
-            startPlayerIfAllowed();
 
             setVolume();
 
@@ -2281,64 +2275,29 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
 
 
-    private void startPlayerIfAllowed() {
+    private int startPlayerIfAllowed() {
 
         Timber.d("startPlayerIfAllowed called");
+
+        boolean isAthanType = this.getThikrType() != null && this.getThikrType().contains(MainActivity.DATA_TYPE_ATHAN);
+
+        // ✅ فحص المكالمة بقى أول خطوة قبل أي حاجة تانية - قبل حتى ما نطلب التركيز الصوتي
+        // من النظام. الأذان بقى بياخد نفس معاملة الذكر العام بالظبط: لو فيه مكالمة شغالة
+        // (عادية أو نت)، منحاولش نشغّل خالص ومنطلبش تركيز صوتي أصلاً - عشان مجرد محاولة
+        // الطلب دي (حتى لو هترفض) بتأثر على صوت المكالمة والسماعة البلوتوث
+        if (isCallCurrentlyActive()) {
+
+            Timber.d("call is active - skipping entirely without requesting audio focus (type: " + this.getThikrType() + ")");
+
+            return AudioManager.AUDIOFOCUS_REQUEST_FAILED;
+
+        }
 
         int ret = requestAudioFocus();
 
         Timber.d("request audio focus return code is %s", ret);
 
-        boolean isAthanType = this.getThikrType() != null && this.getThikrType().contains(MainActivity.DATA_TYPE_ATHAN);
-
-        boolean isGeneralThikrType = this.getThikrType() != null && this.getThikrType().equalsIgnoreCase(MainActivity.DATA_TYPE_GENERAL_THIKR);
-
-        // ✅ الذكر العام لازم مايشتغلش خالص وقت مكالمة شغالة (عادية أو نت) - بغض النظر إن
-        // التركيز الصوتي الدائم بتاعه ممكن يتوافق عليه رغم المكالمة (زي ما بيحصل مع الأذان)،
-        // هنا بنفرض إننا نتجاهل الموافقة دي ومنشغلش خالص، لأن الذكر العام (على عكس الأذان)
-        // مالوش داعي يقاطع مكالمة، ومحاولته الجاية بعد 10 دقايق كفاية
-        if (isGeneralThikrType && isCallCurrentlyActive()) {
-
-            Timber.d("general thikr - call is active, skipping this occurrence entirely (will try again next cycle)");
-
-            return;
-
-        }
-
-        // ✅ بنفحص المكالمة **بغض النظر عن نتيجة التركيز الصوتي** - لأن الأذان بياخد أولوية
-        // عالية وممكن الأندرويد يوافقله على التركيز حتى لو فيه مكالمة شغالة بالفعل، وده كان
-        // بيخلي الأذان يشتغل بصوت عادي غلط وقت المكالمة. المكان ده بقى المصدر الوحيد لهذا القرار
-        boolean callAlreadyActive = isAthanType && isCallCurrentlyActive();
-
-        if (callAlreadyActive && player != null) {
-
-            Timber.d("call already active - starting athan MUTED regardless of focus result, so it can complete normally");
-
-            athanIntentionallyMutedForExistingCall = true;
-
-            try {
-
-                isMutedByFlip = true;
-
-                lastAthanWasMuted = true;
-
-                this.play_count++;
-
-                sendMessageToUI(MSG_CURRENT_PLAYING, currentPlaying);
-
-                player.setVolume(0f, 0f);
-
-                player.start();
-
-                this.updateActions();
-
-            } catch (Exception e) {
-
-                Timber.e(e, "athan muted-for-call start failed");
-
-            }
-
-        } else if (ret == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+        if (ret == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
 
             Timber.d("request audio focus granted");
 
@@ -2379,10 +2338,11 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
             Log.d(TAG, "audio focused request denied");
 
-            // ✅ حالة نادرة: التركيز اترفض لسبب تاني غير مكالمة (زي تطبيق تاني ماسك تركيز حصري)
-            // برضه نشغّل الأذان مكتوم عشان الشاشة تقفل طبيعي بدل ما تفضل معلقة
+            // ✅ اتأكدنا فوق الأول مفيش مكالمة شغالة، فالرفض ده لازم يكون لسبب تاني
+            // (زي تطبيق تاني ماسك تركيز حصري) - برضه نشغّل الأذان مكتوم عشان الشاشة
+            // تقفل طبيعي بدل ما تفضل معلقة
             if (isAthanType && player != null) {
-                Timber.d("athan focus denied (not a detected call) - starting playback MUTED anyway so it can complete normally");
+                Timber.d("athan focus denied (not a call) - starting playback MUTED anyway so it can complete normally");
                 try {
                     athanIntentionallyMutedForExistingCall = true;
                     isMutedByFlip = true;
@@ -2398,6 +2358,8 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
             }
 
         }
+
+        return ret;
 
     }
 
