@@ -661,29 +661,9 @@ public class ThikrService extends IntentService  {
                 }
 
             }
-            //starting chatheadservice
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                if (Settings.canDrawOverlays(this)) {
-                    Log.d(TAG, "calling chatheadservice 621");
-                    Intent intentChatHead = new Intent(this.getApplicationContext(), ChatHeadService.class);
-                    intentChatHead.putExtra("thikr", athan);
-                    intentChatHead.putExtra("isAthan", true);
-                    //startService(intentChatHead);
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        //startForegroundService(intentChatHead);
-                        startForegroundService(intentChatHead);
-                    } else {
-                        startService(intentChatHead);
-                    }
-                }
-            } else {
-                Log.d(TAG, "calling chatheadservice 634");
-                Intent intentChatHead = new Intent(this.getApplicationContext(), ChatHeadService.class);
-                intentChatHead.putExtra("thikr", athan);
-                intentChatHead.putExtra("isAthan", true);
-                startService(intentChatHead);
-            }
-
+            // ✅ شيلنا استدعاء الفقاعة العائمة وقت الأذان بالتحديد - الإشعار الدائم بتاع
+            // ThikrMediaPlayerService (اللي فيه زر الإيقاف) أصلاً كافي ومغطي نفس الغرض،
+            // فمالوش داعي إشعار وفقاعة زيادة على بعض وقت الأذان
 
         }
 
