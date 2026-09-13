@@ -119,8 +119,10 @@ public class ChatHeadService extends Service implements View.OnTouchListener {
 					getBaseContext().getResources().getDisplayMetrics());
 		}
 		if (intent == null) {
-			Log.d(TAG, "starting foreground (null intent?)");
-			startnotification();
+			// ✅ ده بيحصل لما أندرويد نفسه يعيد تشغيل الخدمة تلقائي في الخلفية من غير أي بيانات
+			// حقيقية معاها (زي بعد ما يكون قفلها). مالوش داعي نظهر إشعار خالص هنا لأننا هنقفل
+			// الخدمة على طول برضه - ده كان بيسبب إشعار يظهر ويختفي بسرعة من غير أي فايدة
+			Log.d(TAG, "restarted with null intent - nothing to show, stopping quietly");
 			this.stopSelf();
 			return START_NOT_STICKY;
 		}
