@@ -163,6 +163,12 @@ public class ChatHeadService extends Service implements View.OnTouchListener {
 				startForeground(NOTIFICATION_ID, mBuilder.build());
 			} else {
 				Log.d(TAG, "starting foreground (not athan)");
+				// ✅ النص الحقيقي كان مستخرج فوق (متغير thikr المحلي) بس مكانش بيتحط في
+				// this.thikr قبل ما ننادي startnotification()، فكانت دايمًا ترجع للنص
+				// الاحتياطي الإنجليزي بدل النص الصحيح
+				if (thikr != null) {
+					this.thikr = thikr;
+				}
 				startnotification();
 			}
 
