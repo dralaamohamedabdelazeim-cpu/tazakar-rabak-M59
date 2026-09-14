@@ -87,6 +87,31 @@ public class ThikrAlarmReceiver extends BroadcastReceiver {
 
     }
 
+    // ✅ مرجع ثابت (static) للمشغل الحالي - لازم يكون ثابت لأن كل استدعاء لـ onReceive
+    // بيعمل نسخة جديدة تمامًا من BroadcastReceiver، فمتغير عادي في الكلاس مكانش هيتذكر
+    // مشغل الصوت السابق. بيه بنضمن إن صوت تنبيه جديد (زي الإقامة) يوقف أي صوت تنبيه سابق
+    // لسه شغال بدل ما يشتغلوا الاتنين فوق بعض
+    private static MediaPlayer currentAlertPlayer;
+    private static AudioManager.OnAudioFocusChangeListener currentAlertListener;
+    private static AudioManager currentAlertAudioManager;
+
+    private static void stopAnyPlayingAlertSound() {
+        try {
+            if (currentAlertPlayer != null) {
+                if (currentAlertPlayer.isPlaying()) currentAlertPlayer.stop();
+                currentAlertPlayer.release();
+            }
+        } catch (Exception ignored) {}
+        currentAlertPlayer = null;
+        try {
+            if (currentAlertAudioManager != null && currentAlertListener != null) {
+                currentAlertAudioManager.abandonAudioFocus(currentAlertListener);
+            }
+        } catch (Exception ignored) {}
+        currentAlertListener = null;
+        currentAlertAudioManager = null;
+    }
+
     // ✅ بنشغّل صوت التنبيه (اقتراب الصلاة / الإقامة) بمشغل صوت مباشر بتركيز صوتي فعلي،
     // بدل ما نتكل على صوت الإشعار الجاهز في أندرويد. صوت الإشعار ده مشترك بين كل التطبيقات،
     // فأي إشعار من تطبيق تاني يوصل أثناء التشغيل كان بيقاطعه أو يستبدله فورًا. بالطريقة دي،
@@ -96,6 +121,10 @@ public class ThikrAlarmReceiver extends BroadcastReceiver {
 
         final AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
         if (audioManager == null) return;
+
+        // ✅ لو فيه صوت تنبيه لسه شغال من نداء سابق (زي اقتراب الصلاة اللي لسه ماخلصش)،
+        // نوقفه الأول قبل ما نبدأ الصوت الجديد
+        stopAnyPlayingAlertSound();
 
         final MediaPlayer[] playerHolder = new MediaPlayer[1];
 
@@ -121,6 +150,7 @@ public class ThikrAlarmReceiver extends BroadcastReceiver {
                             }
                         } catch (Exception ignored) {}
                         playerHolder[0] = null;
+                        if (currentAlertPlayer == playerHolder[0]) currentAlertPlayer = null;
                         try { audioManager.abandonAudioFocus(listenerHolder[0]); } catch (Exception ignored) {}
                     }
                     break;
@@ -146,11 +176,19 @@ public class ThikrAlarmReceiver extends BroadcastReceiver {
         try {
             MediaPlayer player = new MediaPlayer();
             playerHolder[0] = player;
+            currentAlertPlayer = player;
+            currentAlertListener = listenerHolder[0];
+            currentAlertAudioManager = audioManager;
             player.setAudioAttributes(attrs);
             player.setDataSource(context, soundUri);
             player.setOnCompletionListener(mp -> {
                 try { mp.release(); } catch (Exception ignored) {}
                 playerHolder[0] = null;
+                if (currentAlertPlayer == mp) {
+                    currentAlertPlayer = null;
+                    currentAlertListener = null;
+                    currentAlertAudioManager = null;
+                }
                 try { audioManager.abandonAudioFocus(listenerHolder[0]); } catch (Exception ignored) {}
             });
             player.prepare();
