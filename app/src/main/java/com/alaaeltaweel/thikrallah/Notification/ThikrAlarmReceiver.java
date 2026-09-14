@@ -102,15 +102,6 @@ public class ThikrAlarmReceiver extends BroadcastReceiver {
         final AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
         if (audioManager == null) return;
 
-        // ✅ قفل دائم (محفوظ على الجهاز) - بيفضل شغال حتى لو أندرويد قفل التطبيق وفتحه تاني
-        // بين المنبهين (بيحصل كتير في أجهزة زي Oppo/ColorOS اللي بتقفل التطبيقات بسرعة)
-        final SharedPreferences alertPrefs = PreferenceManager.getDefaultSharedPreferences(context);
-        long lockUntil = alertPrefs.getLong("active_alert_sound_until", 0);
-        if (System.currentTimeMillis() < lockUntil) {
-            Log.d(TAG, "playProtectedAlertSound: alert sound still playing (persisted lock), skipping");
-            return;
-        }
-
         // ✅ لو فيه صوت تنبيه شغال بالفعل في نفس العملية، منشغلش صوت تاني فوقه - نتجاهل المحاولة الجديدة
         synchronized (alertPlayerLock) {
             if (activeAlertPlayer != null) {
@@ -146,7 +137,6 @@ public class ThikrAlarmReceiver extends BroadcastReceiver {
                         synchronized (alertPlayerLock) {
                             activeAlertPlayer = null;
                         }
-                        alertPrefs.edit().remove("active_alert_sound_until").apply();
                         try { audioManager.abandonAudioFocus(listenerHolder[0]); } catch (Exception ignored) {}
                     }
                     break;
@@ -183,29 +173,15 @@ public class ThikrAlarmReceiver extends BroadcastReceiver {
                 synchronized (alertPlayerLock) {
                     if (activeAlertPlayer == mp) activeAlertPlayer = null;
                 }
-                alertPrefs.edit().remove("active_alert_sound_until").apply();
                 try { audioManager.abandonAudioFocus(listenerHolder[0]); } catch (Exception ignored) {}
             });
             player.prepare();
-
-            // ✅ دلوقتي عرفنا مدة الصوت فعليًا - نسجل القفل الدائم لحد ما الصوت يخلص + هامش أمان
-            int durationMs;
-            try {
-                durationMs = player.getDuration();
-            } catch (Exception ignored) {
-                durationMs = 0;
-            }
-            if (durationMs <= 0) durationMs = 15000; // احتياطي لو مقدرناش نجيب مدة الملف
-            long lockUntilTime = System.currentTimeMillis() + durationMs + 1500;
-            alertPrefs.edit().putLong("active_alert_sound_until", lockUntilTime).apply();
-
             player.start();
         } catch (Exception e) {
             Log.e(TAG, "playProtectedAlertSound failed: " + e.getMessage());
             synchronized (alertPlayerLock) {
                 if (activeAlertPlayer == playerHolder[0]) activeAlertPlayer = null;
             }
-            alertPrefs.edit().remove("active_alert_sound_until").apply();
             try { audioManager.abandonAudioFocus(listenerHolder[0]); } catch (Exception ignored) {}
         }
     }
