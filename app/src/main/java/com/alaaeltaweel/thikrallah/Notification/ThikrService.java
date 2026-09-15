@@ -22,6 +22,7 @@ import android.os.Vibrator;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.telephony.TelephonyManager;
+import android.telephony.PhoneStateListener;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -66,11 +67,10 @@ public class ThikrService extends IntentService  {
     String TAG = "ThikrService";
     private final static int NOTIFICATION_ID_GENERIC_FOREGROUND=50;
     private final static int NOTIFICATION_ID_MORNING_NIGHT_THIKR=200;
-    private final static int NOTIFICATION_ID_NIGHT_THIKR=250;
     private final static int NOTIFICATION_ID_QURAN_THIKR=400;
-    private final static int NOTIFICATION_ID_QURAN_THIKR_KAHF=401;
     private final static int NOTIFICATION_ID_QURAN_DOWNLOAD_NEEDED=500;
     private AudioManager am;
+    private Intent calling_intent;
     Context mcontext;
     @Inject PageProvider quranPageProvider;
     QuranSettings quransettings;
@@ -103,7 +103,46 @@ public class ThikrService extends IntentService  {
         return false;
     }
 }
+private PhoneStateListener phoneStateListener;
+    private boolean pendingThikrAfterCall = false;
+    // ✅ بيحفظ نوع التذكير اللي اتأجل بسبب المكالمة - عشان رقم إعادة المحاولة يبقى
+    // مخصص لكل نوع، ومايحصلش تضارب أو مسح لتذكير تاني لو نوعين مختلفين اتأجلوا بنفس المكالمة
+    private String pendingThikrDataType = "";
 
+    private void registerCallListener() {
+        TelephonyManager tm = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+        if (tm == null) return;
+        phoneStateListener = new PhoneStateListener() {
+            @Override
+            public void onCallStateChanged(int state, String phoneNumber) {
+                if (state == TelephonyManager.CALL_STATE_IDLE && pendingThikrAfterCall) {
+                    pendingThikrAfterCall = false;
+                    android.app.AlarmManager alarmMgr =
+                        (android.app.AlarmManager) getSystemService(Context.ALARM_SERVICE);
+                    Intent retry = new Intent(getApplicationContext(), ThikrAlarmReceiver.class);
+                    if (calling_intent != null && calling_intent.getExtras() != null) {
+                        retry.putExtras(calling_intent.getExtras());
+                    }
+                    // ✅ رقم مخصص لكل نوع تذكير (بدل رقم ثابت واحد) - عشان لو نوعين مختلفين
+                    // اتأجلوا بنفس المكالمة، كل واحد فيهم يفضل له محاولة إعادة منفصلة، مايمسحش التاني
+                    android.app.PendingIntent pi = android.app.PendingIntent.getBroadcast(
+                        getApplicationContext(), pendingThikrDataType.hashCode() + 9999, retry,
+                        android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
+                    alarmMgr.setExactAndAllowWhileIdle(
+                        android.app.AlarmManager.RTC_WAKEUP,
+                        System.currentTimeMillis() + 3000, pi);
+                }
+            }
+        };
+        tm.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
+    }
+
+    private void unregisterCallListener() {
+        TelephonyManager tm = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+        if (tm != null && phoneStateListener != null) {
+            tm.listen(phoneStateListener, PhoneStateListener.LISTEN_NONE);
+        }
+	}
 	@Override
 	protected void onHandleIntent(Intent intent) {
 
@@ -112,6 +151,8 @@ public class ThikrService extends IntentService  {
             showForegroundNotificationan(NOTIFICATION_ID_GENERIC_FOREGROUND);
         }
 
+         calling_intent=intent;
+		registerCallListener();
         mcontext=this.getApplicationContext();
         quransettings=QuranSettings.getInstance(mcontext);
         //update all alarms
@@ -212,9 +253,9 @@ public class ThikrService extends IntentService  {
                             this.startService(new Intent(this, ThikrMediaPlayerService.class).putExtras(data));
                         }
                     } else {
-                        // ✅ فيه مكالمة شغالة - دور الذكر ده عدى، مفيش داعي نأجله أو نعيد
-                        // محاولته، الجدولة العادية هي اللي هتشغّل اللي بعده في وقته
-                        Log.d(TAG, "Call in progress, skipping this general thikr occurrence entirely (its turn has passed)");
+                        Log.d(TAG, "Call in progress, will resume after call ends");
+                        pendingThikrAfterCall = true;
+                        pendingThikrDataType = MainActivity.DATA_TYPE_GENERAL_THIKR;
                     }
                 }
             } catch (Exception e) {
@@ -315,7 +356,7 @@ public class ThikrService extends IntentService  {
                     manager.createNotificationChannel(chan);
                     mBuilder.setChannelId(NOTIFICATION_CHANNEL_ID);
                 }
-                mNotificationManager.notify(NOTIFICATION_ID_NIGHT_THIKR, mBuilder.build());
+                mNotificationManager.notify(NOTIFICATION_ID_MORNING_NIGHT_THIKR, mBuilder.build());
 			}else{
 				if (!isInCall()) {
 				sharedPrefs.edit().putString("com.alaaeltaweel.thikrallah.datatype", MainActivity.DATA_TYPE_NIGHT_THIKR).apply();
@@ -511,7 +552,7 @@ public class ThikrService extends IntentService  {
                     manager.createNotificationChannel(chan);
                     mBuilder.setChannelId(NOTIFICATION_CHANNEL_ID);
                 }
-                mNotificationManager.notify(NOTIFICATION_ID_QURAN_THIKR_KAHF, mBuilder.build());
+                mNotificationManager.notify(NOTIFICATION_ID_QURAN_THIKR, mBuilder.build());
             }else{
 
                 sharedPrefs.edit().putString("com.alaaeltaweel.thikrallah.datatype", MainActivity.DATA_TYPE_QURAN_MULK).apply();
@@ -575,7 +616,7 @@ public class ThikrService extends IntentService  {
                             NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
                             NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this);
                             mBuilder.setContentTitle(this.getString(R.string.my_app_name))
-                                    .setContentText(this.getString(R.string.surat_alkahf))
+                                    .setContentText(this.getString(R.string.surat_almulk))
                                     .setSmallIcon(R.drawable.ic_launcher)
                                     .setAutoCancel(true);
 
@@ -584,7 +625,7 @@ public class ThikrService extends IntentService  {
                             mBuilder.setSound(soundUri,AudioManager.STREAM_NOTIFICATION);
                             Intent launchAppIntent = new Intent(this, PagerActivity.class);
                             launchAppIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                            launchAppIntent.putExtra("page", 293);
+                            launchAppIntent.putExtra("page", 562);
 
                             PendingIntent launchAppPendingIntent = PendingIntent.getActivity(this,
                                     8588, launchAppIntent, PendingIntent.FLAG_ONE_SHOT|PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE
@@ -603,7 +644,7 @@ public class ThikrService extends IntentService  {
                                 manager.createNotificationChannel(chan);
                                 mBuilder.setChannelId(NOTIFICATION_CHANNEL_ID);
                             }
-                            mNotificationManager.notify(NOTIFICATION_ID_QURAN_THIKR_KAHF, mBuilder.build());
+                            mNotificationManager.notify(NOTIFICATION_ID_QURAN_THIKR, mBuilder.build());
                         }
 
                     }
@@ -661,9 +702,29 @@ public class ThikrService extends IntentService  {
                 }
 
             }
-            // ✅ شيلنا استدعاء الفقاعة العائمة وقت الأذان بالتحديد - الإشعار الدائم بتاع
-            // ThikrMediaPlayerService (اللي فيه زر الإيقاف) أصلاً كافي ومغطي نفس الغرض،
-            // فمالوش داعي إشعار وفقاعة زيادة على بعض وقت الأذان
+            //starting chatheadservice
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (Settings.canDrawOverlays(this)) {
+                    Log.d(TAG, "calling chatheadservice 621");
+                    Intent intentChatHead = new Intent(this.getApplicationContext(), ChatHeadService.class);
+                    intentChatHead.putExtra("thikr", athan);
+                    intentChatHead.putExtra("isAthan", true);
+                    //startService(intentChatHead);
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        //startForegroundService(intentChatHead);
+                        startForegroundService(intentChatHead);
+                    } else {
+                        startService(intentChatHead);
+                    }
+                }
+            } else {
+                Log.d(TAG, "calling chatheadservice 634");
+                Intent intentChatHead = new Intent(this.getApplicationContext(), ChatHeadService.class);
+                intentChatHead.putExtra("thikr", athan);
+                intentChatHead.putExtra("isAthan", true);
+                startService(intentChatHead);
+            }
+
 
         }
 
@@ -1160,11 +1221,11 @@ public class ThikrService extends IntentService  {
 			Date dateCompareOne = parseDate(quiet_time_start);
 			Date dateCompareTwo = parseDate(quiet_time_end);
 			if (dateCompareOne.after(dateCompareTwo)){
-				if (!(!date.before(dateCompareTwo) && dateCompareOne.after(date))) {
+				if (!(dateCompareTwo.before( date ) && dateCompareOne.after(date))) {
 					return true;
 				}
 			}else{
-				if (!date.before(dateCompareOne) && dateCompareTwo.after(date)) {
+				if (dateCompareOne.before( date ) && dateCompareTwo.after(date)) {
 					return true;
 				}
 			}
@@ -1220,5 +1281,6 @@ public class ThikrService extends IntentService  {
     public void onDestroy(){
 Log.d(TAG,"calling on destroy");
         super.onDestroy();
+  unregisterCallListener();
     }
 }

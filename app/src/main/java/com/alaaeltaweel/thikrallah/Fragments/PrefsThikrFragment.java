@@ -129,27 +129,10 @@ public class PrefsThikrFragment extends PreferenceFragmentCompat implements OnSh
         super.onPause();
     }
 
-    // ✅ مفاتيح داخلية بحتة بتتغير من كود التطبيق نفسه (مش من المستخدم في شاشة الإعدادات) -
-    // معندهاش علاقة بأي إعداد يستحق إعادة حساب الإنذارات كلها من جديد
-    private static final java.util.Set<String> INTERNAL_BOOKKEEPING_KEYS = new java.util.HashSet<>(java.util.Arrays.asList(
-            "lastAlarmsUpdate",
-            "next_general_thikr_scheduled_time",
-            "next_general_thikr_scheduled_interval",
-            "next_general_thikr_scheduled_quiet_signature",
-            "last_claimed_general_thikr_occurrence",
-            "thikr_current_index",
-            "last_general_thikr_time",
-            "isMediaPermissionNeeded",
-            "ISPLAYING",
-            "last_iqama_play_time",
-            "last_pre_athan_play_time",
-            "location_not_set_warning"
-    ));
-
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences,
                                           String key) {
-        if (key.equalsIgnoreCase("volume") || INTERNAL_BOOKKEEPING_KEYS.contains(key)) {
+        if (key.equalsIgnoreCase("volume")) {
 			return;
 		}
 		MyAlarmsManager manager=new MyAlarmsManager(this.getActivity().getApplicationContext());

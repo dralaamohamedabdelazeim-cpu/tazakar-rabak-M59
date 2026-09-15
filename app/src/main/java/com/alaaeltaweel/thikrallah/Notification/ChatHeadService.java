@@ -119,10 +119,8 @@ public class ChatHeadService extends Service implements View.OnTouchListener {
 					getBaseContext().getResources().getDisplayMetrics());
 		}
 		if (intent == null) {
-			// ✅ ده بيحصل لما أندرويد نفسه يعيد تشغيل الخدمة تلقائي في الخلفية من غير أي بيانات
-			// حقيقية معاها (زي بعد ما يكون قفلها). مالوش داعي نظهر إشعار خالص هنا لأننا هنقفل
-			// الخدمة على طول برضه - ده كان بيسبب إشعار يظهر ويختفي بسرعة من غير أي فايدة
-			Log.d(TAG, "restarted with null intent - nothing to show, stopping quietly");
+			Log.d(TAG, "starting foreground (null intent?)");
+			startnotification();
 			this.stopSelf();
 			return START_NOT_STICKY;
 		}
@@ -163,12 +161,6 @@ public class ChatHeadService extends Service implements View.OnTouchListener {
 				startForeground(NOTIFICATION_ID, mBuilder.build());
 			} else {
 				Log.d(TAG, "starting foreground (not athan)");
-				// ✅ النص الحقيقي كان مستخرج فوق (متغير thikr المحلي) بس مكانش بيتحط في
-				// this.thikr قبل ما ننادي startnotification()، فكانت دايمًا ترجع للنص
-				// الاحتياطي الإنجليزي بدل النص الصحيح
-				if (thikr != null) {
-					this.thikr = thikr;
-				}
 				startnotification();
 			}
 
@@ -226,13 +218,7 @@ public class ChatHeadService extends Service implements View.OnTouchListener {
 			}
 
 		} else {
-			Log.d(TAG, "not reminder type 1 or 3 - showing as plain notification instead: " + reminderType);
-			// ✅ النص الحقيقي كان جاي أصلاً مع الطلب، بس الكود كان مش بياخده هنا، فكان دايمًا
-			// يرجع للنص الاحتياطي (اللي طلع إنجليزي لعدم وجود ترجمة عربية محفوظة له)
-			String thikrText = intent.getStringExtra("thikr");
-			if (thikrText != null) {
-				this.thikr = thikrText;
-			}
+			Log.d(TAG, "not reminder type 1 or 3? what then? It is: " + reminderType);
 			startnotification();
 			this.stopSelf();
 		}

@@ -49,159 +49,6 @@ import com.alaaeltaweel.thikrallah.ThikrMediaPlayerService;
 public class ThikrAlarmReceiver extends BroadcastReceiver {
     String TAG = "ThikrAlarmReceiver";
 
-    // ✅ قفل عام على مستوى الكلاس - يمنع تشغيل أكتر من صوت تنبيه (إقامة/قبل أذان) في نفس الوقت.
-    // لو فيه صوت شغال بالفعل، أي محاولة تشغيل جديدة هترفض بدل ما تتعارض معاه أو توقفه
-    private static final Object alertPlayerLock = new Object();
-    private static MediaPlayer activeAlertPlayer = null;
-    // ✅ نستخدم متغير "محجوز" منفصل عن المشغل نفسه، وبنحجزه فورًا وبشكل ذرّي (atomic) في نفس
-    // خطوة الفحص - قبل حتى ما نطلب التركيز الصوتي أو ننشئ المشغل، اللي ممكن ياخد وقت محسوس.
-    // من غيره، نداءين قريبين جدًا من بعض (زي اقتراب الصلاة والإقامة لو جم في لحظة متقاربة)
-    // ممكن الاتنين "يشوفوا" مفيش صوت شغال في نفس اللحظة قبل ما أي منهم يسجل نفسه، فيعدّوا
-    // الفحص الاتنين ويشتغلوا فوق بعض
-    private static boolean alertSoundBusy = false;
-
-    // ✅ فحص موحّد لوجود مكالمة شغالة فعلاً (عادية أو نت) - بنستخدمه بدل طلب حجز صوت مؤقت
-    // عشان مانلغيش صوت التنبيه لمجرد إشعار عابر من تطبيق تاني بيتزامن معانا في نفس اللحظة
-    private boolean isActualCallInProgress(Context context) {
-
-        try {
-            TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
-            if (tm != null && tm.getCallState() != TelephonyManager.CALL_STATE_IDLE) {
-                return true;
-            }
-        } catch (SecurityException e) {
-            Log.d(TAG, "Cannot check call state");
-        }
-
-        // ✅ تطبيقات مكالمات النت الحديثة (زي واتساب) بتسجل نفسها كمكالمة "مُدارة ذاتيًا" مع
-        // النظام - ده بيظهر هنا حتى لو وضع الصوت (MODE_IN_COMMUNICATION) ملحقش يتغير
-        try {
-            android.telecom.TelecomManager telecomManager =
-                    (android.telecom.TelecomManager) context.getSystemService(Context.TELECOM_SERVICE);
-            if (telecomManager != null && telecomManager.isInCall()) {
-                return true;
-            }
-        } catch (Exception e) {
-            Log.d(TAG, "Cannot check telecom call state");
-        }
-
-        try {
-            AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
-            if (audioManager != null && audioManager.getMode() == AudioManager.MODE_IN_COMMUNICATION) {
-                return true;
-            }
-        } catch (Exception e) {
-            Log.d(TAG, "Cannot check audio mode");
-        }
-
-        return false;
-
-    }
-
-    // ✅ بنشغّل صوت التنبيه (اقتراب الصلاة / الإقامة) بمشغل صوت مباشر بتركيز صوتي فعلي،
-    // بدل ما نتكل على صوت الإشعار الجاهز في أندرويد. صوت الإشعار ده مشترك بين كل التطبيقات،
-    // فأي إشعار من تطبيق تاني يوصل أثناء التشغيل كان بيقاطعه أو يستبدله فورًا. بالطريقة دي،
-    // بناخد تركيز صوتي فعلي ونتجاهل أي مقاطعة قصيرة (زي نغمة إشعار تطبيق تاني)، ومنوقفش
-    // إلا لو فيه مكالمة حقيقية شغالة فعلاً وقت المقاطعة
-    private void playProtectedAlertSound(Context context, android.net.Uri soundUri) {
-
-        final AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
-        if (audioManager == null) return;
-
-        // ✅ فحص وحجز "ذرّي" في خطوة واحدة مقفولة - لو مفيش صوت محجوز، نحجزه فورًا هنا قبل
-        // أي حاجة تانية، عشان مستحيل نداء تاني قريب جدًا من التوقيت ده يعدي الفحص في نفس اللحظة
-        synchronized (alertPlayerLock) {
-            if (alertSoundBusy) {
-                Log.d(TAG, "playProtectedAlertSound: alert sound already playing, skipping new one");
-                return;
-            }
-            alertSoundBusy = true;
-        }
-
-        final MediaPlayer[] playerHolder = new MediaPlayer[1];
-
-        android.media.AudioAttributes attrs = new android.media.AudioAttributes.Builder()
-                .setUsage(android.media.AudioAttributes.USAGE_ALARM)
-                .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                .build();
-
-        AudioManager.OnAudioFocusChangeListener[] listenerHolder = new AudioManager.OnAudioFocusChangeListener[1];
-
-        listenerHolder[0] = focusChange -> {
-            switch (focusChange) {
-                case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
-                case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
-                case AudioManager.AUDIOFOCUS_LOSS:
-                    // ✅ نتجاهل أي مقاطعة إلا لو فيه مكالمة حقيقية شغالة فعلاً دلوقتي
-                    if (isActualCallInProgress(context)) {
-                        try {
-                            MediaPlayer p = playerHolder[0];
-                            if (p != null) {
-                                if (p.isPlaying()) p.stop();
-                                p.release();
-                            }
-                        } catch (Exception ignored) {}
-                        playerHolder[0] = null;
-                        synchronized (alertPlayerLock) {
-                            activeAlertPlayer = null;
-                            alertSoundBusy = false;
-                        }
-                        try { audioManager.abandonAudioFocus(listenerHolder[0]); } catch (Exception ignored) {}
-                    }
-                    break;
-            }
-        };
-
-        int result;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            android.media.AudioFocusRequest focusRequest = new android.media.AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
-                    .setAudioAttributes(attrs)
-                    .setOnAudioFocusChangeListener(listenerHolder[0])
-                    .build();
-            result = audioManager.requestAudioFocus(focusRequest);
-        } else {
-            result = audioManager.requestAudioFocus(listenerHolder[0], AudioManager.STREAM_ALARM, AudioManager.AUDIOFOCUS_GAIN);
-        }
-
-        if (result != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
-            Log.d(TAG, "playProtectedAlertSound: audio focus not granted, skipping");
-            synchronized (alertPlayerLock) {
-                alertSoundBusy = false;
-            }
-            return;
-        }
-
-        try {
-            MediaPlayer player = new MediaPlayer();
-            playerHolder[0] = player;
-            synchronized (alertPlayerLock) {
-                activeAlertPlayer = player;
-            }
-            player.setAudioAttributes(attrs);
-            player.setDataSource(context, soundUri);
-            player.setOnCompletionListener(mp -> {
-                try { mp.release(); } catch (Exception ignored) {}
-                playerHolder[0] = null;
-                synchronized (alertPlayerLock) {
-                    if (activeAlertPlayer == mp) {
-                        activeAlertPlayer = null;
-                        alertSoundBusy = false;
-                    }
-                }
-                try { audioManager.abandonAudioFocus(listenerHolder[0]); } catch (Exception ignored) {}
-            });
-            player.prepare();
-            player.start();
-        } catch (Exception e) {
-            Log.e(TAG, "playProtectedAlertSound failed: " + e.getMessage());
-            synchronized (alertPlayerLock) {
-                if (activeAlertPlayer == playerHolder[0]) activeAlertPlayer = null;
-                alertSoundBusy = false;
-            }
-            try { audioManager.abandonAudioFocus(listenerHolder[0]); } catch (Exception ignored) {}
-        }
-    }
-
 
     @Override
      public void onReceive(Context context, Intent intent) {
@@ -312,8 +159,16 @@ if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
                 prefs.edit().putLong("last_athan_time_" + dataType, nowMs).commit();
             }
 
-            // ✅ تحقق من وجود مكالمة (عادية أو نت) وابعت الحالة للشاشة
-            boolean isInCall = isActualCallInProgress(context);
+            // ✅ تحقق من وجود مكالمة وابعت الحالة للشاشة
+            boolean isInCall = false;
+            try {
+                TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+                if (tm != null && tm.getCallState() != TelephonyManager.CALL_STATE_IDLE) {
+                    isInCall = true;
+                }
+            } catch (SecurityException e) {
+                Log.d(TAG, "Cannot check call state");
+            }
 
             // ✅ شغّل صوت الأذان مباشرة من المنبه نفسه - مستقل عن نجاح فتح الشاشة
             // القفل ده مشترك مع AthanScreenActivity عشان الصوت ميتكررش لو الشاشة فتحت بعده
@@ -348,7 +203,8 @@ if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
             }
 
             // ✅ ضمان فتح الشاشة حتى لو النظام منع الفتح المباشر (قيود Android 10+ على فتح Activity من الخلفية)
-            // بقى الإشعار الدائم (اللي فيه زر الإيقاف) هو اللي بيضمن ده، فمالوش داعي إشعار زيادة هنا
+            // ده نفس الأسلوب اللي بيشتغل بثبات مع تنبيه ما قبل الأذان والإقامة
+            showAthanFullScreenNotification(context, athanIntent, dataType);
 
             // ✅ خط دفاع إضافي مستقل - نافذة عائمة، بس بس لو الشاشة العادية فعلاً فشلت تفتح.
             // بدل ما نشغلها فورًا كل مرة (وده كان بيعمل إشعار زيادة يظهر ويختفي بسرعة حتى
@@ -454,7 +310,14 @@ private void showPreAthanNotification(Context context, String prayerKey) {
     android.net.Uri soundUri = android.net.Uri.parse(
         "android.resource://" + context.getPackageName() + "/" + soundRes);
 
-    boolean canPlaySound = !isActualCallInProgress(context);
+    AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+    boolean canPlaySound = true;
+    if (audioManager != null) {
+        int focusResult = audioManager.requestAudioFocus(null,
+            AudioManager.STREAM_ALARM,
+            AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
+        canPlaySound = (focusResult == AudioManager.AUDIOFOCUS_REQUEST_GRANTED);
+    }
     
     String channelId = "pre_athan_reminder_v2_" + prayerKey;
     NotificationManager notificationManager =
@@ -465,9 +328,15 @@ private void showPreAthanNotification(Context context, String prayerKey) {
                 channelId, "تنبيه اقتراب الصلاة", NotificationManager.IMPORTANCE_HIGH);
         channel.enableVibration(true);
         channel.setVibrationPattern(new long[]{0, 500, 200, 500});
-        // ✅ الإشعار بقى صامت دايمًا - الصوت بقى بيتشغل بمشغل صوت منفصل (playProtectedAlertSound)
-        // عشان مايتقاطعش لو إشعار من تطبيق تاني وصل في نفس اللحظة
-        channel.setSound(null, null);
+        if (canPlaySound) {
+            channel.setSound(canPlaySound ? soundUri : null,
+                new android.media.AudioAttributes.Builder()
+                    .setUsage(android.media.AudioAttributes.USAGE_ALARM)
+                    .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build());
+        } else {
+            channel.setSound(null, null);
+        }
         channel.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
         notificationManager.createNotificationChannel(channel);
     
@@ -489,19 +358,61 @@ PendingIntent pendingIntent = PendingIntent.getBroadcast(context, prayerKey.hash
             .setAutoCancel(true)
            .setTimeoutAfter(3 * 60 * 1000L) 
             .setVibrate(new long[]{0, 500, 200, 500})
-            .setSound(null)
+            .setSound(canPlaySound ? soundUri : null)
             .setContentIntent(pendingIntent) 
             .setFullScreenIntent(wakePendingIntent, true);
     PreferenceManager.getDefaultSharedPreferences(context).edit()
                 .putLong("last_pre_athan_play_time", System.currentTimeMillis()).apply();
         notificationManager.notify(prayerKey.hashCode(), builder.build());
-        if (canPlaySound) {
-            playProtectedAlertSound(context, soundUri);
+        if (audioManager != null && canPlaySound) {
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                audioManager.abandonAudioFocus(null); // ✅ رجّع الميكروفون بعد ما صوت التنبيه يخلص
+                notificationManager.cancel(prayerKey.hashCode()); // ✅ قفل الإشعار تلقائي بعد ما الصوت يخلص
+            }, 30000);
         }
-        new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            notificationManager.cancel(prayerKey.hashCode()); // ✅ قفل الإشعار تلقائي بعد فترة
-        }, 30000);
 }
+
+    // ✅ إشعار full-screen بيضمن فتح شاشة الأذان حتى لو منعت قيود الأندرويد فتحها مباشرة من الخلفية
+    // نفس القناة والـ ID اللي بتستخدمهم AthanScreenActivity في "showReturnToAthanNotification"
+    // عشان لو الشاشة فتحت فعلاً (onResume) هيتقفل الإشعار ده تلقائي
+    private void showAthanFullScreenNotification(Context context, Intent athanIntent, String dataType) {
+        String channelId = "athan_screen_channel";
+        int notifId = 774411;
+
+        NotificationManager nm =
+                (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        if (nm == null) return;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = nm.getNotificationChannel(channelId);
+            if (channel == null) {
+                channel = new NotificationChannel(channelId, "شاشة الأذان", NotificationManager.IMPORTANCE_HIGH);
+                channel.setSound(null, null); // ✅ الصوت شغال بالفعل من ThikrMediaPlayerService، الإشعار ده بس لفتح الشاشة
+                nm.createNotificationChannel(channel);
+            }
+        }
+
+        int piFlags = PendingIntent.FLAG_UPDATE_CURRENT;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            piFlags |= PendingIntent.FLAG_IMMUTABLE;
+        }
+        PendingIntent fullScreenPendingIntent = PendingIntent.getActivity(
+                context, dataType.hashCode() + 4444, athanIntent, piFlags);
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, channelId)
+                .setSmallIcon(R.drawable.ic_launcher)
+                .setContentTitle("حان وقت الأذان")
+                .setContentText("اضغط لفتح شاشة الأذان")
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setAutoCancel(true)
+                .setOngoing(true)
+                .setSound(null)
+                .setContentIntent(fullScreenPendingIntent)
+                .setFullScreenIntent(fullScreenPendingIntent, true);
+
+        nm.notify(notifId, builder.build());
+    }
 
     private boolean isAthanType(String dataType) {
         if (dataType == null) return false;
@@ -532,7 +443,14 @@ PendingIntent pendingIntent = PendingIntent.getBroadcast(context, prayerKey.hash
     android.net.Uri soundUri = android.net.Uri.parse(
         "android.resource://" + context.getPackageName() + "/" + soundRes);
 
-    boolean canPlayIqamaSound = !isActualCallInProgress(context);
+         AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+boolean canPlayIqamaSound = true;
+if (audioManager != null) {
+    int focusResult = audioManager.requestAudioFocus(null,
+        AudioManager.STREAM_ALARM,
+        AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
+    canPlayIqamaSound = (focusResult == AudioManager.AUDIOFOCUS_REQUEST_GRANTED);
+}
         
     String channelId = "iqama_channel_v2_s" + soundChoice;
     NotificationManager nm =
@@ -541,9 +459,11 @@ PendingIntent pendingIntent = PendingIntent.getBroadcast(context, prayerKey.hash
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         NotificationChannel channel = new NotificationChannel(
             channelId, "إقامة الصلاة", NotificationManager.IMPORTANCE_HIGH);
-        // ✅ الإشعار بقى صامت دايمًا - الصوت بقى بيتشغل بمشغل صوت منفصل (playProtectedAlertSound)
-        // عشان مايتقاطعش لو إشعار من تطبيق تاني وصل في نفس اللحظة
-        channel.setSound(null, null);
+        channel.setSound(canPlayIqamaSound ? soundUri : null,
+            new android.media.AudioAttributes.Builder()
+                .setUsage(android.media.AudioAttributes.USAGE_ALARM)
+                .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .build());
        channel.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
         nm.createNotificationChannel(channel);
     
@@ -567,17 +487,17 @@ PendingIntent pi = PendingIntent.getBroadcast(context, prayerKey.hashCode() + 22
         .setAutoCancel(true)
         .setTimeoutAfter(3 * 60 * 1000L) 
         .setFullScreenIntent(wakePi, true) 
-        .setSound(null)
+        .setSound(canPlayIqamaSound ? soundUri : null)
         .setContentIntent(pi); 
 
         PreferenceManager.getDefaultSharedPreferences(context).edit()
                 .putLong("last_iqama_play_time", System.currentTimeMillis()).apply();
     nm.notify(("iqama_" + prayerKey).hashCode(), builder.build());
-        if (canPlayIqamaSound) {
-            playProtectedAlertSound(context, soundUri);
+        if (audioManager != null && canPlayIqamaSound) {
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                audioManager.abandonAudioFocus(null); // ✅ رجّع الميكروفون بعد ما صوت الإقامة يخلص
+                nm.cancel(("iqama_" + prayerKey).hashCode()); // ✅ قفل الإشعار تلقائي بعد ما الصوت يخلص
+            }, 30000);
         }
-        new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            nm.cancel(("iqama_" + prayerKey).hashCode()); // ✅ قفل الإشعار تلقائي بعد فترة
-        }, 30000);
     }
 }

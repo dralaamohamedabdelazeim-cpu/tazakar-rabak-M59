@@ -169,16 +169,8 @@ public class MyAlarmsManager {
             long storedNextTime = sharedPrefs.getLong("next_general_thikr_scheduled_time", 0);
             String storedInterval = sharedPrefs.getString("next_general_thikr_scheduled_interval", "");
             boolean intervalChanged = !RandomReminderInterval.equals(storedInterval);
-            // ✅ لازم نعيد الحساب برضه لو المستخدم غيّر وقت الراحة نفسه (بداية أو نهاية أو تفعيله)،
-            // مش بس لما الفاصل الزمني يتغير - وإلا الميعاد المجدول بيفضل زي ما هو من غير ما ياخد
-            // الإعداد الجديد في الاعتبار
-            String currentQuietSignature = sharedPrefs.getBoolean("quiet_time_choice", true)
-                    + "_" + sharedPrefs.getString("quiet_time_start", "22:00")
-                    + "_" + sharedPrefs.getString("quiet_time_end", "22:00");
-            String storedQuietSignature = sharedPrefs.getString("next_general_thikr_scheduled_quiet_signature", "");
-            boolean quietTimeSettingsChanged = !currentQuietSignature.equals(storedQuietSignature);
 
-            if (storedNextTime > now.getTimeInMillis() && !intervalChanged && !quietTimeSettingsChanged) {
+            if (storedNextTime > now.getTimeInMillis() && !intervalChanged) {
                 Log.d("MyAlarmsManager", "General thikr already scheduled, skipping reschedule");
             } else {
                 alarmMgr.cancel(pendingIntentGeneral);
@@ -220,7 +212,6 @@ public class MyAlarmsManager {
                 sharedPrefs.edit()
                         .putLong("next_general_thikr_scheduled_time", calendar1.getTimeInMillis())
                         .putString("next_general_thikr_scheduled_interval", RandomReminderInterval)
-                        .putString("next_general_thikr_scheduled_quiet_signature", currentQuietSignature)
                         .apply();
             }
         } else {
@@ -463,16 +454,7 @@ private void setAlarmClockHighPriority(long timeInMilliseconds, PendingIntent op
         double latitude = Double.parseDouble(MainActivity.getLatitude(context));
         double longitude = Double.parseDouble(MainActivity.getLongitude(context));
         if (latitude == 0 && longitude == 0) {
-            // ✅ إصلاح: بدل ما نرجع بصمت (كل إنذارات الصلاة كانت بتتجمد من غير أي تنبيه)،
-            // نسجل تحذير واضح ونحفظ فلاج عشان أي شاشة في التطبيق تقدر تتحقق منه وتنبه المستخدم
-            Log.w(TAG, "updateAllPrayerAlarms: location not set yet (lat/lon = 0,0) - prayer alarms NOT scheduled");
-            if (sharedPrefs != null) {
-                sharedPrefs.edit().putBoolean("location_not_set_warning", true).apply();
-            }
             return;
-        }
-        if (sharedPrefs != null) {
-            sharedPrefs.edit().putBoolean("location_not_set_warning", false).apply();
         }
         updatePrayerAlarms(requestCodeAthan1, requestCodePreAthan1, requestCodeSilentOn1, requestCodeSilentOff1, requestCodeIqama1, "isFajrReminder", 0, MainActivity.DATA_TYPE_ATHAN1, "fajr");
         updatePrayerAlarms(requestCodeAthan2, requestCodePreAthan2, requestCodeSilentOn2, requestCodeSilentOff2, requestCodeIqama2, "isDuhrReminder", 2, MainActivity.DATA_TYPE_ATHAN2, "dhuhr");
@@ -580,7 +562,7 @@ if (isAthanReminder && isSilentModeEnabled) {
     calendarSilentOnToday.set(Calendar.MINUTE, Integer.parseInt(prayerTimes[prayerPosition].split(":", 3)[1]));
     calendarSilentOnToday.set(Calendar.SECOND, 0);
     calendarSilentOnToday.add(Calendar.MINUTE, iqamaMinutesForSilent);
-    calendarSilentOnToday.add(Calendar.SECOND, 30); // ✅ هامش بسيط عشان صوت الإقامة ياخد فرصته الأول قبل ما الصمت يتفعل
+    calendarSilentOnToday.add(Calendar.SECOND, 60); // ✅ هامش بسيط عشان صوت الإقامة ياخد فرصته الأول قبل ما الصمت يتفعل
 
     Calendar calendarSilentOffToday = (Calendar) calendarSilentOnToday.clone();
     calendarSilentOffToday.add(Calendar.MINUTE, silentDurationMinutes);

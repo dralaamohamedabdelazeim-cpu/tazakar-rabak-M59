@@ -10,6 +10,8 @@ import android.os.Handler;
 import android.os.Looper;
 import android.preference.PreferenceManager;
 import android.util.Log;
+import android.app.ActivityManager;
+import java.util.List;
 
 public class ThikrBootReceiver extends BroadcastReceiver {
     @Override
@@ -17,13 +19,12 @@ public class ThikrBootReceiver extends BroadcastReceiver {
         if (null != intent.getAction()) {
             Log.d("ThikrBootReceiver", "intent called with action" + intent.getAction());
 if (intent.getBooleanExtra("isWatchdog", false)) {
-            // ✅ شيلنا فحص "الخدمة شغالة ولا لأ" لأنه بيتكل على دالة قديمة أندرويد بقى يقيّدها
-            // وممكن يشيلها تمامًا في نسخة مستقبلية. أندرويد نفسه بيتعامل بأمان مع طلب تشغيل
-            // خدمة شغالة بالفعل، فمالوش داعي نفحص إحنا الأول
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(new Intent(context, AthanTimerService.class));
-            } else {
-                context.startService(new Intent(context, AthanTimerService.class));
+            if (!isServiceRunning(context, AthanTimerService.class)) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(new Intent(context, AthanTimerService.class));
+                } else {
+                    context.startService(new Intent(context, AthanTimerService.class));
+                }
             }
             return;
   }
@@ -75,4 +76,15 @@ if (intent.getBooleanExtra("isWatchdog", false)) {
         }
     }
 
+    private boolean isServiceRunning(Context context, Class<?> serviceClass) {
+        ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        List<ActivityManager.RunningServiceInfo> services = manager.getRunningServices(Integer.MAX_VALUE);
+        if (services == null) return false;
+        for (ActivityManager.RunningServiceInfo service : services) {
+            if (serviceClass.getName().equals(service.service.getClassName())) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
