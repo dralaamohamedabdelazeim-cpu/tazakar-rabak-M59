@@ -53,6 +53,12 @@ public class ThikrAlarmReceiver extends BroadcastReceiver {
     // لو فيه صوت شغال بالفعل، أي محاولة تشغيل جديدة هترفض بدل ما تتعارض معاه أو توقفه
     private static final Object alertPlayerLock = new Object();
     private static MediaPlayer activeAlertPlayer = null;
+    // ✅ نستخدم متغير "محجوز" منفصل عن المشغل نفسه، وبنحجزه فورًا وبشكل ذرّي (atomic) في نفس
+    // خطوة الفحص - قبل حتى ما نطلب التركيز الصوتي أو ننشئ المشغل، اللي ممكن ياخد وقت محسوس.
+    // من غيره، نداءين قريبين جدًا من بعض (زي اقتراب الصلاة والإقامة لو جم في لحظة متقاربة)
+    // ممكن الاتنين "يشوفوا" مفيش صوت شغال في نفس اللحظة قبل ما أي منهم يسجل نفسه، فيعدّوا
+    // الفحص الاتنين ويشتغلوا فوق بعض
+    private static boolean alertSoundBusy = false;
 
     // ✅ فحص موحّد لوجود مكالمة شغالة فعلاً (عادية أو نت) - بنستخدمه بدل طلب حجز صوت مؤقت
     // عشان مانلغيش صوت التنبيه لمجرد إشعار عابر من تطبيق تاني بيتزامن معانا في نفس اللحظة
@@ -102,12 +108,14 @@ public class ThikrAlarmReceiver extends BroadcastReceiver {
         final AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
         if (audioManager == null) return;
 
-        // ✅ لو فيه صوت تنبيه شغال بالفعل في نفس العملية، منشغلش صوت تاني فوقه - نتجاهل المحاولة الجديدة
+        // ✅ فحص وحجز "ذرّي" في خطوة واحدة مقفولة - لو مفيش صوت محجوز، نحجزه فورًا هنا قبل
+        // أي حاجة تانية، عشان مستحيل نداء تاني قريب جدًا من التوقيت ده يعدي الفحص في نفس اللحظة
         synchronized (alertPlayerLock) {
-            if (activeAlertPlayer != null) {
+            if (alertSoundBusy) {
                 Log.d(TAG, "playProtectedAlertSound: alert sound already playing, skipping new one");
                 return;
             }
+            alertSoundBusy = true;
         }
 
         final MediaPlayer[] playerHolder = new MediaPlayer[1];
@@ -136,6 +144,7 @@ public class ThikrAlarmReceiver extends BroadcastReceiver {
                         playerHolder[0] = null;
                         synchronized (alertPlayerLock) {
                             activeAlertPlayer = null;
+                            alertSoundBusy = false;
                         }
                         try { audioManager.abandonAudioFocus(listenerHolder[0]); } catch (Exception ignored) {}
                     }
@@ -156,6 +165,9 @@ public class ThikrAlarmReceiver extends BroadcastReceiver {
 
         if (result != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
             Log.d(TAG, "playProtectedAlertSound: audio focus not granted, skipping");
+            synchronized (alertPlayerLock) {
+                alertSoundBusy = false;
+            }
             return;
         }
 
@@ -171,7 +183,10 @@ public class ThikrAlarmReceiver extends BroadcastReceiver {
                 try { mp.release(); } catch (Exception ignored) {}
                 playerHolder[0] = null;
                 synchronized (alertPlayerLock) {
-                    if (activeAlertPlayer == mp) activeAlertPlayer = null;
+                    if (activeAlertPlayer == mp) {
+                        activeAlertPlayer = null;
+                        alertSoundBusy = false;
+                    }
                 }
                 try { audioManager.abandonAudioFocus(listenerHolder[0]); } catch (Exception ignored) {}
             });
@@ -181,6 +196,7 @@ public class ThikrAlarmReceiver extends BroadcastReceiver {
             Log.e(TAG, "playProtectedAlertSound failed: " + e.getMessage());
             synchronized (alertPlayerLock) {
                 if (activeAlertPlayer == playerHolder[0]) activeAlertPlayer = null;
+                alertSoundBusy = false;
             }
             try { audioManager.abandonAudioFocus(listenerHolder[0]); } catch (Exception ignored) {}
         }
