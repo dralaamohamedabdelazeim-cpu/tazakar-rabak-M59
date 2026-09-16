@@ -511,7 +511,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
             String channelName = this.getResources().getString(R.string.remember_notification);
 
-            NotificationChannel chan = new NotificationChannel(NOTIFICATION_CHANNEL_ID, channelName, NotificationManager.IMPORTANCE_DEFAULT);
+            NotificationChannel chan = new NotificationChannel(NOTIFICATION_CHANNEL_ID, channelName, NotificationManager.IMPORTANCE_HIGH);
 
             chan.setSound(null, new AudioAttributes.Builder()
 
