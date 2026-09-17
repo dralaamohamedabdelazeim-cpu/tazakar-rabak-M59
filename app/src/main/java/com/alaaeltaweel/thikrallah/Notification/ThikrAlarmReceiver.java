@@ -352,7 +352,7 @@ PendingIntent pendingIntent = PendingIntent.getBroadcast(context, prayerKey.hash
             .setContentText("تبقى " + PreferenceManager.getDefaultSharedPreferences(context).getString("preAthanMinutes_" + prayerKey, "15") + " دقيقة على صلاة " + prayerNameAr) 
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
-           .setTimeoutAfter(30 * 1000L)
+           .setTimeoutAfter(1 * 60 * 1000L)
             .setVibrate(new long[]{0, 500, 200, 500})
             .setSound(canPlaySound ? soundUri : null)
             .setContentIntent(pendingIntent) 
@@ -439,7 +439,7 @@ PendingIntent pi = PendingIntent.getBroadcast(context, prayerKey.hashCode() + 22
         .setContentText("حان وقت إقامة الصلاة")
         .setPriority(NotificationCompat.PRIORITY_HIGH)
         .setAutoCancel(true)
-        .setTimeoutAfter(30 * 1000L)
+        .setTimeoutAfter(2 * 60 * 1000L)
         .setFullScreenIntent(wakePi, true) 
         .setSound(canPlayIqamaSound ? soundUri : null)
         .setContentIntent(pi); 
