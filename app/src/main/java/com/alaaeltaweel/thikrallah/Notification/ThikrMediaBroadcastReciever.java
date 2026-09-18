@@ -29,9 +29,11 @@ public class ThikrMediaBroadcastReciever extends BroadcastReceiver {
             String intentAction = intent.getAction();
             data=new Bundle();
             Log.d(TAG,"onReceive called");
-            data.putAll(intent.getExtras());
+            if (intent.getExtras() != null) {
+                data.putAll(intent.getExtras());
+            }
             data.putBoolean("isUserAction",true);
-            Log.i("mediastyle", intentAction.toString() + " happended");
+            Log.i("mediastyle", (intentAction != null ? intentAction : "null") + " happended");
             if (Intent.ACTION_MEDIA_BUTTON.equals(intent.getAction())) {
 
                 final KeyEvent event = intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT);
