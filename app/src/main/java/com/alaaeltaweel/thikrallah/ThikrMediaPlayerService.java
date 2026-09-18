@@ -793,7 +793,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
         }
 
         // ✅ حماية إضافية أقوى من التكرار - بتشيك على التوقيت مش بس isPlaying()
-        if (incomingDataType != null && incomingDataType.equalsIgnoreCase(MainActivity.DATA_TYPE_GENERAL_THIKR)) {
+        if (action != MEDIA_PLAYER_RESET && incomingDataType != null && incomingDataType.equalsIgnoreCase(MainActivity.DATA_TYPE_GENERAL_THIKR)) {
             long nowMsGeneral = System.currentTimeMillis();
             if (nowMsGeneral - lastGeneralThikrPlayStartTime < 5000) {
                 Timber.d("General thikr play request too close to last one, skipping duplicate");
