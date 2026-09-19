@@ -307,6 +307,7 @@ if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
                         .setFullScreenIntent(generalWakePendingIntent, true);
                 wakeNm.notify(("thikr_wake_" + dataType).hashCode(), wakeBuilder.build());
             }            
+         
             // باقي التنبيهات تشتغل عادي
             data.putBoolean("isUserAction", false);
             Intent intent2 = new Intent(context, ThikrService.class).putExtras(data);
