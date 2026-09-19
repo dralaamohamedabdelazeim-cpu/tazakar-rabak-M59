@@ -66,9 +66,10 @@ public class AthanTimerService extends Service {
                 }
                 timer = new Timer();
                 isStarted = true;
-                timer.scheduleAtFixedRate(new TimerTask() {
+              timer.scheduleAtFixedRate(new TimerTask() {
                     @Override
                     public void run() {
+                    android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_URGENT_AUDIO);
                     initNotification();
                     checkMissedPrayerEvents();
                     checkMissedGeneralThikr();
