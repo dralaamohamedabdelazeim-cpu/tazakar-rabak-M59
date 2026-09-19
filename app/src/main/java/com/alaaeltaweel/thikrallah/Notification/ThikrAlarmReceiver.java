@@ -276,6 +276,32 @@ if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
            new MyAlarmsManager(context).UpdateAllApplicableAlarms();
             }
 
+            // ✅ إيقاظ الشاشة بقوة لأي ذكر عادي (نفس طريقة الأذان تمامًا)
+            Intent generalWakeIntent = new Intent(context, WakeUpActivity.class);
+            generalWakeIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            PendingIntent generalWakePendingIntent = PendingIntent.getActivity(context,
+                    dataType.hashCode() + 5555, generalWakeIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+            String wakeChannelId = "thikr_wakeup_v1";
+            NotificationManager wakeNm =
+                    (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                NotificationChannel wakeChannel = new NotificationChannel(
+                        wakeChannelId, "إيقاظ الشاشة للذكر", NotificationManager.IMPORTANCE_HIGH);
+                wakeChannel.setSound(null, null);
+                wakeNm.createNotificationChannel(wakeChannel);
+            }
+            NotificationCompat.Builder wakeBuilder = new NotificationCompat.Builder(context, wakeChannelId)
+                    .setSmallIcon(R.drawable.ic_launcher)
+                    .setContentTitle("تذكر ربك")
+                    .setContentText("حان وقت الذكر")
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setAutoCancel(true)
+                    .setTimeoutAfter(15 * 1000L)
+                    .setFullScreenIntent(generalWakePendingIntent, true);
+            wakeNm.notify(("thikr_wake_" + dataType).hashCode(), wakeBuilder.build());
+            
             // باقي التنبيهات تشتغل عادي
             data.putBoolean("isUserAction", false);
             Intent intent2 = new Intent(context, ThikrService.class).putExtras(data);
