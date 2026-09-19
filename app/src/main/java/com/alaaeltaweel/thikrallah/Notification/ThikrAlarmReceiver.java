@@ -97,7 +97,7 @@ if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
             prePrefs.edit()
                     .putLong("last_preathan_time_" + prayerName, System.currentTimeMillis())
                     .putString("last_preathan_minutes_used_" + prayerName, currentPreMinutes)
-                    .commit();
+                    .apply();
 
             showPreAthanNotification(context, prayerName);
             if (wakeLock != null && wakeLock.isHeld()) wakeLock.release();
@@ -129,7 +129,7 @@ if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
             iqamaPrefs.edit()
                     .putLong("last_iqama_time_" + prayerName, System.currentTimeMillis())
                     .putString("last_iqama_minutes_used_" + prayerName, currentIqamaMinutes)
-                    .commit();
+                    .apply();
             showIqamaNotification(context, prayerName, iqamaSound);
             if (wakeLock != null && wakeLock.isHeld()) wakeLock.release();
             return;
@@ -156,7 +156,7 @@ if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
             }
             // ✅ زرار الاختبار ميسجلش نفسه كـ"آخر أذان شغل"، عشان الأذان الحقيقي المجدول لنفس اليوم يفضل يشتغل عادي في معاده
             if (!isTestTrigger) {
-                prefs.edit().putLong("last_athan_time_" + dataType, nowMs).commit();
+                prefs.edit().putLong("last_athan_time_" + dataType, nowMs).apply();
             }
 
             // ✅ تحقق من وجود مكالمة وابعت الحالة للشاشة
@@ -174,7 +174,7 @@ if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
             // القفل ده مشترك مع AthanScreenActivity عشان الصوت ميتكررش لو الشاشة فتحت بعده
             if (!isInCall) {
                 SharedPreferences soundPrefs = PreferenceManager.getDefaultSharedPreferences(context);
-                soundPrefs.edit().putLong("athan_sound_triggered_" + dataType, nowMs).commit();
+                soundPrefs.edit().putLong("athan_sound_triggered_" + dataType, nowMs).apply();
 
                 Bundle soundData = new Bundle();
                 soundData.putInt("ACTION", ThikrMediaPlayerService.MEDIA_PLAYER_PLAY);
@@ -272,7 +272,7 @@ if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
                     if (wakeLock != null && wakeLock.isHeld()) wakeLock.release();
                     return;
                 }
-                generalPrefs.edit().putLong("last_general_thikr_receiver_time", nowMs2).commit();
+                generalPrefs.edit().putLong("last_general_thikr_receiver_time", nowMs2).apply();
            new MyAlarmsManager(context).UpdateAllApplicableAlarms();
             }
 
