@@ -298,7 +298,7 @@ if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
                     .setContentText("حان وقت الذكر")
                     .setPriority(NotificationCompat.PRIORITY_HIGH)
                     .setAutoCancel(true)
-                    .setTimeoutAfter(15 * 1000L)
+                    .setTimeoutAfter(3 * 1000L)
                     .setFullScreenIntent(generalWakePendingIntent, true);
             wakeNm.notify(("thikr_wake_" + dataType).hashCode(), wakeBuilder.build());
             
