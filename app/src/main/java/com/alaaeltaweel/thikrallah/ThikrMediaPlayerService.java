@@ -452,10 +452,20 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
                     if (state == TelephonyManager.CALL_STATE_RINGING ||
 
                             state == TelephonyManager.CALL_STATE_OFFHOOK) {
-
-                        if (player != null && player.isPlaying()) {
+     if (player != null && player.isPlaying()) {
 
                             player.stop();
+
+                        }
+
+                        // ✅ وقف الدعاء بعد الأذان لو كان شغال وقت ما المكالمة جت
+                        if (com.alaaeltaweel.thikrallah.Notification.DuaPlayerHelper.isDuaPlaying()) {
+
+                            com.alaaeltaweel.thikrallah.Notification.DuaPlayerHelper.stopDua(ThikrMediaPlayerService.this);
+
+                        }
+
+                        if (true) {
 
                             stopService(new Intent(ThikrMediaPlayerService.this,
 
@@ -2554,9 +2564,18 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
                     state == TelephonyManager.CALL_STATE_OFFHOOK) {
 
+                // ✅ وقف الدعاء بعد الأذان لو كان شغال وقت ما المكالمة جت
+                if (com.alaaeltaweel.thikrallah.Notification.DuaPlayerHelper.isDuaPlaying()) {
+
+                    com.alaaeltaweel.thikrallah.Notification.DuaPlayerHelper.stopDua(ThikrMediaPlayerService.this);
+
+                }
+
                 if (player != null && player.isPlaying()) {
 
                     player.stop();
+
+                    isAthanSoundActive = false;
 
                     isAthanSoundActive = false;
 
