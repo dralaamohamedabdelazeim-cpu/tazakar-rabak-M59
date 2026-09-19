@@ -124,7 +124,7 @@ public class ChatHeadService extends Service implements View.OnTouchListener {
 			// الخدمة على طول برضه - ده كان بيسبب إشعار يظهر ويختفي بسرعة من غير أي فايدة
 			Log.d(TAG, "restarted with null intent - nothing to show, stopping quietly");
 			this.stopSelf();
-			return START_NOT_STICKY;
+			return START_STICKY;
 		}
 		SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this.getApplicationContext());
 		int reminderType = Integer.parseInt(sharedPrefs.getString("RemindmeThroughTheDayType", "1"));
@@ -236,7 +236,7 @@ public class ChatHeadService extends Service implements View.OnTouchListener {
 			startnotification();
 			this.stopSelf();
 		}
-		return START_NOT_STICKY;
+		return START_STICKY;
 	}
 
 	static class DestroyRunnable implements Runnable {
