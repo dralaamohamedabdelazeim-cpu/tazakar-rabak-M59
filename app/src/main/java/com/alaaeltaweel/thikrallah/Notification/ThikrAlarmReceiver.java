@@ -55,9 +55,26 @@ public class ThikrAlarmReceiver extends BroadcastReceiver {
 
         Log.d(TAG, "onrecieve called");
         PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
-            PowerManager.WakeLock wakeLock = pm.newWakeLock(
-    PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "tazakar:ThikrReceiverWakeLock");
-        wakeLock.acquire(60 * 1000L);
+
+            // ✅ نتأكد الأول لو فيه مكالمة شغالة، عشان مانصحيش الشاشة بالقوة ونعمل تقطيع فيها
+            boolean isInCallAtTop = false;
+            try {
+                TelephonyManager tmTop = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+                if (tmTop != null && tmTop.getCallState() != TelephonyManager.CALL_STATE_IDLE) {
+                    isInCallAtTop = true;
+                }
+            } catch (SecurityException e) {
+                Log.d(TAG, "Cannot check call state at top");
+            }
+
+            PowerManager.WakeLock wakeLock;
+            if (isInCallAtTop) {
+                wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "tazakar:ThikrReceiverWakeLockCall");
+            } else {
+                wakeLock = pm.newWakeLock(
+        PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "tazakar:ThikrReceiverWakeLock");
+            }
+            wakeLock.acquire(60 * 1000L);
 
 if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
             DuaPlayerHelper.stopDua(context);
