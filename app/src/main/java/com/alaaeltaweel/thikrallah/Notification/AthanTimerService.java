@@ -31,6 +31,8 @@ import timber.log.Timber;
 
 public class AthanTimerService extends Service {
 	NotificationCompat.Builder notificationBuilder;
+	private PendingIntent cachedLaunchPendingIntent;
+	private boolean notificationChannelReady = false;
     String TAG = "AthanTimerService";
     private final static int NOTIFICATION_ID = 54;
 	private Context mContext;
@@ -91,54 +93,61 @@ public class AthanTimerService extends Service {
 			timer = null;
 		}
 		isStarted = false;
-		if (wakeLock != null && wakeLock.isHeld()) {
-            wakeLock.release();
-            wakeLock = null;
-		}
-		super.onDestroy();
-        NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        mNotificationManager.cancel(NOTIFICATION_ID);
-	}
-
-	private void initNotification() {
+private void initNotification() {
 		Timber.tag(TAG).d("initiNotification started");
 
-		Intent resultIntent = new Intent(mContext, MainActivity.class);
-		resultIntent.putExtra("FromNotification", true);
-		resultIntent.putExtra("DataType", MainActivity.DATA_TYPE_ATHAN);
-		resultIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+		// ✅ الإعداد التقيل (القناة + الـ PendingIntent + startForeground) بيحصل مرة واحدة بس
+		if (!notificationChannelReady) {
 
-		PendingIntent launchAppPendingIntent = PendingIntent.getActivity(mContext,
-				0, resultIntent, PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+			Intent resultIntent = new Intent(mContext, MainActivity.class);
+			resultIntent.putExtra("FromNotification", true);
+			resultIntent.putExtra("DataType", MainActivity.DATA_TYPE_ATHAN);
+			resultIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-			String NOTIFICATION_CHANNEL_ID = "com.alaaeltaweel.thikrallah.Notification.AthanTimerService";
-			String channelName = this.getResources().getString(R.string.athan_timer_notifiaction);
-			NotificationChannel chan = new NotificationChannel(NOTIFICATION_CHANNEL_ID, channelName, NotificationManager.IMPORTANCE_DEFAULT);
-			chan.setSound(null, null);
-			chan.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
-			NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-			assert manager != null;
-			manager.createNotificationChannel(chan);
-			notificationBuilder = new NotificationCompat.Builder(mContext, NOTIFICATION_CHANNEL_ID);
+			cachedLaunchPendingIntent = PendingIntent.getActivity(mContext,
+					0, resultIntent, PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+				String NOTIFICATION_CHANNEL_ID = "com.alaaeltaweel.thikrallah.Notification.AthanTimerService";
+				String channelName = this.getResources().getString(R.string.athan_timer_notifiaction);
+				NotificationChannel chan = new NotificationChannel(NOTIFICATION_CHANNEL_ID, channelName, NotificationManager.IMPORTANCE_DEFAULT);
+				chan.setSound(null, null);
+				chan.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+				NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+				assert manager != null;
+				manager.createNotificationChannel(chan);
+				notificationBuilder = new NotificationCompat.Builder(mContext, NOTIFICATION_CHANNEL_ID);
+			} else {
+				notificationBuilder = new NotificationCompat.Builder(mContext);
+			}
+
+			notificationBuilder
+					.setSmallIcon(R.drawable.ic_launcher)
+					.setAutoCancel(true)
+					.setContentTitle(getString(R.string.my_app_name))
+					.setPriority(Notification.PRIORITY_DEFAULT)
+					.setContentText(getNextPrayer())
+					.setContentIntent(cachedLaunchPendingIntent);
+
+			notificationBuilder = setVisibilityPublic(notificationBuilder);
+			Timber.tag(TAG).d("started forground");
+			Timber.tag(TAG).d("context is " + mContext);
+
+			if (mContext != null) {
+				startForeground(NOTIFICATION_ID, notificationBuilder.build());
+			}
+
+			notificationChannelReady = true;
+
 		} else {
-			notificationBuilder = new NotificationCompat.Builder(mContext);
-		}
 
-		notificationBuilder
-				.setSmallIcon(R.drawable.ic_launcher)
-				.setAutoCancel(true)
-				.setContentTitle(getString(R.string.my_app_name))
-				.setPriority(Notification.PRIORITY_DEFAULT)
-				.setContentText(getNextPrayer())
-				.setContentIntent(launchAppPendingIntent);
+			// ✅ التحديثات بعد كده خفيفة جدًا - بس تغيير النص وإعادة النشر العادي
+			notificationBuilder.setContentText(getNextPrayer());
+			NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+			if (manager != null) {
+				manager.notify(NOTIFICATION_ID, notificationBuilder.build());
+			}
 
-		notificationBuilder = setVisibilityPublic(notificationBuilder);
-		Timber.tag(TAG).d("started forground");
-		Timber.tag(TAG).d("context is " + mContext);
-
-		if (mContext != null) {
-			startForeground(NOTIFICATION_ID, notificationBuilder.build());
 		}
 	}
 
