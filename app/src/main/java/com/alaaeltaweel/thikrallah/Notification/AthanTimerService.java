@@ -93,7 +93,16 @@ public class AthanTimerService extends Service {
 			timer = null;
 		}
 		isStarted = false;
-private void initNotification() {
+		if (wakeLock != null && wakeLock.isHeld()) {
+			wakeLock.release();
+			wakeLock = null;
+		}
+		super.onDestroy();
+		NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+		mNotificationManager.cancel(NOTIFICATION_ID);
+	}
+
+	private void initNotification() {
 		Timber.tag(TAG).d("initiNotification started");
 
 		// ✅ الإعداد التقيل (القناة + الـ PendingIntent + startForeground) بيحصل مرة واحدة بس
