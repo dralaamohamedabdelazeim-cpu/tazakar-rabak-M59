@@ -110,6 +110,7 @@ private PhoneStateListener phoneStateListener;
     private String pendingThikrDataType = "";
 
     private void registerCallListener() {
+        unregisterCallListener(); // ✅ نلغي أي مراقب قديم لسه شغال الأول قبل ما نسجل واحد جديد
         TelephonyManager tm = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
         if (tm == null) return;
         phoneStateListener = new PhoneStateListener() {
