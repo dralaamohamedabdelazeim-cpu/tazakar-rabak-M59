@@ -140,6 +140,10 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
     private boolean isMutedByFlipService = false;
     // ✅ كتم صوت الأذان بزرار الصوت حتى لو شاشة الأذان مقفولة/التطبيق في الخلفية (زي حساس القلب بالظبط)
     private VolumeButtonReceiver volumeButtonReceiver;
+    // ✅ مراقب حالة المكالمات - محتاج نحتفظ بمرجعه عشان نقدر نلغي تسجيله في onDestroy
+    private TelephonyManager telephonyManagerRef;
+    private MyCallStateCallback callStateCallbackRef;
+    private PhoneStateListener phoneStateListenerRef;
 
     public static final int MEDIA_PLAYER_PAUSE = 1;
 
@@ -421,18 +425,19 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
         initMediaPlayer();
 
         TelephonyManager tm = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+        telephonyManagerRef = tm;
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
 
-            MyCallStateCallback callbackListener = new MyCallStateCallback();
+            callStateCallbackRef = new MyCallStateCallback();
 
-            tm.registerTelephonyCallback(getMainExecutor(), callbackListener);
+            tm.registerTelephonyCallback(getMainExecutor(), callStateCallbackRef);
 
         } else {
 
             // Android 11 وأقل
 
-            tm.listen(new PhoneStateListener() {
+            phoneStateListenerRef = new PhoneStateListener() {
 
                 // ✅ نفس فكرة النسخة الحديثة: نتجاهل أول استدعاء عشان المكالمة الشغالة بالفعل ماتقفلش الأذان فورًا
                 private boolean isFirstCallback = true;
@@ -482,7 +487,8 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
                 }
 
-            }, PhoneStateListener.LISTEN_CALL_STATE);
+            };
+            tm.listen(phoneStateListenerRef, PhoneStateListener.LISTEN_CALL_STATE);
 
         }
 
@@ -1661,6 +1667,16 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
         if (flipSensorManager != null) {
             flipSensorManager.unregisterListener(this);
         }
+        // ✅ تنظيف مراقب حالة المكالمات - كان بيتسجل من غير ما يتشال خالص قبل كده
+        try {
+            if (telephonyManagerRef != null) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && callStateCallbackRef != null) {
+                    telephonyManagerRef.unregisterTelephonyCallback(callStateCallbackRef);
+                } else if (phoneStateListenerRef != null) {
+                    telephonyManagerRef.listen(phoneStateListenerRef, PhoneStateListener.LISTEN_NONE);
+                }
+            }
+        } catch (Exception ignored) {}
         // ✅ تنظيف مراقبة زرار الصوت لو الخدمة اتقفلت خالص
         if (volumeButtonReceiver != null) {
             try { unregisterReceiver(volumeButtonReceiver); } catch (Exception ignored) {}
