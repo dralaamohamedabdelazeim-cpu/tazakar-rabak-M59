@@ -355,14 +355,11 @@ private void showPreAthanNotification(Context context, String prayerKey) {
     android.net.Uri soundUri = android.net.Uri.parse(
         "android.resource://" + context.getPackageName() + "/" + soundRes);
 
+    // ✅ صوت "اقتربت الصلاة" بيتشغل عن طريق قناة الإشعار نفسها، مش عن طريق مشغل صوت تابع للتطبيق،
+    // فمش لازم ناخد تركيز صوت حصري الأول عشان يتشغل - ده كان يلغي الصوت تمامًا لو تطبيق
+    // تاني (زي لعبة) ماسك تركيز الصوت وقتها
     AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
     boolean canPlaySound = true;
-    if (audioManager != null) {
-        int focusResult = audioManager.requestAudioFocus(null,
-            AudioManager.STREAM_ALARM,
-            AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
-        canPlaySound = (focusResult == AudioManager.AUDIOFOCUS_REQUEST_GRANTED);
-    }
     
     String channelId = "pre_athan_reminder_v2_" + prayerKey;
     NotificationManager notificationManager =
@@ -409,12 +406,9 @@ PendingIntent pendingIntent = PendingIntent.getBroadcast(context, prayerKey.hash
     PreferenceManager.getDefaultSharedPreferences(context).edit()
                 .putLong("last_pre_athan_play_time", System.currentTimeMillis()).apply();
         notificationManager.notify(prayerKey.hashCode(), builder.build());
-        if (audioManager != null && canPlaySound) {
-            new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                audioManager.abandonAudioFocus(null); // ✅ رجّع الميكروفون بعد ما صوت التنبيه يخلص
-                notificationManager.cancel(prayerKey.hashCode()); // ✅ قفل الإشعار تلقائي بعد ما الصوت يخلص
-            }, 30000);
-        }
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            notificationManager.cancel(prayerKey.hashCode()); // ✅ قفل الإشعار تلقائي بعد ما الصوت يخلص
+        }, 30000);
 }
 
     private boolean isAthanType(String dataType) {
