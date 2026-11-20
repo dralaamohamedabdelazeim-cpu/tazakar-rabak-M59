@@ -168,7 +168,8 @@ if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
             if (!isTestTrigger && lastAthanTime > 0 &&
                 lastCal.get(Calendar.DAY_OF_YEAR) == nowCal.get(Calendar.DAY_OF_YEAR) &&
                 lastCal.get(Calendar.YEAR) == nowCal.get(Calendar.YEAR)) {
-                Log.d(TAG, "Athan already played today, skipping: " + dataType);
+                                Log.d(TAG, "Athan already played today, skipping: " + dataType);
+                if (wakeLock != null && wakeLock.isHeld()) wakeLock.release();
                 return;
             }
             // ✅ زرار الاختبار ميسجلش نفسه كـ"آخر أذان شغل"، عشان الأذان الحقيقي المجدول لنفس اليوم يفضل يشتغل عادي في معاده
