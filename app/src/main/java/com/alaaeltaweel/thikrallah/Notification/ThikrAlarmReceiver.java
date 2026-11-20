@@ -84,7 +84,10 @@ if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
          
         Bundle data = intent.getExtras();
 
-        if (data == null) return;
+                if (data == null) {
+            if (wakeLock != null && wakeLock.isHeld()) wakeLock.release();
+            return;
+        }
 
         String dataType = data.getString("com.alaaeltaweel.thikrallah.datatype");
 
