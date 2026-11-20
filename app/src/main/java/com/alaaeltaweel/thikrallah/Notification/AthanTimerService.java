@@ -72,7 +72,8 @@ public class AthanTimerService extends Service {
                     @Override
                     public void run() {
                     android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_URGENT_AUDIO);
-                    initNotification();
+                    // أي استثناء هنا كان بيقتل الـ Timer نهائيًا والحارس يقف من غير ما حد يعرف
+                    try { initNotification(); } catch (Exception e) { Timber.tag(TAG).e(e, "initNotification failed"); }
                     checkMissedPrayerEvents();
                     checkMissedGeneralThikr();
                 }
@@ -114,7 +115,7 @@ public class AthanTimerService extends Service {
 			resultIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
 			cachedLaunchPendingIntent = PendingIntent.getActivity(mContext,
-					0, resultIntent, PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+					0, resultIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE); // اتشال ONE_SHOT: كان الضغط على الإشعار بيشتغل مرة واحدة بس
 
 			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
 				String NOTIFICATION_CHANNEL_ID = "com.alaaeltaweel.thikrallah.Notification.AthanTimerService";
@@ -133,6 +134,7 @@ public class AthanTimerService extends Service {
 			notificationBuilder
 					.setSmallIcon(R.drawable.ic_launcher)
 					.setAutoCancel(true)
+						.setOnlyAlertOnce(true)
 					.setContentTitle(getString(R.string.my_app_name))
 					.setPriority(Notification.PRIORITY_DEFAULT)
 					.setContentText(getNextPrayer())
@@ -330,7 +332,8 @@ public class AthanTimerService extends Service {
 					Timber.tag(TAG).d("Watchdog fired athan for " + fKey);
 				});
 
-				// الإقامة
+				// الإقامة - لازم تكون مفعّلة، قبل كده الحارس كان بيشغلها حتى لو متعطلة
+				if (!sharedPrefs.getBoolean("isIqamaReminder_" + key, false)) continue;
 				int iqamaMin;
 				try { iqamaMin = Integer.parseInt(sharedPrefs.getString("iqamaMinutes_" + key, "10")); } catch (Exception e) { iqamaMin = 10; }
 				int iqamaSound = sharedPrefs.getInt("iqamaSoundChoice_" + key, 1);

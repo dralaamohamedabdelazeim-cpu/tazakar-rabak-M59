@@ -52,17 +52,25 @@ public class SilentModeReceiver extends BroadcastReceiver {
             try { audioManager.setRingerMode(AudioManager.RINGER_MODE_VIBRATE); } catch (Exception e) { Log.e(TAG, "setRingerMode failed", e); }
             Log.d(TAG, "Silent mode ON, previous mode was " + currentMode);
         } else if (ACTION_SILENT_OFF.equals(intent.getAction())) {
+            // ✅ لو إحنا مش اللي فعّلنا الصمت (منبه إنهاء زيادة أو متأخر)، متغيرش وضع الرنين بوضع قديم
+            if (!prefs.getBoolean(PREF_SILENT_ACTIVE_BY_APP, false)) {
+                Log.d(TAG, "Silent OFF ignored - silent mode was not active by app");
+                return;
+            }
             int previousMode = prefs.getInt(PREF_PREVIOUS_RINGER_MODE, AudioManager.RINGER_MODE_NORMAL);
             try {
                 audioManager.setRingerMode(previousMode);
-                audioManager.setMode(AudioManager.MODE_NORMAL);
+                int audioMode = audioManager.getMode();
+                if (audioMode != AudioManager.MODE_IN_CALL && audioMode != AudioManager.MODE_IN_COMMUNICATION) {
+                    audioManager.setMode(AudioManager.MODE_NORMAL);
+                }
             } catch (Exception e) {
                 Log.e(TAG, "setRingerMode failed", e);
             }
             prefs.edit().putBoolean(PREF_SILENT_ACTIVE_BY_APP, false).commit();
             Log.d(TAG, "Silent mode OFF, restored mode " + previousMode);
-        } else if ("com.alaaeltaweel.thikrallah.STOP_SOUND".equals(intent.getAction())) {
-            audioManager.setStreamVolume(AudioManager.STREAM_ALARM, 0, 0);
         }
+        // ✅ اتشال فرع STOP_SOUND: كان بيخلي صوت المنبه (ALARM) صفر بشكل دائم أول ما المستخدم يضغط
+        // على إشعار اقتربت الصلاة/الإقامة، وبعدها كل التنبيهات اللي بتشتغل على صوت المنبه تبقى صامتة.
     }
 }

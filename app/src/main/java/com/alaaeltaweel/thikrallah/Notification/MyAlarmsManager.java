@@ -282,7 +282,7 @@ public class MyAlarmsManager {
         if (cannonEnabled) {
             PrayTime prayers = PrayTime.instancePrayTime(context);
             String[] times = prayers.getPrayerTimes(context);
-            if (times != null && times.length >= 5) {
+            if (times != null && times.length >= 6) {
                 try {
                     String[] maghribTime = times[5].split(":", 3);
                     Calendar cannonCal = Calendar.getInstance();
@@ -332,14 +332,13 @@ public class MyAlarmsManager {
         } else if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
             alarmMgr.setExact(AlarmManager.RTC_WAKEUP, timeInMilliseconds, pendingIntent);
         } else {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmMgr.canScheduleExactAlarms()) {
                 setAlarmClockHighPriority(timeInMilliseconds, pendingIntent);
             } else {
-                if (alarmMgr.canScheduleExactAlarms()) {
-                    setAlarmClockHighPriority(timeInMilliseconds, pendingIntent);
-                } else {
-                    requestExactAlarmPermission();
-                }
+                // ✅ من غير إذن المنبهات الدقيقة كان مفيش أي منبه بيتسجل خالص (صمت تام).
+                // دلوقتي بنسجله تقريبي على الأقل، وبنطلب الإذن لو احنا جوه Activity
+                alarmMgr.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, timeInMilliseconds, pendingIntent);
+                requestExactAlarmPermission();
             }
         }
     }
@@ -568,7 +567,10 @@ if (isAthanReminder && isSilentModeEnabled) {
     calendarSilentOffToday.add(Calendar.MINUTE, silentDurationMinutes);
 
     if (now.after(calendarSilentOnToday) && now.before(calendarSilentOffToday)) {
-        Log.d(TAG, "Inside active silent window for " + prayerName + ", keeping existing OFF alarm");
+        // ✅ بعد ريستارت الجهاز أو قتل التطبيق منبه الإنهاء بيضيع، والموبايل كان بيفضل صامت لحد تاني يوم.
+        // تسجيل نفس المنبه تاني آمن (نفس الـ PendingIntent بيستبدل القديم)
+        setAlarm(calendarSilentOffToday, pendingSilentOff);
+        Log.d(TAG, "Inside active silent window for " + prayerName + ", re-armed OFF alarm");
     } else {
         alarmMgr.cancel(pendingSilentOn);
         alarmMgr.cancel(pendingSilentOff);

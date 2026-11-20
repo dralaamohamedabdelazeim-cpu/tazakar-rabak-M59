@@ -516,7 +516,7 @@ private PhoneStateListener phoneStateListener;
             return;
         }
         if (thikrType.equals(MainActivity.DATA_TYPE_QURAN_KAHF)){
-            sharedPrefs.edit().putInt("", Calendar.getInstance().get(Calendar.DAY_OF_MONTH)).apply();
+            sharedPrefs.edit().putInt("lastKahfPlayed", Calendar.getInstance().get(Calendar.DAY_OF_MONTH)).apply();
 
             int reminderType=Integer.parseInt(sharedPrefs.getString("remindMekahfType", "1"));
             if (reminderType==1){
@@ -556,7 +556,7 @@ private PhoneStateListener phoneStateListener;
                 mNotificationManager.notify(NOTIFICATION_ID_QURAN_THIKR, mBuilder.build());
             }else{
 
-                sharedPrefs.edit().putString("com.alaaeltaweel.thikrallah.datatype", MainActivity.DATA_TYPE_QURAN_MULK).apply();
+                sharedPrefs.edit().putString("com.alaaeltaweel.thikrallah.datatype", MainActivity.DATA_TYPE_QURAN_KAHF).apply();
 
                 data.putInt("ACTION", ThikrMediaPlayerService.MEDIA_PLAYER_PLAYALL);
                 SuraAyah start = new SuraAyah(18, 1);

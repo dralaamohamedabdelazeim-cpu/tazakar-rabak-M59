@@ -59,6 +59,7 @@ public class ThikrMediaBroadcastReciever extends BroadcastReceiver {
                     }
                 }
             }
+            if (intentAction == null) return;
             if (intentAction.equalsIgnoreCase("play")){
                 resumePlayer();
             }else if(intentAction.equalsIgnoreCase("pause")){
@@ -101,7 +102,7 @@ public class ThikrMediaBroadcastReciever extends BroadcastReceiver {
     }
     public void sendActionToMediaService(Bundle data){
         if (data.getInt("ACTION",-100)!=-100){
-            Log.d(TAG,"sendActionToMediaService called with action"+data.getInt("action",-100));
+            Log.d(TAG,"sendActionToMediaService called with action"+data.getInt("ACTION",-100));
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(new Intent(context, ThikrMediaPlayerService.class).putExtras(data));
             } else {

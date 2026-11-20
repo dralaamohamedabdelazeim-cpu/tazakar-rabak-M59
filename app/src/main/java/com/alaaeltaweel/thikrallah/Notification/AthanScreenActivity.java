@@ -420,12 +420,8 @@ public boolean onKeyDown(int keyCode, KeyEvent event) {
         }
         soundPrefs.edit().putLong("athan_sound_triggered_" + dataType, System.currentTimeMillis()).commit();
 
-        android.media.AudioManager am = (android.media.AudioManager) getSystemService(Context.AUDIO_SERVICE);
-        if (am != null) {
-            am.requestAudioFocus(null,
-                android.media.AudioManager.STREAM_ALARM,
-                android.media.AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
-        }
+        // ✅ اتشال طلب التركيز الصوتي هنا: كان بيتاخد ومبيتسابش أبدًا (listener = null) فبيفضل ماسك
+        // الصوت ويكتم تطبيقات تانية، والخدمة بتاخد تركيزها بنفسها
         Bundle data = new Bundle();
         data.putInt("ACTION", ThikrMediaPlayerService.MEDIA_PLAYER_PLAY);
         data.putString("com.alaaeltaweel.thikrallah.datatype", dataType);
