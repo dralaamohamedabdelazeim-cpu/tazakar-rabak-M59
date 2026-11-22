@@ -125,6 +125,40 @@
             android:title="@string/mulk_reminder_type" />
     </PreferenceCategory>
 
+    <!-- ✅ حديث اليوم (3 أوقات، ويوم الجمعة أحاديث خاصة بالجمعة) -->
+    <PreferenceCategory
+        android:title="حديث اليوم 📖"
+        android:layout="@layout/preference_catagory">
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="remindMeDailyHadith"
+            android:title="حديث اليوم - الوقت الأول"
+            android:summary="حديث صحيح من موسوعة الأحاديث النبوية، ويوم الجمعة أحاديث عن الجمعة" />
+        <com.alaaeltaweel.thikrallah.Utilities.TimePreference
+            android:defaultValue="09:00"
+            android:key="dailyHadithTime"
+            android:title="وقت الحديث الأول"
+            android:dependency="remindMeDailyHadith" />
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="remindMeDailyHadith2"
+            android:title="حديث اليوم - الوقت الثاني" />
+        <com.alaaeltaweel.thikrallah.Utilities.TimePreference
+            android:defaultValue="16:00"
+            android:key="dailyHadithTime2"
+            android:title="وقت الحديث الثاني"
+            android:dependency="remindMeDailyHadith2" />
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="remindMeDailyHadith3"
+            android:title="حديث اليوم - الوقت الثالث" />
+        <com.alaaeltaweel.thikrallah.Utilities.TimePreference
+            android:defaultValue="20:00"
+            android:key="dailyHadithTime3"
+            android:title="وقت الحديث الثالث"
+            android:dependency="remindMeDailyHadith3" />
+    </PreferenceCategory>
+
     <!-- ✅ إعدادات رمضان -->
     <PreferenceCategory
         android:title="إعدادات رمضان 🌙"
