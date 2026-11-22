@@ -125,38 +125,58 @@
             android:title="@string/mulk_reminder_type" />
     </PreferenceCategory>
 
-    <!-- ✅ حديث اليوم (3 أوقات، ويوم الجمعة أحاديث خاصة بالجمعة) -->
+    <!-- ✅ الفوائد اليومية: حديث / أسماء الله / دعاء / آية -->
     <PreferenceCategory
-        android:title="حديث اليوم 📖"
+        android:title="الفوائد اليومية 📖"
         android:layout="@layout/preference_catagory">
         <CheckBoxPreference
             android:defaultValue="true"
-            android:key="remindMeDailyHadith"
-            android:title="حديث اليوم - الوقت الأول"
-            android:summary="حديث صحيح من موسوعة الأحاديث النبوية، ويوم الجمعة أحاديث عن الجمعة" />
+            android:key="dailyContent_enabled"
+            android:title="إشعارات الفوائد اليومية"
+            android:summary="حديث، اسم من أسماء الله، دعاء، آية - في أوقات متنوعة خلال اليوم" />
+        <com.alaaeltaweel.thikrallah.Utilities.MyListPreference
+            android:defaultValue="4"
+            android:entries="@array/DailyContentCountEntries"
+            android:entryValues="@array/DailyContentCountValues"
+            android:key="dailyContent_count"
+            android:title="عدد الإشعارات في اليوم"
+            android:dependency="dailyContent_enabled" />
         <com.alaaeltaweel.thikrallah.Utilities.TimePreference
-            android:defaultValue="09:00"
-            android:key="dailyHadithTime"
-            android:title="وقت الحديث الأول"
-            android:dependency="remindMeDailyHadith" />
+            android:defaultValue="08:00"
+            android:key="dailyContent_start"
+            android:title="بداية الفترة"
+            android:dependency="dailyContent_enabled" />
+        <com.alaaeltaweel.thikrallah.Utilities.TimePreference
+            android:defaultValue="22:00"
+            android:key="dailyContent_end"
+            android:title="نهاية الفترة"
+            android:dependency="dailyContent_enabled" />
         <CheckBoxPreference
             android:defaultValue="true"
-            android:key="remindMeDailyHadith2"
-            android:title="حديث اليوم - الوقت الثاني" />
-        <com.alaaeltaweel.thikrallah.Utilities.TimePreference
-            android:defaultValue="16:00"
-            android:key="dailyHadithTime2"
-            android:title="وقت الحديث الثاني"
-            android:dependency="remindMeDailyHadith2" />
+            android:key="dailyContent_random"
+            android:title="أوقات عشوائية"
+            android:summary="الأوقات بتتغير كل يوم وبتبعد 20 دقيقة عن أوقات الصلاة. لو قفلتها بتتوزع بالتساوي"
+            android:dependency="dailyContent_enabled" />
         <CheckBoxPreference
             android:defaultValue="true"
-            android:key="remindMeDailyHadith3"
-            android:title="حديث اليوم - الوقت الثالث" />
-        <com.alaaeltaweel.thikrallah.Utilities.TimePreference
-            android:defaultValue="20:00"
-            android:key="dailyHadithTime3"
-            android:title="وقت الحديث الثالث"
-            android:dependency="remindMeDailyHadith3" />
+            android:key="dailyContent_hadith"
+            android:title="الأحاديث"
+            android:dependency="dailyContent_enabled" />
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="dailyContent_names"
+            android:title="أسماء الله الحسنى"
+            android:dependency="dailyContent_enabled" />
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="dailyContent_dua"
+            android:title="الأدعية والأذكار"
+            android:dependency="dailyContent_enabled" />
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="dailyContent_ayah"
+            android:title="الآيات"
+            android:dependency="dailyContent_enabled" />
     </PreferenceCategory>
 
     <!-- ✅ إعدادات رمضان -->
