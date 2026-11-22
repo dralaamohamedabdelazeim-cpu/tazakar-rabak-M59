@@ -28,8 +28,10 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.HashSet;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -64,8 +66,16 @@ public class DailyHadithHelper {
     private static final String CHANNEL_ID = "daily_hadith_v1";
     private static final int NOTIFICATION_ID = 7430;
     private static final int MIN_CHARS = 20;
-    private static final int MAX_CHARS = 350;   // الأحاديث الأطول بنستبعدها عشان تظهر كويس في الإشعار
-    private static final int MAX_CHARS_FRIDAY = 450;   // أحاديث الجمعة قليلة فبنوسّع الحد شوية
+    private static final int MAX_CHARS = 600;          // أحاديث أطول مقبولة لو فيها نصيحة أو ذكر
+    private static final int MAX_CHARS_FRIDAY = 600;
+    private static final int CACHE_VERSION = 2;        // رفع الرقم بيمسح الأحاديث المحفوظة بالمعايير القديمة
+
+    // كلمات في أسماء الأقسام بتدل على مواضيع مفيدة لعامة الناس
+    private static final String[] USEFUL_KEYWORDS = {
+            "الفضائل", "الآداب", "الأخلاق", "الرقائق", "المواعظ", "الزهد", "تزكية",
+            "الأذكار", "الدعاء", "الدعوات", "التوبة", "الصبر", "الصدقة", "الوالدين",
+            "صلة الرحم", "الجار", "الإحسان", "الرحمة", "الصدق", "الأمانة", "الحياء", "التواضع"
+    };
     private static final int PREFETCH_DAYS = 3;
     private static final long ALARM_BUDGET_MS = 8000L;      // وقت الإشعار نفسه: سريع
     private static final long PREFETCH_BUDGET_MS = 60000L;  // التحميل المسبق في الخلفية
@@ -205,10 +215,10 @@ public class DailyHadithHelper {
 
     /** أحاديث من أقسام الجمعة بس. كل جمعة بتاخد الأحاديث اللي بعد اللي فاتت. */
     private static JSONObject pickFriday(Context app, JSONObject cache, long day, int slot, long deadline) throws Exception {
-        JSONArray pool = cache.optJSONArray("fridayIds");
+        JSONArray pool = cache.optJSONArray("fridayIdsV2");
         if (pool == null || pool.length() == 0) {
             pool = fetchFridayIds(deadline);
-            cache.put("fridayIds", pool);
+            cache.put("fridayIdsV2", pool);
             saveMeta(app, null, pool);
         }
         int len = pool.length();
@@ -232,10 +242,10 @@ public class DailyHadithHelper {
 
     /** اختيار ثابت ومتنوع: كل مرة تصنيف مختلف، وجواه حديث صحيح قصير. */
     private static JSONObject pickNormal(Context app, JSONObject cache, long day, int slot, long deadline) throws Exception {
-        JSONArray cats = cache.optJSONArray("cats");
+        JSONArray cats = cache.optJSONArray("catsV2");
         if (cats == null || cats.length() == 0) {
-            cats = fetchCategoryIds(deadline);
-            cache.put("cats", cats);
+            cats = fetchUsefulCategoryIds(deadline);
+            cache.put("catsV2", cats);
             saveMeta(app, cats, null);
         }
         int n = cats.length();
@@ -297,31 +307,71 @@ public class DailyHadithHelper {
         return rec;
     }
 
-    private static JSONArray fetchCategoryIds(long deadline) throws Exception {
+    private static boolean hasUsefulKeyword(String title) {
+        if (title == null) return false;
+        for (String k : USEFUL_KEYWORDS) {
+            if (title.contains(k)) return true;
+        }
+        return false;
+    }
+
+    /** القسم مفيد لو اسمه أو اسم أي قسم أب ليه فيه كلمة من كلمات المواضيع المفيدة */
+    private static boolean isUsefulCategory(String id, Map<String, String> parents, Map<String, String> titles) {
+        String cur = id;
+        for (int depth = 0; depth < 8 && cur != null && !cur.isEmpty() && !"null".equals(cur); depth++) {
+            if (hasUsefulKeyword(titles.get(cur))) return true;
+            cur = parents.get(cur);
+        }
+        return false;
+    }
+
+    /** أقسام الفضائل والآداب والأخلاق والأذكار والدعاء... (بتتحدد من أسماء الأقسام في الموسوعة) */
+    private static JSONArray fetchUsefulCategoryIds(long deadline) throws Exception {
         JSONArray arr = new JSONArray(httpGet(BASE + "/categories/list/?language=ar", deadline));
-        JSONArray ids = new JSONArray();
+        Map<String, String> parents = new HashMap<String, String>();
+        Map<String, String> titles = new HashMap<String, String>();
+        for (int i = 0; i < arr.length(); i++) {
+            JSONObject c = arr.getJSONObject(i);
+            String id = c.optString("id");
+            parents.put(id, c.optString("parent_id", ""));
+            titles.put(id, c.optString("title", ""));
+        }
+        JSONArray useful = new JSONArray();
+        JSONArray all = new JSONArray();
         for (int i = 0; i < arr.length(); i++) {
             JSONObject c = arr.getJSONObject(i);
             int count = 0;
             try { count = Integer.parseInt(c.optString("hadeeths_count", "0")); } catch (Exception ignored) { }
-            if (count > 0) ids.put(c.optString("id"));
+            if (count <= 0) continue;
+            String id = c.optString("id");
+            all.put(id);
+            if (isUsefulCategory(id, parents, titles)) useful.put(id);
         }
-        return ids;
+        Log.d(TAG, "useful categories: " + useful.length() + " of " + all.length());
+        if (useful.length() < 3) {
+            Log.d(TAG, "too few useful categories, using all categories");
+            return all;
+        }
+        return useful;
     }
 
-    /** كل الأحاديث اللي في أقسام عنوانها فيه "الجمعة" (وقسم صلاة الجمعة وفروعه) */
+    /** أقسام فضل الجمعة وآدابها (من غير الأحكام الفقهية) */
     private static JSONArray fetchFridayIds(long deadline) throws Exception {
         JSONArray arr = new JSONArray(httpGet(BASE + "/categories/list/?language=ar", deadline));
         Set<String> catIds = new LinkedHashSet<String>();
+        Set<String> looseIds = new LinkedHashSet<String>();
         for (int i = 0; i < arr.length(); i++) {
             JSONObject c = arr.getJSONObject(i);
             String id = c.optString("id");
-            String title = c.optString("title", "");
+            String title = c.optString("title", "").trim();
             String parent = c.optString("parent_id", "");
-            if (title.contains("الجمعة") || "472".equals(id) || "472".equals(parent)) {
-                catIds.add(id);
-            }
+            if (title.contains("الجمعة") || "472".equals(id) || "472".equals(parent)) looseIds.add(id);
+            if (!title.contains("الجمعة")) continue;
+            if (title.contains("أحكام") || title.contains("شروط")) continue;
+            if (title.equals("صلاة الجمعة")) continue;   // القسم الأب بيشمل الأحكام
+            catIds.add(id);
         }
+        if (catIds.isEmpty()) catIds = looseIds;   // لو الأسماء مختلفة نرجع للبحث الواسع
         Log.d(TAG, "friday categories: " + catIds);
         Set<String> seen = new LinkedHashSet<String>();
         for (String cid : catIds) {
@@ -397,6 +447,7 @@ public class DailyHadithHelper {
                     }
                     in.close();
                     o = new JSONObject(new String(b, 0, off, "UTF-8"));
+                    if (o.optInt("v", 1) < CACHE_VERSION) o = null;   // نسخة قديمة: نبدأ من جديد
                 }
             } catch (Exception e) {
                 Log.d(TAG, "cache load failed: " + e.getMessage());
@@ -404,7 +455,7 @@ public class DailyHadithHelper {
             try {
                 if (o == null) o = new JSONObject();
                 if (o.optJSONObject("days") == null) o.put("days", new JSONObject());
-                if (o.optJSONArray("cats") == null) o.put("cats", new JSONArray());
+                if (o.optJSONArray("catsV2") == null) o.put("catsV2", new JSONArray());
             } catch (Exception ignored) { }
             return o;
         }
@@ -412,6 +463,7 @@ public class DailyHadithHelper {
 
     private static void writeCache(Context app, JSONObject cache) throws Exception {
         cache.put("credit", "موسوعة الأحاديث النبوية - hadeethenc.com");
+        cache.put("v", CACHE_VERSION);
         File f = new File(app.getFilesDir(), CACHE_FILE);
         FileOutputStream out = new FileOutputStream(f);
         out.write(cache.toString().getBytes("UTF-8"));
@@ -445,8 +497,8 @@ public class DailyHadithHelper {
         synchronized (FILE_LOCK) {
             try {
                 JSONObject cache = loadCache(app);
-                if (cats != null) cache.put("cats", cats);
-                if (fridayIds != null) cache.put("fridayIds", fridayIds);
+                if (cats != null) cache.put("catsV2", cats);
+                if (fridayIds != null) cache.put("fridayIdsV2", fridayIds);
                 writeCache(app, cache);
             } catch (Exception e) {
                 Log.d(TAG, "meta save failed: " + e.getMessage());
