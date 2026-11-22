@@ -56,8 +56,12 @@ public class PrayerReminderSoundService extends Service {
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable hardStop = this::finishAndStop;
 
-    // نتجاهل أي تغيير في التركيز الصوتي: صوت الإقامة/التنبيه أهم من إنه يتقطع لإشعار واتساب
-    private final AudioManager.OnAudioFocusChangeListener focusListener = change -> { };
+    // نتجاهل تغيير التركيز الصوتي العادي (إشعار واتساب مثلاً)، لكن لو جت مكالمة نوقف الصوت فورًا
+    private final AudioManager.OnAudioFocusChangeListener focusListener = change -> {
+        if (change != AudioManager.AUDIOFOCUS_GAIN && isInCall()) {
+            finishAndStop();
+        }
+    };
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -79,7 +83,7 @@ public class PrayerReminderSoundService extends Service {
 
         // لازم startForeground بسرعة بعد startForegroundService
         try {
-            Notification n = buildNotification(kind, prayer);
+            Notification n = buildNotification(kind, prayer, true);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 startForeground(NOTIFICATION_ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
             } else {
@@ -97,10 +101,37 @@ public class PrayerReminderSoundService extends Service {
             prefs.edit().putLong("last_pre_athan_play_time", now).apply();
         }
 
+        // ✅ أثناء المكالمة (أو رنين مكالمة واردة) مفيش صوت: بنسيب إشعار صامت بس
+        if (isInCall()) {
+            Log.d(TAG, "Call active - skipping reminder sound");
+            try {
+                stopForeground(false);
+                NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+                if (nm != null) nm.notify(NOTIFICATION_ID, buildNotification(kind, prayer, false));
+            } catch (Exception e) {
+                Log.e(TAG, "in-call notification failed: " + e.getMessage());
+            }
+            stopSelf();
+            return START_NOT_STICKY;
+        }
+
         repairAlarmVolumeOnce(prefs);
         acquireWakeLock();
         playSound(kind, prayer, iqamaSound);
         return START_NOT_STICKY;
+    }
+
+    private boolean isInCall() {
+        try {
+            AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+            if (am == null) return false;
+            int mode = am.getMode();
+            return mode == AudioManager.MODE_IN_CALL
+                    || mode == AudioManager.MODE_IN_COMMUNICATION
+                    || mode == AudioManager.MODE_RINGTONE;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     // النسخة القديمة كانت بتخلي صوت المنبه صفر لما المستخدم يضغط على الإشعار. بنصلحه مرة واحدة بس.
@@ -220,7 +251,7 @@ public class PrayerReminderSoundService extends Service {
         super.onDestroy();
     }
 
-    private Notification buildNotification(String kind, String prayerKey) {
+    private Notification buildNotification(String kind, String prayerKey, boolean ongoing) {
         NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && nm != null) {
             NotificationChannel ch = new NotificationChannel(CHANNEL_ID, "تنبيهات الصلاة", NotificationManager.IMPORTANCE_HIGH);
@@ -265,7 +296,8 @@ public class PrayerReminderSoundService extends Service {
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setCategory(NotificationCompat.CATEGORY_ALARM)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                .setOngoing(true)
+                .setOngoing(ongoing)
+                .setAutoCancel(true)
                 .setVibrate(new long[]{0, 500, 200, 500})
                 .setContentIntent(stopPi)
                 .addAction(0, "إيقاف الصوت", stopPi)
