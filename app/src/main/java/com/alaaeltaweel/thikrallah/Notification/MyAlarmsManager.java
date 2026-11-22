@@ -129,6 +129,39 @@ public class MyAlarmsManager {
             alarmMgr.cancel(pendingIntentMulk);
         }
 
+        // ✅ حديث اليوم: 3 أوقات في اليوم (كل وقت له تشغيل وساعة)
+        boolean anyHadith = false;
+        for (int hadithSlot = 1; hadithSlot <= DailyHadithHelper.SLOTS; hadithSlot++) {
+            Intent hadithIntent = new Intent(context, ThikrAlarmReceiver.class);
+            hadithIntent.putExtra("com.alaaeltaweel.thikrallah.datatype", DailyHadithHelper.DATA_TYPE);
+            hadithIntent.putExtra(DailyHadithHelper.EXTRA_SLOT, hadithSlot);
+            PendingIntent pendingIntentHadith = PendingIntent.getBroadcast(context,
+                    DailyHadithHelper.REQUEST_CODE_BASE + hadithSlot - 1, hadithIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+            if (sharedPrefs.getBoolean(DailyHadithHelper.enabledKey(hadithSlot), true)) {
+                anyHadith = true;
+                try {
+                    String[] hadithTime = sharedPrefs.getString(DailyHadithHelper.timeKey(hadithSlot),
+                            DailyHadithHelper.defaultTime(hadithSlot)).split(":", 3);
+                    Calendar hadithCal = Calendar.getInstance();
+                    hadithCal.set(Calendar.HOUR_OF_DAY, Integer.parseInt(hadithTime[0].trim()));
+                    hadithCal.set(Calendar.MINUTE, Integer.parseInt(hadithTime[1].trim()));
+                    hadithCal.set(Calendar.SECOND, 0);
+                    if (!hadithCal.after(now)) {
+                        hadithCal.add(Calendar.DAY_OF_YEAR, 1);
+                    }
+                    setAlarm(hadithCal, pendingIntentHadith);
+                } catch (Exception e) {
+                    Log.e(TAG, "Error setting daily hadith alarm " + hadithSlot + ": " + e.getMessage());
+                }
+            } else {
+                alarmMgr.cancel(pendingIntentHadith);
+            }
+        }
+        if (anyHadith) {
+            DailyHadithHelper.prefetchAsync(context);
+        }
+
         // Morning Reminder
         PendingIntent pendingIntentMorningThikr = PendingIntent.getBroadcast(context, requestCodeMorningAlarm, launchIntent.putExtra("com.alaaeltaweel.thikrallah.datatype", MainActivity.DATA_TYPE_DAY_THIKR), PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         if (remindMeMorningThikr) {

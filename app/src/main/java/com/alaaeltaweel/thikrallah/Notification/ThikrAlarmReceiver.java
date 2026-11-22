@@ -54,6 +54,18 @@ public class ThikrAlarmReceiver extends BroadcastReceiver {
      public void onReceive(Context context, Intent intent) {
 
         Log.d(TAG, "onrecieve called");
+
+        // ✅ حديث اليوم: إشعار هادي، لازم يتعالج قبل قفل الإضاءة (WakeLock) اللي تحت عشان مايصحيش الشاشة
+        try {
+            if (intent != null && DailyHadithHelper.DATA_TYPE.equals(
+                    intent.getStringExtra("com.alaaeltaweel.thikrallah.datatype"))) {
+                DailyHadithHelper.handleAlarm(context, goAsync(),
+                        intent.getIntExtra(DailyHadithHelper.EXTRA_SLOT, 1));
+                return;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "daily hadith branch failed: " + e.getMessage());
+        }
         PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
 
             // ✅ نتأكد الأول لو فيه مكالمة شغالة، عشان مانصحيش الشاشة بالقوة ونعمل تقطيع فيها
