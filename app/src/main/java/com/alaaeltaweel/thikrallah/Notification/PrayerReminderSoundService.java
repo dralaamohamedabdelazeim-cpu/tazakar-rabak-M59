@@ -151,7 +151,7 @@ public class PrayerReminderSoundService extends Service {
 
     private void playSound(String kind, String prayer, int iqamaSound) {
         releasePlayer();
-        int res = KIND_IQAMA.equals(kind) ? iqamaRes(iqamaSound) : preAthanRes(prayer);
+        int res = KIND_IQAMA.equals(kind) ? iqamaRes(iqamaSound) : preAthanRes(prayer);   // الجمعة: بيستخدم pre_jumuah لو الملف موجود
         requestFocus();
         try {
             MediaPlayer p = new MediaPlayer();
@@ -266,7 +266,7 @@ public class PrayerReminderSoundService extends Service {
             for (int i = 1; i <= 3; i++) nm.deleteNotificationChannel("iqama_channel_v2_s" + i);
         }
 
-        String prayerAr = prayerArabic(prayerKey);
+        String prayerAr = ("dhuhr".equals(prayerKey) && isFridayToday()) ? "الجمعة" : prayerArabic(prayerKey);
         String title;
         String text;
         if (KIND_IQAMA.equals(kind)) {
@@ -316,7 +316,16 @@ public class PrayerReminderSoundService extends Service {
         }
     }
 
-    private static int preAthanRes(String key) {
+    private static boolean isFridayToday() {
+        return java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_WEEK) == java.util.Calendar.FRIDAY;
+    }
+
+    private int preAthanRes(String key) {
+        // ✅ صوت خاص لظهر يوم الجمعة: ملف res/raw/pre_jumuah (اختياري). لو مش موجود بنستخدم صوت الظهر العادي
+        if ("dhuhr".equals(key) && isFridayToday()) {
+            int id = getResources().getIdentifier("pre_jumuah", "raw", getPackageName());
+            if (id != 0) return id;
+        }
         switch (key) {
             case "dhuhr": return R.raw.pre_dhuhr;
             case "asr": return R.raw.pre_asr;
