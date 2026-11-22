@@ -129,36 +129,40 @@ public class MyAlarmsManager {
             alarmMgr.cancel(pendingIntentMulk);
         }
 
-        // ✅ حديث اليوم: 3 أوقات في اليوم (كل وقت له تشغيل وساعة)
-        boolean anyHadith = false;
-        for (int hadithSlot = 1; hadithSlot <= DailyHadithHelper.SLOTS; hadithSlot++) {
-            Intent hadithIntent = new Intent(context, ThikrAlarmReceiver.class);
-            hadithIntent.putExtra("com.alaaeltaweel.thikrallah.datatype", DailyHadithHelper.DATA_TYPE);
-            hadithIntent.putExtra(DailyHadithHelper.EXTRA_SLOT, hadithSlot);
-            PendingIntent pendingIntentHadith = PendingIntent.getBroadcast(context,
-                    DailyHadithHelper.REQUEST_CODE_BASE + hadithSlot - 1, hadithIntent,
+        // ✅ الفوائد اليومية: حديث / أسماء الله / دعاء / آية (أوقات متنوعة وبعيدة عن أوقات الصلاة)
+        DailyHadithHelper.cancelLegacyAlarms(context, alarmMgr);
+        boolean dailyContentOn = sharedPrefs.getBoolean(DailyHadithHelper.K_ENABLED, true)
+                && !DailyHadithHelper.enabledTypes(sharedPrefs).isEmpty();
+        int dailyCount = DailyHadithHelper.getCount(sharedPrefs);
+        long[] contentTimesToday = null;
+        long[] contentTimesTomorrow = null;
+        if (dailyContentOn) {
+            contentTimesToday = DailyHadithHelper.timesForDay(context, 0);
+            contentTimesTomorrow = DailyHadithHelper.timesForDay(context, 1);
+        }
+        for (int contentSlot = 1; contentSlot <= DailyHadithHelper.MAX_SLOTS; contentSlot++) {
+            Intent contentIntent = new Intent(context, ThikrAlarmReceiver.class);
+            contentIntent.putExtra("com.alaaeltaweel.thikrallah.datatype", DailyHadithHelper.DATA_TYPE);
+            contentIntent.putExtra(DailyHadithHelper.EXTRA_SLOT, contentSlot);
+            PendingIntent pendingIntentContent = PendingIntent.getBroadcast(context,
+                    DailyHadithHelper.REQUEST_CODE_BASE + contentSlot - 1, contentIntent,
                     PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-            if (sharedPrefs.getBoolean(DailyHadithHelper.enabledKey(hadithSlot), true)) {
-                anyHadith = true;
+            if (dailyContentOn && contentSlot <= dailyCount) {
                 try {
-                    String[] hadithTime = sharedPrefs.getString(DailyHadithHelper.timeKey(hadithSlot),
-                            DailyHadithHelper.defaultTime(hadithSlot)).split(":", 3);
-                    Calendar hadithCal = Calendar.getInstance();
-                    hadithCal.set(Calendar.HOUR_OF_DAY, Integer.parseInt(hadithTime[0].trim()));
-                    hadithCal.set(Calendar.MINUTE, Integer.parseInt(hadithTime[1].trim()));
-                    hadithCal.set(Calendar.SECOND, 0);
-                    if (!hadithCal.after(now)) {
-                        hadithCal.add(Calendar.DAY_OF_YEAR, 1);
+                    long contentTime = contentTimesToday[contentSlot - 1];
+                    if (contentTime <= System.currentTimeMillis()) {
+                        contentTime = contentTimesTomorrow[contentSlot - 1];
                     }
-                    setAlarm(hadithCal, pendingIntentHadith);
+                    // منبه عادي (مش منبه ساعة) عشان مايظهرش كـ"المنبه القادم" ومايحتاجش إذن المنبهات الدقيقة
+                    alarmMgr.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, contentTime, pendingIntentContent);
                 } catch (Exception e) {
-                    Log.e(TAG, "Error setting daily hadith alarm " + hadithSlot + ": " + e.getMessage());
+                    Log.e(TAG, "Error setting daily content alarm " + contentSlot + ": " + e.getMessage());
                 }
             } else {
-                alarmMgr.cancel(pendingIntentHadith);
+                alarmMgr.cancel(pendingIntentContent);
             }
         }
-        if (anyHadith) {
+        if (dailyContentOn) {
             DailyHadithHelper.prefetchAsync(context);
         }
 
