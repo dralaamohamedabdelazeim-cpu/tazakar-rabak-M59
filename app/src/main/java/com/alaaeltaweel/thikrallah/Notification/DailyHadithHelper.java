@@ -12,8 +12,11 @@ import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.preference.PreferenceManager;
 import android.util.Log;
+import android.widget.Toast;
 
 import androidx.core.app.NotificationCompat;
 
@@ -769,6 +772,55 @@ public class DailyHadithHelper {
 
     /** بديل بسيط لـ ByteArrayOutputStream عشان مانستوردش حاجات زيادة */
     private static class ByteArrayBuffer extends java.io.ByteArrayOutputStream { }
+
+    // ------------------------------------------------------------------
+    // زر "جرّب الآن" في الإعدادات: بيعرض إشعار من كل نوع فورًا ويقولك لو في نوع فشل وليه
+    // ------------------------------------------------------------------
+    public static void testNow(Context ctx) {
+        final Context app = ctx.getApplicationContext();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                StringBuilder sb = new StringBuilder();
+                long day = epochDay();
+                int slot = 1;
+                for (String type : enabledTypes(prefs(app))) {
+                    String label = T_HADITH.equals(type) ? "حديث" : T_NAMES.equals(type) ? "أسماء الله"
+                            : T_DUA.equals(type) ? "دعاء" : "آية";
+                    try {
+                        JSONObject cache = loadCache(app);
+                        JSONObject rec = pickByType(app, cache, type, day, slot,
+                                System.currentTimeMillis() + 12000L);
+                        if (rec != null) {
+                            showNotification(app, rec, slot);
+                            sb.append(label).append(": تمام\n");
+                        } else {
+                            sb.append(label).append(": مفيش محتوى مناسب\n");
+                        }
+                    } catch (Exception e) {
+                        sb.append(label).append(": فشل (").append(e.getMessage()).append(")\n");
+                    }
+                    slot++;
+                }
+                if (sb.length() == 0) sb.append("مفيش أي نوع مفعّل في الإعدادات\n");
+                try {
+                    java.text.SimpleDateFormat f = new java.text.SimpleDateFormat("HH:mm");
+                    StringBuilder tm = new StringBuilder();
+                    for (long t : timesForDay(app, 0)) {
+                        if (t > System.currentTimeMillis()) tm.append(f.format(new java.util.Date(t))).append("  ");
+                    }
+                    sb.append("باقي النهارده: ").append(tm.length() == 0 ? "لا شيء" : tm.toString().trim());
+                } catch (Exception ignored) { }
+                final String msg = sb.toString();
+                new Handler(Looper.getMainLooper()).post(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(app, msg, Toast.LENGTH_LONG).show();
+                    }
+                });
+            }
+        }, "DailyContentTest").start();
+    }
 
     // ------------------------------------------------------------------
     // الإشعار

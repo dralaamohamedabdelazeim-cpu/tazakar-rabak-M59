@@ -39,6 +39,7 @@ if (intent.getBooleanExtra("isWatchdog", false)) {
             // تشغيل الـ alarms عند البوت
             if (intent.getAction().equalsIgnoreCase("com.alaaeltaweel.thikrallah.Notification.ThikrBootReceiver.android.action.broadcast")
                 || intent.getAction().equalsIgnoreCase(Intent.ACTION_BOOT_COMPLETED)
+                || intent.getAction().equalsIgnoreCase(Intent.ACTION_MY_PACKAGE_REPLACED)
                 || intent.getAction().equalsIgnoreCase("android.intent.action.QUICKBOOT_POWERON")
                 || intent.getAction().equalsIgnoreCase("com.htc.intent.action.QUICKBOOT_POWERON")) {
 
@@ -62,7 +63,8 @@ if (intent.getBooleanExtra("isWatchdog", false)) {
                 if (isTimer) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                            if (intent.getAction().equalsIgnoreCase(Intent.ACTION_BOOT_COMPLETED)) {
+                            if (intent.getAction().equalsIgnoreCase(Intent.ACTION_BOOT_COMPLETED)
+                                    || intent.getAction().equalsIgnoreCase(Intent.ACTION_MY_PACKAGE_REPLACED)) {
                                 context.startForegroundService(new Intent(context, AthanTimerService.class));
                             }
                         } else {

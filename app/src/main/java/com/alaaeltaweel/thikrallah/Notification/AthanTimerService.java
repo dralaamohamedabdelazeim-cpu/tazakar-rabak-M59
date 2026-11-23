@@ -134,6 +134,7 @@ public class AthanTimerService extends Service {
 			notificationBuilder
 					.setSmallIcon(R.drawable.ic_launcher)
 					.setAutoCancel(true)
+						.setOngoing(true) // ثابت: مايتمسحش بزر مسح الإشعارات
 						.setOnlyAlertOnce(true)
 					.setContentTitle(getString(R.string.my_app_name))
 					.setPriority(Notification.PRIORITY_DEFAULT)
