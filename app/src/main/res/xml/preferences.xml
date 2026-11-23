@@ -141,6 +141,42 @@
             android:key="dailyContent_count"
             android:title="عدد الإشعارات في اليوم"
             android:dependency="dailyContent_enabled" />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="dailyContent_fixed"
+            android:title="أحدد الأوقات بنفسي"
+            android:summary="الإشعارات بتيجي في الأوقات اللي تكتبها بالظبط، من غير عشوائية ومن غير ابتعاد عن الصلوات"
+            android:dependency="dailyContent_enabled" />
+        <com.alaaeltaweel.thikrallah.Utilities.TimePreference
+            android:defaultValue="08:00"
+            android:key="dailyContent_time1"
+            android:title="الوقت الأول"
+            android:dependency="dailyContent_enabled" />
+        <com.alaaeltaweel.thikrallah.Utilities.TimePreference
+            android:defaultValue="10:30"
+            android:key="dailyContent_time2"
+            android:title="الوقت الثاني"
+            android:dependency="dailyContent_enabled" />
+        <com.alaaeltaweel.thikrallah.Utilities.TimePreference
+            android:defaultValue="13:00"
+            android:key="dailyContent_time3"
+            android:title="الوقت الثالث"
+            android:dependency="dailyContent_enabled" />
+        <com.alaaeltaweel.thikrallah.Utilities.TimePreference
+            android:defaultValue="15:30"
+            android:key="dailyContent_time4"
+            android:title="الوقت الرابع"
+            android:dependency="dailyContent_enabled" />
+        <com.alaaeltaweel.thikrallah.Utilities.TimePreference
+            android:defaultValue="18:00"
+            android:key="dailyContent_time5"
+            android:title="الوقت الخامس"
+            android:dependency="dailyContent_enabled" />
+        <com.alaaeltaweel.thikrallah.Utilities.TimePreference
+            android:defaultValue="20:30"
+            android:key="dailyContent_time6"
+            android:title="الوقت السادس"
+            android:dependency="dailyContent_enabled" />
         <com.alaaeltaweel.thikrallah.Utilities.TimePreference
             android:defaultValue="08:00"
             android:key="dailyContent_start"
