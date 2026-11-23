@@ -16,4 +16,16 @@
         <item>5</item>
         <item>6</item>
     </string-array>
+    <string-array name="DailyContentTypeEntries">
+        <item>الأحاديث</item>
+        <item>أسماء الله الحسنى</item>
+        <item>الأدعية والأذكار</item>
+        <item>الآيات</item>
+    </string-array>
+    <string-array name="DailyContentTypeValues">
+        <item>hadith</item>
+        <item>names</item>
+        <item>dua</item>
+        <item>ayah</item>
+    </string-array>
 </resources>
