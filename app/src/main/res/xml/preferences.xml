@@ -134,6 +134,11 @@
             android:key="dailyContent_enabled"
             android:title="إشعارات الفوائد اليومية"
             android:summary="حديث، اسم من أسماء الله، دعاء، آية - في أوقات متنوعة خلال اليوم" />
+        <Preference
+            android:key="dailyContent_customize"
+            android:title="تخصيص ▾"
+            android:summary="العدد والأوقات وأنواع المحتوى"
+            android:dependency="dailyContent_enabled" />
         <com.alaaeltaweel.thikrallah.Utilities.MyListPreference
             android:defaultValue="4"
             android:entries="@array/DailyContentCountEntries"
@@ -193,25 +198,12 @@
             android:title="أوقات عشوائية"
             android:summary="الأوقات بتتغير كل يوم وبتبعد 20 دقيقة عن أوقات الصلاة. لو قفلتها بتتوزع بالتساوي"
             android:dependency="dailyContent_enabled" />
-        <CheckBoxPreference
-            android:defaultValue="true"
-            android:key="dailyContent_hadith"
-            android:title="الأحاديث"
-            android:dependency="dailyContent_enabled" />
-        <CheckBoxPreference
-            android:defaultValue="true"
-            android:key="dailyContent_names"
-            android:title="أسماء الله الحسنى"
-            android:dependency="dailyContent_enabled" />
-        <CheckBoxPreference
-            android:defaultValue="true"
-            android:key="dailyContent_dua"
-            android:title="الأدعية والأذكار"
-            android:dependency="dailyContent_enabled" />
-        <CheckBoxPreference
-            android:defaultValue="true"
-            android:key="dailyContent_ayah"
-            android:title="الآيات"
+        <MultiSelectListPreference
+            android:defaultValue="@array/DailyContentTypeValues"
+            android:entries="@array/DailyContentTypeEntries"
+            android:entryValues="@array/DailyContentTypeValues"
+            android:key="dailyContent_types"
+            android:title="أنواع المحتوى"
             android:dependency="dailyContent_enabled" />
         <Preference
             android:key="dailyContent_test"
