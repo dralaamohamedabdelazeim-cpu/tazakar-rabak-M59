@@ -297,6 +297,7 @@ public class PrayerReminderSoundService extends Service {
                 .setCategory(NotificationCompat.CATEGORY_ALARM)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setOngoing(ongoing)
+                .setGroup("prayer_reminder_sound_group")   // مجموعة لوحدها (نفس سبب إشعار التايمر)
                 .setAutoCancel(true)
                 .setVibrate(new long[]{0, 500, 200, 500})
                 .setContentIntent(stopPi)

@@ -801,7 +801,11 @@ public class DailyHadithHelper {
             @Override
             public void run() {
                 StringBuilder sb = new StringBuilder();
-                long day = epochDay();
+                // كل ضغطة بتختار محتوى مختلف: بنزوّد اليوم بمضاعفات 7 (نفس اليوم من الأسبوع، فالجمعة تفضل جمعة)
+                SharedPreferences tp = prefs(app);
+                int counter = tp.getInt("dailyContent_test_counter", 0) + 1;
+                tp.edit().putInt("dailyContent_test_counter", counter).apply();
+                long day = epochDay() + 7L * counter;
                 int slot = 1;
                 for (String type : enabledTypes(prefs(app))) {
                     String label = T_HADITH.equals(type) ? "حديث" : T_NAMES.equals(type) ? "أسماء الله"

@@ -135,6 +135,7 @@ public class AthanTimerService extends Service {
 					.setSmallIcon(R.drawable.ic_launcher)
 					.setAutoCancel(true)
 						.setOngoing(true) // ثابت: مايتمسحش بزر مسح الإشعارات
+						.setGroup("athan_timer_group") // مجموعة لوحده: عشان مايخليش باقي إشعارات التطبيق "غير قابلة للمسح" بزر المسح العام
 						.setOnlyAlertOnce(true)
 					.setContentTitle(getString(R.string.my_app_name))
 					.setPriority(Notification.PRIORITY_DEFAULT)
