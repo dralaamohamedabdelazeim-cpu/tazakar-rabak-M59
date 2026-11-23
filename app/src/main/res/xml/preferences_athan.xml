@@ -49,6 +49,12 @@
             android:key="lock_athan_on_volume_buttons"
             android:title="قفل الأذان عند الضغط على أزرار الصوت" />
 
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="announce_before_athan"
+            android:title="إعلان الصلاة قبل الأذان"
+            android:summary="صوت قصير (حان الآن موعد صلاة ...) ثم يبدأ الأذان بعده بثواني" />
+
     <com.alaaeltaweel.thikrallah.Utilities.MyListPreference
         android:defaultValue="9"
         android:entries="@array/athan_notification_types"
