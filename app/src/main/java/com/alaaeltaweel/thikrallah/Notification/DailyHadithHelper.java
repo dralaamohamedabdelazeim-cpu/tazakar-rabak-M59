@@ -73,6 +73,7 @@ public class DailyHadithHelper {
     public static final String K_START = "dailyContent_start";
     public static final String K_END = "dailyContent_end";
     public static final String K_RANDOM = "dailyContent_random";
+    public static final String K_TYPES = "dailyContent_types";
     public static final String K_FIXED = "dailyContent_fixed";      // "أحدد الأوقات بنفسي"
     private static final String[] FIXED_DEFAULTS = {"08:00", "10:30", "13:00", "15:30", "18:00", "20:30"};
 
@@ -118,8 +119,10 @@ public class DailyHadithHelper {
 
     public static List<String> enabledTypes(SharedPreferences p) {
         List<String> l = new ArrayList<String>();
+        Set<String> chosen = null;
+        try { chosen = p.getStringSet(K_TYPES, null); } catch (Exception ignored) { }
         for (String t : TYPES) {
-            if (p.getBoolean("dailyContent_" + t, true)) l.add(t);
+            if (chosen == null || chosen.contains(t)) l.add(t);   // مفيش اختيار محفوظ = كل الأنواع
         }
         return l;
     }
