@@ -2157,11 +2157,12 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
     if (isPlaying()) {
         player.pause();
     }
+    stopLaterIfCall();
     final android.media.MediaPlayer playerAtPauseTime = player;
     new Handler(Looper.getMainLooper()).postDelayed(() -> {
         if (player == playerAtPauseTime && player != null && !isPlaying()) {
             Timber.d("transient-pause safety-net: resuming playback, focus was never returned");
-            startPlayerIfAllowed();
+            startPlayerIfAllowed();   // لو لسه في مكالمة، startPlayerIfAllowed نفسها بتقفل الصوت
         }
     }, 4000);
     break;
@@ -2169,6 +2170,8 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
             case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
 
                 Timber.d("AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK");
+
+                stopLaterIfCall();
 
                 if (isPlaying()) {
 
@@ -2265,9 +2268,50 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
 
 
+    /** الأذكار والتلاوة (أي حاجة غير الأذان) */
+    private boolean isNonAthanType() {
+        return !(this.getThikrType() != null && this.getThikrType().contains(MainActivity.DATA_TYPE_ATHAN));
+    }
+
+    /** نوقف الصوت ونقفل الخدمة بسبب مكالمة (نفس خطوات فقدان التركيز الكامل) */
+    private void stopBecauseOfCall() {
+        try {
+            if (player != null && isPlaying()) player.stop();
+        } catch (Exception ignored) { }
+        try { this.resetPlayer(); } catch (Exception ignored) { }
+        isAthanSoundActive = false;
+        try { this.stopForeground(true); } catch (Exception ignored) { }
+        if (mediaSession != null) { try { mediaSession.setActive(false); } catch (Exception ignored) { } }
+        this.stopSelf();
+    }
+
+    /** بعد فقدان مؤقت للتركيز: لو السبب مكالمة، نقفل بدل ما نكمل بصوت واطي فوق المكالمة */
+    private void stopLaterIfCall() {
+        if (!isNonAthanType() || this.isUserAction) return;
+        final android.media.MediaPlayer playerAtLoss = player;
+        long[] delays = {700, 2000, 3500};
+        for (long d : delays) {
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                if (player != null && player == playerAtLoss
+                        && com.alaaeltaweel.thikrallah.Notification.CallStateHelper.isInCall(ThikrMediaPlayerService.this, true)) {
+                    Timber.d("call detected after focus loss - stopping playback");
+                    stopBecauseOfCall();
+                }
+            }, d);
+        }
+    }
+
     private void startPlayerIfAllowed() {
 
         Timber.d("startPlayerIfAllowed called");
+
+        // ✅ مكالمة شغالة (عادية أو واتساب/إنترنت): الأذكار والتلاوة مايشتغلوش وقتها حتى بصوت واطي
+        if (isNonAthanType() && !this.isUserAction
+                && com.alaaeltaweel.thikrallah.Notification.CallStateHelper.isInCall(this, true)) {
+            Timber.d("call in progress - not starting non-athan playback");
+            stopBecauseOfCall();
+            return;
+        }
 
         int ret = requestAudioFocus();
 
