@@ -30,6 +30,17 @@ public class PrefsThikrFragment extends PreferenceFragmentCompat implements OnSh
 		// Load the preferences from an XML resource
 		addPreferencesFromResource(R.xml.preferences);
 		initSummary(getPreferenceScreen());
+		// زر "جرّب الإشعارات الآن" في قسم الفوائد اليومية
+		Preference dailyTest = findPreference("dailyContent_test");
+		if (dailyTest != null) {
+			dailyTest.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+				@Override
+				public boolean onPreferenceClick(Preference preference) {
+					com.alaaeltaweel.thikrallah.Notification.DailyHadithHelper.testNow(getActivity().getApplicationContext());
+					return true;
+				}
+			});
+		}
 	}
 
 	@Override
