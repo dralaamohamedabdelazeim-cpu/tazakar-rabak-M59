@@ -41,10 +41,24 @@ public class PrefsThikrFragment extends PreferenceFragmentCompat implements OnSh
 				}
 			});
 		}
+		Preference customizeRow = findPreference("dailyContent_customize");
+		if (customizeRow != null) {
+			customizeRow.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+				@Override
+				public boolean onPreferenceClick(Preference preference) {
+					dailyExpanded = !dailyExpanded;
+					updateDailyContentVisibility();
+					return true;
+				}
+			});
+		}
 		updateDailyContentVisibility();
 	}
 
-	/** ستارة الأوقات الثابتة: بتظهر خانات الأوقات لما "أحدد الأوقات بنفسي" يتفعّل، وبتخفي إعدادات الفترة والعشوائي */
+	// ستارة "تخصيص": مقفولة في الأول عشان الصفحة مش تتزحم
+	private boolean dailyExpanded = false;
+
+	/** بتظهر/تخفي تفاصيل الفوائد اليومية حسب الستارة، وحسب الأوقات الثابتة وعدد الإشعارات */
 	private void updateDailyContentVisibility() {
 		try {
 			SharedPreferences sp = getPreferenceManager().getSharedPreferences();
@@ -54,17 +68,47 @@ public class PrefsThikrFragment extends PreferenceFragmentCompat implements OnSh
 				count = Integer.parseInt(sp.getString("dailyContent_count", "4").trim());
 			} catch (Exception ignored) {
 			}
+			Preference customize = findPreference("dailyContent_customize");
+			if (customize != null) customize.setTitle(dailyExpanded ? "تخصيص ▴" : "تخصيص ▾");
+			String[] alwaysInside = {"dailyContent_count", "dailyContent_fixed", "dailyContent_types", "dailyContent_test"};
+			for (String k : alwaysInside) {
+				Preference x = findPreference(k);
+				if (x != null) x.setVisible(dailyExpanded);
+			}
 			for (int i = 1; i <= 6; i++) {
 				Preference timePref = findPreference("dailyContent_time" + i);
-				if (timePref != null) timePref.setVisible(fixed && i <= count);
+				if (timePref != null) timePref.setVisible(dailyExpanded && fixed && i <= count);
 			}
 			String[] windowKeys = {"dailyContent_start", "dailyContent_end", "dailyContent_random"};
 			for (String k : windowKeys) {
 				Preference w = findPreference(k);
-				if (w != null) w.setVisible(!fixed);
+				if (w != null) w.setVisible(dailyExpanded && !fixed);
 			}
+			updateDailyTypesSummary();
 		} catch (Exception e) {
 			Log.d("PrefsThikr", "visibility update failed: " + e.getMessage());
+		}
+	}
+
+	/** ملخص أنواع المحتوى المختارة */
+	private void updateDailyTypesSummary() {
+		try {
+			androidx.preference.MultiSelectListPreference types =
+					(androidx.preference.MultiSelectListPreference) findPreference("dailyContent_types");
+			if (types == null) return;
+			java.util.Set<String> values = types.getValues();
+			CharSequence[] entries = types.getEntries();
+			CharSequence[] entryValues = types.getEntryValues();
+			StringBuilder sb = new StringBuilder();
+			for (int i = 0; i < entryValues.length; i++) {
+				if (values.contains(entryValues[i].toString())) {
+					if (sb.length() > 0) sb.append("، ");
+					sb.append(entries[i]);
+				}
+			}
+			types.setSummary(sb.length() == 0 ? "لا شيء مختار" : sb.toString());
+		} catch (Exception e) {
+			Log.d("PrefsThikr", "types summary failed: " + e.getMessage());
 		}
 	}
 
