@@ -41,6 +41,31 @@ public class PrefsThikrFragment extends PreferenceFragmentCompat implements OnSh
 				}
 			});
 		}
+		updateDailyContentVisibility();
+	}
+
+	/** ستارة الأوقات الثابتة: بتظهر خانات الأوقات لما "أحدد الأوقات بنفسي" يتفعّل، وبتخفي إعدادات الفترة والعشوائي */
+	private void updateDailyContentVisibility() {
+		try {
+			SharedPreferences sp = getPreferenceManager().getSharedPreferences();
+			boolean fixed = sp.getBoolean("dailyContent_fixed", false);
+			int count = 4;
+			try {
+				count = Integer.parseInt(sp.getString("dailyContent_count", "4").trim());
+			} catch (Exception ignored) {
+			}
+			for (int i = 1; i <= 6; i++) {
+				Preference timePref = findPreference("dailyContent_time" + i);
+				if (timePref != null) timePref.setVisible(fixed && i <= count);
+			}
+			String[] windowKeys = {"dailyContent_start", "dailyContent_end", "dailyContent_random"};
+			for (String k : windowKeys) {
+				Preference w = findPreference(k);
+				if (w != null) w.setVisible(!fixed);
+			}
+		} catch (Exception e) {
+			Log.d("PrefsThikr", "visibility update failed: " + e.getMessage());
+		}
 	}
 
 	@Override
@@ -151,6 +176,9 @@ public class PrefsThikrFragment extends PreferenceFragmentCompat implements OnSh
 		
 		Preference pref = findPreference(key);
 		updatePrefSummary(pref);
+		if (key.startsWith("dailyContent_")) {
+			updateDailyContentVisibility();
+		}
         if (key.equalsIgnoreCase("language")){
             Intent intent=new Intent();
             intent.setClass(this.getActivity(), MainActivity.class);
