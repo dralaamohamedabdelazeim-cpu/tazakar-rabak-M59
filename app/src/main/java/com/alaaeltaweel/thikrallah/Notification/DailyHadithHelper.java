@@ -73,6 +73,12 @@ public class DailyHadithHelper {
     public static final String K_START = "dailyContent_start";
     public static final String K_END = "dailyContent_end";
     public static final String K_RANDOM = "dailyContent_random";
+    public static final String K_FIXED = "dailyContent_fixed";      // "أحدد الأوقات بنفسي"
+    private static final String[] FIXED_DEFAULTS = {"08:00", "10:30", "13:00", "15:30", "18:00", "20:30"};
+
+    public static String fixedTimeKey(int slot) {
+        return "dailyContent_time" + slot;
+    }
     public static final String T_HADITH = "hadith";
     public static final String T_NAMES = "names";
     public static final String T_DUA = "dua";
@@ -175,6 +181,17 @@ public class DailyHadithHelper {
         midnight.set(Calendar.SECOND, 0);
         midnight.set(Calendar.MILLISECOND, 0);
         midnight.add(Calendar.DAY_OF_YEAR, dayOffset);
+
+        // الأوقات اللي المستخدم حددها بنفسه: بنشتغل بيها زي ما هي بالظبط (من غير عشوائية ولا ابتعاد عن الصلوات)
+        if (p.getBoolean(K_FIXED, false)) {
+            long[] fixed = new long[count];
+            for (int i = 0; i < count; i++) {
+                int m = parseMinutes(p.getString(fixedTimeKey(i + 1), FIXED_DEFAULTS[i]),
+                        parseMinutes(FIXED_DEFAULTS[i], 8 * 60));
+                fixed[i] = midnight.getTimeInMillis() + m * 60000L;
+            }
+            return fixed;
+        }
 
         int span = endMin - startMin;
         int[] mins = new int[count];

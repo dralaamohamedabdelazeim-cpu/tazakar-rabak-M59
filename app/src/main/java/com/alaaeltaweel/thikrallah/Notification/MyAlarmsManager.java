@@ -153,8 +153,15 @@ public class MyAlarmsManager {
                     if (contentTime <= System.currentTimeMillis()) {
                         contentTime = contentTimesTomorrow[contentSlot - 1];
                     }
-                    // منبه عادي (مش منبه ساعة) عشان مايظهرش كـ"المنبه القادم" ومايحتاجش إذن المنبهات الدقيقة
-                    alarmMgr.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, contentTime, pendingIntentContent);
+                    if (sharedPrefs.getBoolean(DailyHadithHelper.K_FIXED, false)) {
+                        // أوقات حددها المستخدم: منبه دقيق (بالثانية) زي منبهات الأذان
+                        Calendar contentCal = Calendar.getInstance();
+                        contentCal.setTimeInMillis(contentTime);
+                        setAlarm(contentCal, pendingIntentContent);
+                    } else {
+                        // أوقات عشوائية/موزعة: منبه عادي (مش منبه ساعة) عشان مايظهرش كـ"المنبه القادم"
+                        alarmMgr.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, contentTime, pendingIntentContent);
+                    }
                 } catch (Exception e) {
                     Log.e(TAG, "Error setting daily content alarm " + contentSlot + ": " + e.getMessage());
                 }
