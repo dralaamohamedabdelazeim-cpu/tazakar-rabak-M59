@@ -32,6 +32,14 @@ public class RamadanSoundService extends Service {
 
         showForegroundNotification();
 
+        // ✅ مفيش صوت (مدفع/مسحراتي) أثناء المكالمات
+        if (CallStateHelper.isInCall(this, true)) {
+            Log.d(TAG, "call in progress - skipping ramadan sound");
+            stopForeground(true);
+            stopSelf();
+            return START_NOT_STICKY;
+        }
+
         String action = intent.getAction();
         String soundFile = null;
 

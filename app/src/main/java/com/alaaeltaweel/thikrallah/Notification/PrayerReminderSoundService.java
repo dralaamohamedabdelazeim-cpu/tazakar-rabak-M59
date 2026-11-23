@@ -1,5 +1,7 @@
 package com.alaaeltaweel.thikrallah.Notification;
 
+import android.os.Bundle;
+import com.alaaeltaweel.thikrallah.ThikrMediaPlayerService;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -43,11 +45,47 @@ public class PrayerReminderSoundService extends Service {
     public static final String EXTRA_IQAMA_SOUND = "iqama_sound";
     public static final String KIND_PRE_ATHAN = "pre_athan";
     public static final String KIND_IQAMA = "iqama";
+    public static final String KIND_ANNOUNCE = "announce";           // "حان الآن موعد صلاة ..." قبل الأذان
+    public static final String EXTRA_ATHAN_TYPE = "athan_type";
     public static final String ACTION_STOP = "com.alaaeltaweel.thikrallah.STOP_SOUND";
 
     private static final String CHANNEL_ID = "prayer_reminder_silent_v1";
     private static final int NOTIFICATION_ID = 7421;
     private static final long MAX_PLAY_MS = 3 * 60 * 1000L;
+
+    private static final Object ATHAN_LOCK = new Object();
+    private Runnable announceTimeout;
+
+    /**
+     * بيبدأ صوت الأذان مرة واحدة بس (حتى لو اتنين استدعوه: الخدمة بعد الإعلان + الاحتياطي في المنبه).
+     */
+    public static void startAthanOnce(Context ctx, String dataType) {
+        if (dataType == null) return;
+        synchronized (ATHAN_LOCK) {
+            SharedPreferences p = PreferenceManager.getDefaultSharedPreferences(ctx);
+            String key = "athan_play_started_" + dataType;
+            long now = System.currentTimeMillis();
+            if (now - p.getLong(key, 0) < 20000L) {
+                Log.d(TAG, "athan already started - skipping duplicate start");
+                return;
+            }
+            p.edit().putLong(key, now).commit();
+        }
+        try {
+            Bundle soundData = new Bundle();
+            soundData.putInt("ACTION", ThikrMediaPlayerService.MEDIA_PLAYER_PLAY);
+            soundData.putString("com.alaaeltaweel.thikrallah.datatype", dataType);
+            soundData.putBoolean("isUserAction", false);
+            Intent soundIntent = new Intent(ctx, ThikrService.class).putExtras(soundData);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                ctx.startForegroundService(soundIntent);
+            } else {
+                ctx.startService(soundIntent);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "startAthanOnce failed: " + e.getMessage());
+        }
+    }
 
     private MediaPlayer player;
     private AudioManager audioManager;
@@ -80,6 +118,11 @@ public class PrayerReminderSoundService extends Service {
         int iqamaSound = intent != null ? intent.getIntExtra(EXTRA_IQAMA_SOUND, 1) : 1;
         if (kind == null) kind = KIND_PRE_ATHAN;
         if (prayer == null) prayer = "fajr";
+
+        if (KIND_ANNOUNCE.equals(kind)) {
+            handleAnnounce(intent != null ? intent.getStringExtra(EXTRA_ATHAN_TYPE) : null, prayer);
+            return START_NOT_STICKY;
+        }
 
         // لازم startForeground بسرعة بعد startForegroundService
         try {
@@ -122,16 +165,7 @@ public class PrayerReminderSoundService extends Service {
     }
 
     private boolean isInCall() {
-        try {
-            AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-            if (am == null) return false;
-            int mode = am.getMode();
-            return mode == AudioManager.MODE_IN_CALL
-                    || mode == AudioManager.MODE_IN_COMMUNICATION
-                    || mode == AudioManager.MODE_RINGTONE;
-        } catch (Exception e) {
-            return false;
-        }
+        return CallStateHelper.isInCall(this, true);
     }
 
     // النسخة القديمة كانت بتخلي صوت المنبه صفر لما المستخدم يضغط على الإشعار. بنصلحه مرة واحدة بس.
@@ -147,6 +181,106 @@ public class PrayerReminderSoundService extends Service {
         } catch (Exception e) {
             Log.e(TAG, "repairAlarmVolumeOnce failed: " + e.getMessage());
         }
+    }
+
+    // ------------------------------------------------------------------
+    // إعلان "حان الآن موعد صلاة ..." قبل الأذان، وبعده يبدأ الأذان
+    // ------------------------------------------------------------------
+    private void startAthanIfAllowed(String athanType) {
+        if (!CallStateHelper.isInCall(this, false)) startAthanOnce(this, athanType);
+    }
+
+    private void handleAnnounce(final String athanType, String prayerKey) {
+        try {
+            startForegroundCompat(buildAnnounceNotification(prayerKey));
+        } catch (Exception e) {
+            Log.e(TAG, "announce startForeground failed: " + e.getMessage());
+        }
+        if (isInCall()) {          // مكالمة: مفيش إعلان ولا أذان (المنبه نفسه بيتصرف)
+            finishAndStop();
+            return;
+        }
+        int res = getResources().getIdentifier("announce_" + prayerKey, "raw", getPackageName());
+        if (res == 0) {
+            startAthanIfAllowed(athanType);
+            finishAndStop();
+            return;
+        }
+        acquireWakeLock();
+        requestFocus();
+        try {
+            releasePlayer();
+            MediaPlayer p = new MediaPlayer();
+            p.setAudioAttributes(new AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_NOTIFICATION)       // نفس قناة الأذان
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .build());
+            AssetFileDescriptor afd = getResources().openRawResourceFd(res);
+            p.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
+            afd.close();
+            // نفس سقف "صوت الأذان" اللي في الإعدادات
+            float v = PreferenceManager.getDefaultSharedPreferences(this).getInt("athan_volume", 100) / 100f;
+            v = Math.max(0.05f, Math.min(1f, v));
+            p.setVolume(v, v);
+            p.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                @Override
+                public void onCompletion(MediaPlayer mp) {
+                    startAthanIfAllowed(athanType);
+                    finishAndStop();
+                }
+            });
+            p.setOnErrorListener(new MediaPlayer.OnErrorListener() {
+                @Override
+                public boolean onError(MediaPlayer mp, int what, int extra) {
+                    Log.e(TAG, "announce MediaPlayer error " + what + "/" + extra);
+                    startAthanIfAllowed(athanType);
+                    finishAndStop();
+                    return true;
+                }
+            });
+            p.prepare();
+            p.start();
+            player = p;
+            announceTimeout = new Runnable() {
+                @Override
+                public void run() {
+                    startAthanIfAllowed(athanType);
+                    finishAndStop();
+                }
+            };
+            handler.postDelayed(announceTimeout, 6000);
+        } catch (Exception e) {
+            Log.e(TAG, "announce failed: " + e.getMessage());
+            startAthanIfAllowed(athanType);
+            finishAndStop();
+        }
+    }
+
+    private void startForegroundCompat(Notification n) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(NOTIFICATION_ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
+        } else {
+            startForeground(NOTIFICATION_ID, n);
+        }
+    }
+
+    private Notification buildAnnounceNotification(String prayerKey) {
+        String channelId = "prayer_announce_v1";
+        NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && nm != null) {
+            NotificationChannel ch = new NotificationChannel(channelId, "إعلان الصلاة", NotificationManager.IMPORTANCE_LOW);
+            ch.setSound(null, null);
+            ch.enableVibration(false);
+            nm.createNotificationChannel(ch);
+        }
+        String name = "jumuah".equals(prayerKey) ? "الجمعة" : prayerArabic(prayerKey);
+        return new NotificationCompat.Builder(this, channelId)
+                .setSmallIcon(R.drawable.ic_launcher)
+                .setContentTitle("حان الآن موعد صلاة " + name)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setOngoing(true)
+                .setGroup("prayer_reminder_sound_group")
+                .build();
     }
 
     private void playSound(String kind, String prayer, int iqamaSound) {
@@ -235,6 +369,7 @@ public class PrayerReminderSoundService extends Service {
 
     private void finishAndStop() {
         handler.removeCallbacks(hardStop);
+        if (announceTimeout != null) handler.removeCallbacks(announceTimeout);
         releasePlayer();
         abandonFocus();
         try { if (wakeLock != null && wakeLock.isHeld()) wakeLock.release(); } catch (Exception ignored) { }

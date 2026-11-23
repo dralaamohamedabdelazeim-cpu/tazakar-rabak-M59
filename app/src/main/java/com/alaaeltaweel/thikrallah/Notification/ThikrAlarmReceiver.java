@@ -78,6 +78,7 @@ public class ThikrAlarmReceiver extends BroadcastReceiver {
             } catch (SecurityException e) {
                 Log.d(TAG, "Cannot check call state at top");
             }
+            isInCallAtTop = isInCallAtTop || CallStateHelper.isInCall(context, false);
 
             PowerManager.WakeLock wakeLock;
             if (isInCallAtTop) {
@@ -209,6 +210,7 @@ if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
             } catch (SecurityException e) {
                 Log.d(TAG, "Cannot check call state");
             }
+            isInCall = isInCall || CallStateHelper.isInCall(context, false);
 
             // ✅ شغّل صوت الأذان مباشرة من المنبه نفسه - مستقل عن نجاح فتح الشاشة
             // القفل ده مشترك مع AthanScreenActivity عشان الصوت ميتكررش لو الشاشة فتحت بعده
@@ -216,6 +218,17 @@ if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
                 SharedPreferences soundPrefs = PreferenceManager.getDefaultSharedPreferences(context);
                 soundPrefs.edit().putLong("athan_sound_triggered_" + dataType, nowMs).apply();
 
+                // ✅ إعلان "حان الآن موعد صلاة ..." الأول، وبعده الأذان (الخدمة بتبدأه، وده احتياطي لو اتأخرت)
+                boolean announced = startAnnouncementIfEnabled(context, dataType);
+                if (announced) {
+                    final Context athanCtx = context.getApplicationContext();
+                    final String athanType = dataType;
+                    new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                        if (!CallStateHelper.isInCall(athanCtx, false)) {
+                            PrayerReminderSoundService.startAthanOnce(athanCtx, athanType);
+                        }
+                    }, 3800);
+                } else {
                 Bundle soundData = new Bundle();
                 soundData.putInt("ACTION", ThikrMediaPlayerService.MEDIA_PLAYER_PLAY);
                 soundData.putString("com.alaaeltaweel.thikrallah.datatype", dataType);
@@ -225,6 +238,7 @@ if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
                     context.startForegroundService(soundIntent);
                 } else {
                     context.startService(soundIntent);
+                }
                 }
             }
 
@@ -284,6 +298,8 @@ if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
             } catch (SecurityException e) {
                 Log.d(TAG, "Cannot check call state");
             }
+            // ✅ كمان مكالمات واتساب والإنترنت (مش بتظهر في TelephonyManager)، ومن غير ما نحتاج إذن الهاتف
+            isInCallForThikr = isInCallForThikr || CallStateHelper.isInCall(context, true);
             if (isInCallForThikr) {
                 Log.d(TAG, "Call in progress, scheduling thikr after 15 min");
                 android.app.AlarmManager alarmManager =
@@ -384,6 +400,43 @@ private void startReminderSound(Context context, String kind, String prayerKey, 
         Log.e(TAG, "Failed to start reminder sound service: " + e.getMessage());
     }
 }
+
+    /** بيشغّل إعلان الصلاة لو مفعّل، وبيرجع true لو الإعلان بدأ فعلاً */
+    private boolean startAnnouncementIfEnabled(Context context, String dataType) {
+        try {
+            SharedPreferences p = PreferenceManager.getDefaultSharedPreferences(context);
+            if (!p.getBoolean("announce_before_athan", true)) return false;
+            android.media.AudioManager am = (android.media.AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+            if (am != null && am.getRingerMode() != android.media.AudioManager.RINGER_MODE_NORMAL) return false;
+
+            String key;
+            if (MainActivity.DATA_TYPE_ATHAN1.equals(dataType)) key = "fajr";
+            else if (MainActivity.DATA_TYPE_ATHAN2.equals(dataType)) {
+                key = Calendar.getInstance().get(Calendar.DAY_OF_WEEK) == Calendar.FRIDAY ? "jumuah" : "dhuhr";
+            }
+            else if (MainActivity.DATA_TYPE_ATHAN3.equals(dataType)) key = "asr";
+            else if (MainActivity.DATA_TYPE_ATHAN4.equals(dataType)) key = "maghrib";
+            else if (MainActivity.DATA_TYPE_ATHAN5.equals(dataType)) key = "isha";
+            else return false;
+
+            if (context.getResources().getIdentifier("announce_" + key, "raw", context.getPackageName()) == 0) {
+                return false;      // ملف الصوت مش موجود في raw
+            }
+            Intent i = new Intent(context, PrayerReminderSoundService.class)
+                    .putExtra(PrayerReminderSoundService.EXTRA_KIND, PrayerReminderSoundService.KIND_ANNOUNCE)
+                    .putExtra(PrayerReminderSoundService.EXTRA_PRAYER, key)
+                    .putExtra(PrayerReminderSoundService.EXTRA_ATHAN_TYPE, dataType);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(i);
+            } else {
+                context.startService(i);
+            }
+            return true;
+        } catch (Exception e) {
+            Log.e(TAG, "announcement start failed: " + e.getMessage());
+            return false;
+        }
+    }
 
     private boolean isAthanType(String dataType) {
         if (dataType == null) return false;

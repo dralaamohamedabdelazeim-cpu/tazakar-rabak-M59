@@ -152,19 +152,7 @@ public class DuaPlayerHelper {
 
     // ✅ التحقق من وجود مكالمة هاتفية دلوقتي
     private static boolean isInCallNow(Context context) {
-        try {
-            TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
-            if (tm != null && tm.getCallState() != TelephonyManager.CALL_STATE_IDLE) {
-                return true;
-            }
-            AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
-            if (am != null && am.getMode() == AudioManager.MODE_IN_COMMUNICATION) {
-                return true;
-            }
-            return false;
-        } catch (SecurityException e) {
-            return false;
-        }
+        return CallStateHelper.isInCall(context, true);
     }
 
     private static void showDuaStopNotification(Context context) {
