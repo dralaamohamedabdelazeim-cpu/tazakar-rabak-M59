@@ -177,6 +177,10 @@
             android:key="dailyContent_ayah"
             android:title="الآيات"
             android:dependency="dailyContent_enabled" />
+        <Preference
+            android:key="dailyContent_test"
+            android:title="جرّب الإشعارات الآن"
+            android:summary="بيعرض إشعار من كل نوع فورًا، ويقولك لو في نوع ما اشتغلش وليه" />
     </PreferenceCategory>
 
     <!-- ✅ إعدادات رمضان -->
