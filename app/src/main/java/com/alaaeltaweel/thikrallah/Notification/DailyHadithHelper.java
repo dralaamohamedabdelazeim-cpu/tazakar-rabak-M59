@@ -176,37 +176,56 @@ public class DailyHadithHelper {
         midnight.set(Calendar.MILLISECOND, 0);
         midnight.add(Calendar.DAY_OF_YEAR, dayOffset);
 
-        int seg = (endMin - startMin) / count;
-        long[] out = new long[count];
+        int span = endMin - startMin;
+        int[] mins = new int[count];
         for (int i = 0; i < count; i++) {
-            int segStart = startMin + i * seg;
-            int t;
+            // أول إشعار قريب من بداية الفترة، وآخر إشعار قريب من نهايتها، والباقي موزع بينهم
+            int base = count == 1 ? startMin
+                    : startMin + (int) Math.round((double) span * i / (count - 1));
+            int t = base;
             if (random) {
                 Random r = new Random(day * 1009L + i * 7919L + count);
-                int span = Math.max(1, (int) (seg * 0.8));
-                t = segStart + (int) (seg * 0.1) + r.nextInt(span);
-            } else {
-                t = segStart + seg / 2;
+                if (i == 0) {
+                    t = base + r.nextInt(11);                       // 0..10 دقايق بعد البداية
+                } else if (i == count - 1) {
+                    t = base - r.nextInt(11);                       // 0..10 دقايق قبل النهاية
+                } else {
+                    int jitter = (int) ((span / (count - 1)) * 0.2);   // ±20% من المسافة بين الإشعارات
+                    t = base - jitter + r.nextInt(2 * jitter + 1);
+                }
             }
-            t = avoidPrayers(t, prayers);
-            out[i] = midnight.getTimeInMillis() + t * 60000L;
+            t = avoidPrayers(t, prayers, startMin, endMin);
+            if (i > 0 && t - mins[i - 1] < 15) {                    // مانخلّيش إشعارين لزق في بعض
+                t = avoidPrayers(mins[i - 1] + 15, prayers, startMin, endMin);
+            }
+            mins[i] = t;
+        }
+        long[] out = new long[count];
+        for (int i = 0; i < count; i++) {
+            out[i] = midnight.getTimeInMillis() + mins[i] * 60000L;
         }
         return out;
     }
 
-    private static int avoidPrayers(int t, List<Integer> prayers) {
+    private static int avoidPrayers(int t, List<Integer> prayers, int lo, int hi) {
         for (int iter = 0; iter < 12; iter++) {
-            boolean clash = false;
+            int clash = -1;
             for (int pm : prayers) {
                 if (Math.abs(t - pm) < PRAYER_BUFFER_MIN) {
-                    t = pm + PRAYER_BUFFER_MIN;
-                    clash = true;
+                    clash = pm;
                     break;
                 }
             }
-            if (!clash) break;
+            if (clash < 0) break;
+            int after = clash + PRAYER_BUFFER_MIN;
+            int before = clash - PRAYER_BUFFER_MIN;
+            boolean afterOk = after <= hi;
+            boolean beforeOk = before >= lo;
+            if (afterOk && (!beforeOk || Math.abs(after - t) <= Math.abs(t - before))) t = after;
+            else if (beforeOk) t = before;
+            else t = after;
         }
-        return Math.min(t, 24 * 60 - 1);
+        return Math.min(Math.max(t, 0), 24 * 60 - 1);
     }
 
     private static List<Integer> prayerMinutes(Context ctx) {
