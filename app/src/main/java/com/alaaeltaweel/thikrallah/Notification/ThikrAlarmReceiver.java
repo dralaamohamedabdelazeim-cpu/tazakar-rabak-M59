@@ -210,7 +210,7 @@ if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
             } catch (SecurityException e) {
                 Log.d(TAG, "Cannot check call state");
             }
-            isInCall = isInCall || CallStateHelper.isInCall(context, false);
+            isInCall = isInCall || CallStateHelper.isInCall(context, true);   // مكالمات الإنترنت كمان
 
             // ✅ شغّل صوت الأذان مباشرة من المنبه نفسه - مستقل عن نجاح فتح الشاشة
             // القفل ده مشترك مع AthanScreenActivity عشان الصوت ميتكررش لو الشاشة فتحت بعده
@@ -224,7 +224,7 @@ if ("com.alaaeltaweel.thikrallah.STOP_DUA".equals(intent.getAction())) {
                     final Context athanCtx = context.getApplicationContext();
                     final String athanType = dataType;
                     new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
-                        if (!CallStateHelper.isInCall(athanCtx, false)) {
+                        if (!CallStateHelper.isInCall(athanCtx, true)) {
                             PrayerReminderSoundService.startAthanOnce(athanCtx, athanType);
                         }
                     }, 3800);

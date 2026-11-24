@@ -187,7 +187,7 @@ public class PrayerReminderSoundService extends Service {
     // إعلان "حان الآن موعد صلاة ..." قبل الأذان، وبعده يبدأ الأذان
     // ------------------------------------------------------------------
     private void startAthanIfAllowed(String athanType) {
-        if (!CallStateHelper.isInCall(this, false)) startAthanOnce(this, athanType);
+        if (!CallStateHelper.isInCall(this, true)) startAthanOnce(this, athanType);
     }
 
     private void handleAnnounce(final String athanType, String prayerKey) {
@@ -283,19 +283,34 @@ public class PrayerReminderSoundService extends Service {
                 .build();
     }
 
+    /** "مستوى صوت التذكير" (إعداد volume) بنفس معادلة الأذكار، عشان يبقى مستقل عن صوت الموبايل */
+    private float reminderVolume() {
+        int level = PreferenceManager.getDefaultSharedPreferences(this).getInt("volume", 100);
+        float v;
+        if (level >= 100) {
+            v = 1f;
+        } else {
+            v = (float) (1 - Math.log(101 - Math.max(0, level)) / Math.log(101));
+        }
+        return Math.max(0.01f, Math.min(1f, v));
+    }
+
     private void playSound(String kind, String prayer, int iqamaSound) {
         releasePlayer();
         int res = KIND_IQAMA.equals(kind) ? iqamaRes(iqamaSound) : preAthanRes(prayer);   // الجمعة: بيستخدم pre_jumuah لو الملف موجود
         requestFocus();
         try {
             MediaPlayer p = new MediaPlayer();
+            // ✅ نفس قناة الأذان والأذكار (الإشعارات) + "مستوى صوت التذكير" من الإعدادات، بدل صوت المنبه من غير حد
             p.setAudioAttributes(new AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .setUsage(AudioAttributes.USAGE_NOTIFICATION)
                     .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                     .build());
             AssetFileDescriptor afd = getResources().openRawResourceFd(res);
             p.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
             afd.close();
+            float rv = reminderVolume();
+            p.setVolume(rv, rv);
             p.setOnCompletionListener(mp -> finishAndStop());
             p.setOnErrorListener((mp, what, extra) -> {
                 Log.e(TAG, "MediaPlayer error " + what + "/" + extra);
@@ -320,14 +335,14 @@ public class PrayerReminderSoundService extends Service {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 focusRequest = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
                         .setAudioAttributes(new AudioAttributes.Builder()
-                                .setUsage(AudioAttributes.USAGE_ALARM)
+                                .setUsage(AudioAttributes.USAGE_NOTIFICATION)
                                 .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                                 .build())
                         .setOnAudioFocusChangeListener(focusListener)
                         .build();
                 audioManager.requestAudioFocus(focusRequest);
             } else {
-                audioManager.requestAudioFocus(focusListener, AudioManager.STREAM_ALARM,
+                audioManager.requestAudioFocus(focusListener, AudioManager.STREAM_NOTIFICATION,
                         AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
             }
         } catch (Exception e) {

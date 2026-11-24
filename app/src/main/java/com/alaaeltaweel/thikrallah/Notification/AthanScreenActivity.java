@@ -201,6 +201,11 @@ public class AthanScreenActivity extends AppCompatActivity {
             Log.d(TAG, "Resuming athan screen - athan already playing, not restarting it");
             athanPlayed = true;
             autoHandler.postDelayed(this::stopAthanAndClose, AUTO_DISMISS_DELAY);
+        } else if (isCallInProgress && !CallStateHelper.isInCall(this, false)) {
+            // ✅ مكالمة إنترنت (واتساب وغيره): مفيش صوت خالص حتى المكتوم، عشان ما نخطفش التركيز الصوتي من المكالمة
+            Log.d(TAG, "Internet call in progress, showing athan screen without any audio");
+            athanPlayed = true;
+            autoHandler.postDelayed(this::stopAthanAndClose, AUTO_DISMISS_DELAY);
         } else if (isCallInProgress) {
             // ✅ في مكالمة — شغّل الأذان فعليًا لكن بصوت مكتوم فورًا
             // بكده هيخلص في نفس توقيته الطبيعي والشاشة هتقفل تلقائي مع الـ ATHAN_COMPLETE
