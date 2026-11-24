@@ -88,21 +88,10 @@ public class ThikrService extends IntentService  {
 
 	// ✅ التحقق من وجود مكالمة هاتفية
     private boolean isInCall() {
-    try {
-        TelephonyManager tm = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-        if (tm != null && tm.getCallState() != TelephonyManager.CALL_STATE_IDLE) {
-            return true;
-        }
-        AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-        if (am != null && am.getMode() == AudioManager.MODE_IN_COMMUNICATION) {
-            return true;
-        }
-        return false;
-    } catch (SecurityException e) {
-        Log.d(TAG, "READ_PHONE_STATE permission not granted, assuming no call");
-        return false;
+    
+        // فحص موحّد بدون الاعتماد على إذن الهاتف (مكالمة عادية / رنين / إنترنت)
+        return CallStateHelper.isInCall(this, true);
     }
-}
 private PhoneStateListener phoneStateListener;
     private boolean pendingThikrAfterCall = false;
     // ✅ بيحفظ نوع التذكير اللي اتأجل بسبب المكالمة - عشان رقم إعادة المحاولة يبقى
