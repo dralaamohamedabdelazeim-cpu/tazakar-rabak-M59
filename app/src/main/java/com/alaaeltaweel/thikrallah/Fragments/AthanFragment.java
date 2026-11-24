@@ -65,6 +65,9 @@ public class AthanFragment extends Fragment implements SharedPreferences.OnShare
     private LinearLayout preAthanRow1, preAthanRow2, preAthanRow3, preAthanRow4, preAthanRow5;
     private EditText preAthanMinutes1, preAthanMinutes2, preAthanMinutes3, preAthanMinutes4, preAthanMinutes5;
     private SwitchCompat preAthanCheck1, preAthanCheck2, preAthanCheck3, preAthanCheck4, preAthanCheck5;
+    // ── إعلان الصلاة قبل الأذان (لكل صلاة) ──
+    private LinearLayout announceRow1, announceRow2, announceRow3, announceRow4, announceRow5;
+    private SwitchCompat announceCheck1, announceCheck2, announceCheck3, announceCheck4, announceCheck5;
     private SharedPreferences mPrefs;
     private SharedPreferences.OnSharedPreferenceChangeListener prefListener;
     private CheckBox is_Manual_Location;
@@ -212,6 +215,23 @@ public class AthanFragment extends Fragment implements SharedPreferences.OnShare
         setupPreAthan(asr_switch,     preAthanRow3, preAthanCheck3, preAthanMinutes3, "asr");
         setupPreAthan(maghrib_switch, preAthanRow4, preAthanCheck4, preAthanMinutes4, "maghrib");
         setupPreAthan(ishaa_switch,   preAthanRow5, preAthanCheck5, preAthanMinutes5, "isha");
+
+        // ── إعلان الصلاة قبل الأذان ──
+        announceRow1 = view.findViewById(R.id.announce_row1);
+        announceRow2 = view.findViewById(R.id.announce_row2);
+        announceRow3 = view.findViewById(R.id.announce_row3);
+        announceRow4 = view.findViewById(R.id.announce_row4);
+        announceRow5 = view.findViewById(R.id.announce_row5);
+        announceCheck1 = view.findViewById(R.id.announce_check1);
+        announceCheck2 = view.findViewById(R.id.announce_check2);
+        announceCheck3 = view.findViewById(R.id.announce_check3);
+        announceCheck4 = view.findViewById(R.id.announce_check4);
+        announceCheck5 = view.findViewById(R.id.announce_check5);
+        setupAnnounce(fajr_switch,    announceRow1, announceCheck1, "fajr");
+        setupAnnounce(duhr_switch,    announceRow2, announceCheck2, "dhuhr");
+        setupAnnounce(asr_switch,     announceRow3, announceCheck3, "asr");
+        setupAnnounce(maghrib_switch, announceRow4, announceCheck4, "maghrib");
+        setupAnnounce(ishaa_switch,   announceRow5, announceCheck5, "isha");
      
         iqamaRow1 = view.findViewById(R.id.iqama_row1);
         iqamaRow2 = view.findViewById(R.id.iqama_row2);
@@ -543,6 +563,14 @@ if (hijriOffset != 0) {
                 }
             }
         });
+    }
+    // ✅ إعلان "حان الآن موعد صلاة ..." قبل الأذان: مفتاح لكل صلاة (الافتراضي مفعّل)
+    private void setupAnnounce(SwitchCompat prayerSwitch, LinearLayout row, SwitchCompat check, String key) {
+        if (row == null || check == null) return;
+        check.setChecked(mPrefs.getBoolean("announce_" + key, true));
+        row.setVisibility(prayerSwitch.isChecked() ? View.VISIBLE : View.GONE);
+        check.setOnCheckedChangeListener((buttonView, isChecked) ->
+                mPrefs.edit().putBoolean("announce_" + key, isChecked).apply());
     }
     private android.media.MediaPlayer iqamaPreviewPlayer;
     private void setupIqama(SwitchCompat prayerSwitch, LinearLayout row,
