@@ -418,6 +418,9 @@ private void startReminderSound(Context context, String kind, String prayerKey, 
             else if (MainActivity.DATA_TYPE_ATHAN4.equals(dataType)) key = "maghrib";
             else if (MainActivity.DATA_TYPE_ATHAN5.equals(dataType)) key = "isha";
             else return false;
+            // ✅ مفتاح كل صلاة من شاشة المواقيت (ظهر الجمعة بيتبع مفتاح الظهر). لو مفيش قيمة محفوظة يفضل مفعّل
+            String announcePrefKey = "jumuah".equals(key) ? "dhuhr" : key;
+            if (!p.getBoolean("announce_" + announcePrefKey, true)) return false;
 
             if (context.getResources().getIdentifier("announce_" + key, "raw", context.getPackageName()) == 0) {
                 return false;      // ملف الصوت مش موجود في raw
