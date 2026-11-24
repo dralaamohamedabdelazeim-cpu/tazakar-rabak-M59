@@ -203,6 +203,28 @@
                         android:layout_height="wrap_content"
                         android:checked="true" />
                 </LinearLayout>
+                <LinearLayout
+                    android:id="@+id/announce_row1"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingTop="8dp"
+                    android:visibility="gone">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="end"
+                        android:text="إعلان الصلاة قبل الأذان"
+                        android:textColor="#AAAAAA"
+                        android:textSize="13sp" />
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/announce_check1"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true" />
+                </LinearLayout>
                                 <LinearLayout
                     android:id="@+id/iqama_row1"
                     android:layout_width="match_parent"
@@ -400,6 +422,28 @@
                         android:layout_height="wrap_content"
                         android:checked="true" />
                 </LinearLayout>
+                <LinearLayout
+                    android:id="@+id/announce_row2"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingTop="8dp"
+                    android:visibility="gone">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="end"
+                        android:text="إعلان الصلاة قبل الأذان"
+                        android:textColor="#AAAAAA"
+                        android:textSize="13sp" />
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/announce_check2"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true" />
+                </LinearLayout>
                  <LinearLayout
                     android:id="@+id/iqama_row2"
                     android:layout_width="match_parent"
@@ -559,6 +603,28 @@
                         android:textSize="13sp" />
                     <androidx.appcompat.widget.SwitchCompat
                         android:id="@+id/pre_athan_check3"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true" />
+                </LinearLayout>
+                <LinearLayout
+                    android:id="@+id/announce_row3"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingTop="8dp"
+                    android:visibility="gone">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="end"
+                        android:text="إعلان الصلاة قبل الأذان"
+                        android:textColor="#AAAAAA"
+                        android:textSize="13sp" />
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/announce_check3"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:checked="true" />
@@ -726,6 +792,28 @@
                         android:layout_height="wrap_content"
                         android:checked="true" />
                 </LinearLayout>
+                <LinearLayout
+                    android:id="@+id/announce_row4"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingTop="8dp"
+                    android:visibility="gone">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="end"
+                        android:text="إعلان الصلاة قبل الأذان"
+                        android:textColor="#AAAAAA"
+                        android:textSize="13sp" />
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/announce_check4"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true" />
+                </LinearLayout>
                                 <LinearLayout
                     android:id="@+id/iqama_row4"
                     android:layout_width="match_parent"
@@ -885,6 +973,28 @@
                         android:textSize="13sp" />
                     <androidx.appcompat.widget.SwitchCompat
                         android:id="@+id/pre_athan_check5"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true" />
+                </LinearLayout>
+                <LinearLayout
+                    android:id="@+id/announce_row5"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingTop="8dp"
+                    android:visibility="gone">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="end"
+                        android:text="إعلان الصلاة قبل الأذان"
+                        android:textColor="#AAAAAA"
+                        android:textSize="13sp" />
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/announce_check5"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:checked="true" />
