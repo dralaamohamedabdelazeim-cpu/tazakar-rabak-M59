@@ -57,21 +57,6 @@ if (intent.getBooleanExtra("isWatchdog", false)) {
                     manager.UpdateAllApplicableAlarms();
                 }, 5000);
 
-                // ✅ محاولة إضافية بعد دقيقتين من التحديث/الإقلاع: لو الخدمة لسه مش شغالة، الحارس يشغّلها
-                // (بدل ما نستنى حارس الساعة). رقم 9998 مختلف عن رقم الحارس العادي 9999
-                try {
-                    AlarmManager earlyAm = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-                    Intent earlyIntent = new Intent(context, ThikrBootReceiver.class);
-                    earlyIntent.putExtra("isWatchdog", true);
-                    android.app.PendingIntent earlyPi = android.app.PendingIntent.getBroadcast(context, 9998, earlyIntent,
-                            android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
-                    if (earlyAm != null) {
-                        earlyAm.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,
-                                System.currentTimeMillis() + 2 * 60 * 1000L, earlyPi);
-                    }
-                } catch (Exception e) {
-                    Log.e("ThikrBootReceiver", "early watchdog failed: " + e.getMessage());
-                }
                 SharedPreferences mPrefs = PreferenceManager.getDefaultSharedPreferences(context);
                 boolean isTimer = mPrefs.getBoolean("foreground_athan_timer", true);
 

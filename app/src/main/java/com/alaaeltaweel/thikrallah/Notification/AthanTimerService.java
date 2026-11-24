@@ -72,10 +72,10 @@ public class AthanTimerService extends Service {
                     @Override
                     public void run() {
                     android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_URGENT_AUDIO);
-                    // أي استثناء هنا كان بيقتل الـ Timer نهائيًا والحارس يقف من غير ما حد يعرف
+                    // ✅ أي استثناء في أي خطوة من الـ3 كان بيقتل الـ Timer نهائيًا فالإشعار مايرجعش بعد ما يتمسح
                     try { initNotification(); } catch (Exception e) { Timber.tag(TAG).e(e, "initNotification failed"); }
-                    checkMissedPrayerEvents();
-                    checkMissedGeneralThikr();
+                    try { checkMissedPrayerEvents(); } catch (Exception e) { Timber.tag(TAG).e(e, "checkMissedPrayerEvents failed"); }
+                    try { checkMissedGeneralThikr(); } catch (Exception e) { Timber.tag(TAG).e(e, "checkMissedGeneralThikr failed"); }
                 }
                 }, 0, 60 * 1000);
             }
@@ -133,7 +133,7 @@ public class AthanTimerService extends Service {
 
 			notificationBuilder
 					.setSmallIcon(R.drawable.ic_launcher)
-					.setAutoCancel(true)
+					// ✅ اتشال setAutoCancel: الضغط على الإشعار كان بيمسحه
 						.setOngoing(true) // ثابت: مايتمسحش بزر مسح الإشعارات
 						.setGroup("athan_timer_group") // مجموعة لوحده: عشان مايخليش باقي إشعارات التطبيق "غير قابلة للمسح" بزر المسح العام
 						.setOnlyAlertOnce(true)
