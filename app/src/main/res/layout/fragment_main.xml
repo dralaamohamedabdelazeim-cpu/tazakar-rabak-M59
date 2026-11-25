@@ -368,7 +368,7 @@
                     android:layout_weight="1"
                     android:layout_margin="8dp"
                     android:background="@drawable/card_bg"
-                    android:drawableTop="@drawable/ic_tile_radio"
+                    android:drawableTop="@drawable/photo_radio"
                     android:text="إذاعات القرآن الكريم"
                     android:textColor="#FFFFFF"
                     android:textSize="14sp"
@@ -382,7 +382,7 @@
                     android:layout_weight="1"
                     android:layout_margin="8dp"
                     android:background="@drawable/card_bg"
-                    android:drawableTop="@drawable/ic_tile_library"
+                    android:drawableTop="@drawable/photo_library"
                     android:text="المكتبة: التفسير والأحاديث"
                     android:textColor="#FFFFFF"
                     android:textSize="14sp"
@@ -404,19 +404,12 @@
                     android:layout_weight="1"
                     android:layout_margin="8dp"
                     android:background="@drawable/card_bg"
-                    android:drawableTop="@drawable/ic_tile_prayer"
+                    android:drawableTop="@drawable/photo_prayer"
                     android:text="متتبع الصلاة اليومي"
                     android:textColor="#FFFFFF"
                     android:textSize="14sp"
                     android:gravity="center"
                     android:padding="10dp" />
-
-                <View
-                    android:layout_width="0dp"
-                    android:layout_height="130dp"
-                    android:layout_weight="1"
-                    android:layout_margin="8dp"
-                    android:visibility="invisible" />
 
             </LinearLayout>
 
