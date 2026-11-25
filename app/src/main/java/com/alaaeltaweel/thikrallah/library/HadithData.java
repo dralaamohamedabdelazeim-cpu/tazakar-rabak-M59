@@ -15,8 +15,8 @@ import java.util.ArrayList;
  */
 public class HadithData {
 
-    public static final String[] BOOK_IDS = {"bukhari", "muslim"};
-    public static final String[] BOOK_NAMES = {"صحيح البخاري", "صحيح مسلم"};
+    public static final String[] BOOK_IDS = {"bukhari", "muslim", "riyad_assalihin", "nawawi40", "qudsi40", "bulugh_almaram", "aladab_almufrad", "shamail_muhammadiyah", "abudawud", "tirmidhi", "nasai", "ibnmajah", "malik", "ahmed", "darimi", "mishkat_almasabih"};
+    public static final String[] BOOK_NAMES = {"صحيح البخاري", "صحيح مسلم", "رياض الصالحين", "الأربعون النووية", "الأربعون القدسية", "بلوغ المرام", "الأدب المفرد", "الشمائل المحمدية", "سنن أبي داود", "جامع الترمذي", "سنن النسائي", "سنن ابن ماجه", "موطأ مالك", "مسند الإمام أحمد", "سنن الدارمي", "مشكاة المصابيح"};
 
     public static final int MAX_RESULTS = 300;
 

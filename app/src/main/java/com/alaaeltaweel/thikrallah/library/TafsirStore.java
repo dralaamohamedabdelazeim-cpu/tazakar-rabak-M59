@@ -35,6 +35,7 @@ public class TafsirStore {
             {"ar-tafseer-al-qurtubi", "تفسير القرطبي"},
             {"ar-tafseer-al-saddi", "تفسير السعدي"},
             {"ar-tafsir-muyassar", "التفسير الميسر"},
+            {"ar-tafsir-al-baghawi", "تفسير البغوي (معالم التنزيل)"},
     };
 
     public static final int TOTAL_SURAS = 114;
