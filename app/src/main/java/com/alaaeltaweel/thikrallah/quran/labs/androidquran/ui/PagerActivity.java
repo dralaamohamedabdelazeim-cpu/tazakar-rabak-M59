@@ -1884,6 +1884,12 @@ public class PagerActivity extends QuranActionBarActivity implements
         sliderPage = slidingPagerAdapter.getPagePosition(TAG_PAGE);
       }else if (item.getItemId() ==R.id.cab_translate_ayah){
         sliderPage = slidingPagerAdapter.getPagePosition(TRANSLATION_PAGE);
+      }else if (item.getItemId() ==R.id.cab_tafsir_ayah){
+        Intent tafsirIntent = new Intent(PagerActivity.this,
+            com.alaaeltaweel.thikrallah.library.TafsirActivity.class);
+        tafsirIntent.putExtra("sura", start.sura);
+        tafsirIntent.putExtra("ayah", start.ayah);
+        startActivity(tafsirIntent);
       }else if (item.getItemId() ==R.id.cab_play_from_here){
         sliderPage = slidingPagerAdapter.getPagePosition(AUDIO_PAGE);
       }else if (item.getItemId() ==R.id.cab_share_ayah_link){
