@@ -172,6 +172,15 @@ public class MainFragment extends Fragment {
             intent.setClass(v.getContext(), LibraryActivity.class);
             startActivity(intent);
         });
+        // ✅ كارد التاريخ والرمضان: الضغط عليه بيفتح شاشة رمضان (الإمساكية + إعدادات المدفع والمسحراتي)
+        View dateRamadanCard = view.findViewById(R.id.date_ramadan_card);
+        if (dateRamadanCard != null) {
+            dateRamadanCard.setOnClickListener(v -> {
+                Intent intent = new Intent();
+                intent.setClass(v.getContext(), com.alaaeltaweel.thikrallah.ramadan.RamadanActivity.class);
+                startActivity(intent);
+            });
+        }
         Log.d(TAG, "requestBatteryExclusion");
         requestBatteryExclusion(mContext);
         return view;
