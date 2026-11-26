@@ -11,9 +11,11 @@ import androidx.fragment.app.DialogFragment;
 import androidx.preference.ListPreference;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
+import androidx.preference.PreferenceCategory;
 import androidx.preference.PreferenceGroup;
 import androidx.preference.PreferenceManager;
 import androidx.preference.PreferenceScreen;
+import androidx.preference.TwoStatePreference;
 
 import com.alaaeltaweel.thikrallah.MainActivity;
 import com.alaaeltaweel.thikrallah.Notification.MyAlarmsManager;
@@ -52,7 +54,7 @@ public class PrefsThikrFragment extends PreferenceFragmentCompat implements OnSh
 				}
 			});
 		}
-		updateDailyContentVisibility();
+		setupAccordion();
 	}
 
 	// ستارة "تخصيص": مقفولة في الأول عشان الصفحة مش تتزحم
@@ -62,6 +64,7 @@ public class PrefsThikrFragment extends PreferenceFragmentCompat implements OnSh
 	private void updateDailyContentVisibility() {
 		try {
 			SharedPreferences sp = getPreferenceManager().getSharedPreferences();
+			boolean dOpen = isDailyOpen();
 			boolean fixed = sp.getBoolean("dailyContent_fixed", false);
 			int count = 4;
 			try {
@@ -69,20 +72,25 @@ public class PrefsThikrFragment extends PreferenceFragmentCompat implements OnSh
 			} catch (Exception ignored) {
 			}
 			Preference customize = findPreference("dailyContent_customize");
-			if (customize != null) customize.setTitle(dailyExpanded ? "تخصيص ▴" : "تخصيص ▾");
+			if (customize != null) {
+				customize.setTitle(dailyExpanded ? "تخصيص ▴" : "تخصيص ▾");
+				customize.setVisible(dOpen);
+			}
+			Preference dailyEnabledPref = findPreference("dailyContent_enabled");
+			if (dailyEnabledPref != null) dailyEnabledPref.setVisible(dOpen);
 			String[] alwaysInside = {"dailyContent_count", "dailyContent_fixed", "dailyContent_types", "dailyContent_test"};
 			for (String k : alwaysInside) {
 				Preference x = findPreference(k);
-				if (x != null) x.setVisible(dailyExpanded);
+				if (x != null) x.setVisible(dOpen && dailyExpanded);
 			}
 			for (int i = 1; i <= 6; i++) {
 				Preference timePref = findPreference("dailyContent_time" + i);
-				if (timePref != null) timePref.setVisible(dailyExpanded && fixed && i <= count);
+				if (timePref != null) timePref.setVisible(dOpen && dailyExpanded && fixed && i <= count);
 			}
 			String[] windowKeys = {"dailyContent_start", "dailyContent_end", "dailyContent_random"};
 			for (String k : windowKeys) {
 				Preference w = findPreference(k);
-				if (w != null) w.setVisible(dailyExpanded && !fixed);
+				if (w != null) w.setVisible(dOpen && dailyExpanded && !fixed);
 			}
 			updateDailyTypesSummary();
 		} catch (Exception e) {
@@ -110,6 +118,130 @@ public class PrefsThikrFragment extends PreferenceFragmentCompat implements OnSh
 		} catch (Exception e) {
 			Log.d("PrefsThikr", "types summary failed: " + e.getMessage());
 		}
+	}
+
+	// ---------- أقسام قابلة للطي (كل قسم سطر واحد بملخصه، وتفتح اللي محتاجه) ----------
+	private final java.util.LinkedHashMap<PreferenceCategory, Preference> accHeaders = new java.util.LinkedHashMap<>();
+	private final java.util.HashMap<PreferenceCategory, String> accTitles = new java.util.HashMap<>();
+	private final java.util.HashSet<PreferenceCategory> accOpen = new java.util.HashSet<>();
+	private PreferenceCategory dailyCategory = null;
+
+	private boolean isDailyOpen() {
+		return dailyCategory == null || !accHeaders.containsKey(dailyCategory) || accOpen.contains(dailyCategory);
+	}
+
+	private void setupAccordion() {
+		try {
+			PreferenceScreen screen = getPreferenceScreen();
+			if (screen == null) return;
+			Preference dailyEnabled = findPreference("dailyContent_enabled");
+			if (dailyEnabled != null && dailyEnabled.getParent() instanceof PreferenceCategory) {
+				dailyCategory = (PreferenceCategory) dailyEnabled.getParent();
+			}
+			Context ctx = getPreferenceManager().getContext();
+			java.util.ArrayList<PreferenceCategory> cats = new java.util.ArrayList<>();
+			for (int i = 0; i < screen.getPreferenceCount(); i++) {
+				Preference p = screen.getPreference(i);
+				if (p instanceof PreferenceCategory) cats.add((PreferenceCategory) p);
+			}
+			int n = 0;
+			for (final PreferenceCategory cat : cats) {
+				CharSequence t = cat.getTitle();
+				if (t == null || t.length() == 0) continue;
+				accTitles.put(cat, t.toString());
+				cat.setLayoutResource(R.layout.pref_category_spacer);
+				for (int j = 0; j < cat.getPreferenceCount(); j++) {
+					Preference c = cat.getPreference(j);
+					if (!(c instanceof com.alaaeltaweel.thikrallah.Utilities.SeekBarPreference)) {
+						c.setLayoutResource(R.layout.pref_row_card);
+					}
+				}
+				Preference header = new Preference(ctx);
+				header.setKey("accordion_header_" + (n++));
+				header.setPersistent(false);
+				header.setIconSpaceReserved(false);
+				header.setLayoutResource(R.layout.pref_accordion_header);
+				header.setOrder(-1);
+				header.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+					@Override
+					public boolean onPreferenceClick(Preference preference) {
+						if (accOpen.contains(cat)) {
+							accOpen.remove(cat);
+						} else {
+							accOpen.add(cat);
+						}
+						applyAccordion();
+						return true;
+					}
+				});
+				cat.addPreference(header);
+				accHeaders.put(cat, header);
+			}
+			applyAccordion();
+		} catch (Exception e) {
+			Log.d("PrefsThikr", "accordion setup failed: " + e.getMessage());
+		}
+	}
+
+	private void applyAccordion() {
+		try {
+			for (java.util.Map.Entry<PreferenceCategory, Preference> e : accHeaders.entrySet()) {
+				PreferenceCategory cat = e.getKey();
+				Preference header = e.getValue();
+				if (cat == dailyCategory) continue; // قسم الفوائد اليومية له منطقه الخاص في updateDailyContentVisibility
+				boolean open = accOpen.contains(cat);
+				for (int j = 0; j < cat.getPreferenceCount(); j++) {
+					Preference c = cat.getPreference(j);
+					if (c != header) c.setVisible(open);
+				}
+			}
+			updateDailyContentVisibility();
+			refreshAccordionHeaders();
+		} catch (Exception e) {
+			Log.d("PrefsThikr", "accordion apply failed: " + e.getMessage());
+		}
+	}
+
+	private void refreshAccordionHeaders() {
+		try {
+			for (java.util.Map.Entry<PreferenceCategory, Preference> e : accHeaders.entrySet()) {
+				PreferenceCategory cat = e.getKey();
+				Preference header = e.getValue();
+				boolean open = accOpen.contains(cat);
+				header.setTitle(accTitles.get(cat) + (open ? "  ▴" : "  ▾"));
+				header.setSummary(buildAccordionSummary(cat, header));
+			}
+		} catch (Exception e) {
+			Log.d("PrefsThikr", "accordion refresh failed: " + e.getMessage());
+		}
+	}
+
+	/** ملخص قصير لإعدادات القسم (مفعّل/متوقف + أول قيمتين) يظهر تحت عنوانه وهو مقفول */
+	private String buildAccordionSummary(PreferenceCategory cat, Preference header) {
+		StringBuilder sb = new StringBuilder();
+		int parts = 0;
+		boolean first = true;
+		for (int j = 0; j < cat.getPreferenceCount() && parts < 3; j++) {
+			Preference c = cat.getPreference(j);
+			if (c == header) continue;
+			String part = null;
+			if (c instanceof TwoStatePreference) {
+				if (first) part = ((TwoStatePreference) c).isChecked() ? "مفعّل" : "متوقف";
+			} else if (c instanceof ListPreference) {
+				CharSequence en = ((ListPreference) c).getEntry();
+				if (en != null) part = en.toString();
+			} else if (c instanceof TimePreference) {
+				CharSequence sm = c.getSummary();
+				if (sm != null) part = sm.toString();
+			}
+			first = false;
+			if (part != null && part.length() > 0) {
+				if (sb.length() > 0) sb.append("، ");
+				sb.append(part);
+				parts++;
+			}
+		}
+		return sb.toString();
 	}
 
 	@Override
@@ -220,6 +352,7 @@ public class PrefsThikrFragment extends PreferenceFragmentCompat implements OnSh
 		
 		Preference pref = findPreference(key);
 		updatePrefSummary(pref);
+		refreshAccordionHeaders();
 		if (key.startsWith("dailyContent_")) {
 			updateDailyContentVisibility();
 		}

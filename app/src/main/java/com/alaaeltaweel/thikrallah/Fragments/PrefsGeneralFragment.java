@@ -221,6 +221,10 @@ public class PrefsGeneralFragment extends PreferenceFragmentCompat implements On
         if (key.equalsIgnoreCase("volume")) {
             return;
         }
+        if (key.equals(com.alaaeltaweel.thikrallah.Utilities.ThemeHelper.KEY)) {
+            com.alaaeltaweel.thikrallah.Utilities.ThemeHelper.apply(getActivity().getApplicationContext());
+            return;
+        }
         MyAlarmsManager manager = new MyAlarmsManager(this.getActivity().getApplicationContext());
         manager.UpdateAllApplicableAlarms();
         Preference pref = findPreference(key);

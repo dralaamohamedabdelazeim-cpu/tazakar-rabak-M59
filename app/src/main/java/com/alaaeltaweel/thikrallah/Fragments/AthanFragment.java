@@ -305,7 +305,7 @@ public class AthanFragment extends Fragment implements SharedPreferences.OnShare
                 boolean isSelected = (clickedView == allTabButtons[i]);
                 allTabContents[i].setVisibility(isSelected ? View.VISIBLE : View.GONE);
                 allTabButtons[i].setBackgroundResource(isSelected ? R.drawable.tab_bg_selected : R.drawable.tab_bg_unselected);
-                allTabButtons[i].setTextColor(Color.parseColor(isSelected ? "#1B2234" : "#FFFFFF"));
+                allTabButtons[i].setTextColor(androidx.core.content.ContextCompat.getColor(allTabButtons[i].getContext(), isSelected ? com.alaaeltaweel.thikrallah.R.color.on_accent : com.alaaeltaweel.thikrallah.R.color.text_primary));
             }
         };
 
