@@ -339,6 +339,24 @@ public class PrayTime {
         }
         return prayerTimes;
     }
+    /** نفس getPrayerTimes(Context) لكن لتاريخ معيّن (بتتستخدم في إمساكية رمضان) من غير ما تغيّر أي إعداد. */
+    public String[] getPrayerTimesForDate(Context context, Calendar cal) {
+        double latitude = Double.parseDouble(MainActivity.getLatitude(context));
+        double longitude = Double.parseDouble(MainActivity.getLongitude(context));
+        double timezone = TimeZone.getDefault().getOffset(cal.getTimeInMillis()) / 3600000.0;
+        offsets = new int[]{0, 0, 0, 0, 0, 0, 0};
+        if (getCalcMethod() == CALC_METHOD_OMAN) {
+            offsets[2] = offsets[2] + 5;
+            offsets[3] = offsets[3] + 5;
+            offsets[5] = offsets[5] + 5;
+        }
+        String[] prayerTimes = this.getPrayerTimes(cal, latitude, longitude, timezone);
+        if (prayerTimes[0].equalsIgnoreCase(getInvalidTime()) && this.getAdjustHighLats() == 0) {
+            this.setAdjustHighLats(3);
+            prayerTimes = this.getPrayerTimes(cal, latitude, longitude, timezone);
+        }
+        return prayerTimes;
+    }
     public PrayTime() {
         // Initialize vars
 
