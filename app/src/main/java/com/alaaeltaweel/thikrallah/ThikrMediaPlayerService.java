@@ -772,7 +772,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
             boolean duaWillPlay1 = false;
             if (wasActuallyPlaying && incomingDataType != null && incomingDataType.contains(MainActivity.DATA_TYPE_ATHAN) && !this.currentPlaybackIsUserAction) { // ✅ متشغلش الدعاء لو ده كان مجرد تجربة صوت مؤذن من الإعدادات مش أذان حقيقي
                 sendBroadcast(new Intent("com.alaaeltaweel.thikrallah.ATHAN_COMPLETE"));
-                duaWillPlay1 = com.alaaeltaweel.thikrallah.Notification.DuaPlayerHelper.playDuaAfterAthan(getApplicationContext()); // على طول كلمه - تشغيل الدعاء لما المستخدم يوقف الأذان يدويا
+                duaWillPlay1 = playDuaAfterAthanIfNoCall(); // على طول كلمه - تشغيل الدعاء لما المستخدم يوقف الأذان يدويا
             }
 
             if (!duaWillPlay1) {
@@ -892,6 +892,17 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
 
 
+        // ✅ مكالمة شغالة (عادية أو إنترنت): الأذكار والتلاوة مايشتغلوش وقتها (الأذان بيشتغل مكتوم - تحت)، وبنقرر قبل ما نطلب التركيز الصوتي
+        // عشان منسحبش الصوت من تطبيق المكالمة نفسه. (تجربة الصوت اليدوية من الإعدادات مستثناة)
+        boolean isPlayRequest = action == MEDIA_PLAYER_PLAY || action == MEDIA_PLAYER_PLAYALL
+                || action == MEDIA_PLAYER_RESUME || action == MEDIA_PLAYER_INNCREMENT;
+        if (isPlayRequest && !this.isUserAction && isNonAthanType() && isCallActive()) {
+            Timber.d("call in progress - skipping non-athan playback request");
+            this.updateAllAlarms();
+            stopBecauseOfCall();
+            return Service.START_NOT_STICKY;
+        }
+
         switch (action) {
 
             case MEDIA_PLAYER_PAUSE:
@@ -999,7 +1010,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
                     // ✅ نبعت إشارة "الأذان خلص" عشان الشاشة/النافذة العائمة تقفل نفسها -
                     // ده كان ناقص خالص، فالشاشة كانت فاضلة فاتحة لو وقفت من زرار الإشعار
                     sendBroadcast(new Intent("com.alaaeltaweel.thikrallah.ATHAN_COMPLETE"));
-                    duaWillPlayFromReset = com.alaaeltaweel.thikrallah.Notification.DuaPlayerHelper.playDuaAfterAthan(getApplicationContext());
+                    duaWillPlayFromReset = playDuaAfterAthanIfNoCall();
                 }
 
                 if (!duaWillPlayFromReset) {
@@ -1298,7 +1309,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
             sendBroadcast(broadcastIntent);
             boolean duaWillPlay2 = false;
-            if (getThikrType() != null && getThikrType().contains(MainActivity.DATA_TYPE_ATHAN) && !isUserActionForThisPlay) { duaWillPlay2 = com.alaaeltaweel.thikrallah.Notification.DuaPlayerHelper.playDuaAfterAthan(getApplicationContext()); } // متشغلش الدعاء لو ده كان مجرد تجربة صوت في الإعدادات مش أذان حقيقي // تشغيل الدعاء لو ده أذان بس
+            if (getThikrType() != null && getThikrType().contains(MainActivity.DATA_TYPE_ATHAN) && !isUserActionForThisPlay) { duaWillPlay2 = playDuaAfterAthanIfNoCall(); } // متشغلش الدعاء لو ده كان مجرد تجربة صوت في الإعدادات مش أذان حقيقي // تشغيل الدعاء لو ده أذان بس
 
 
             resetPlayer();
@@ -1613,6 +1624,13 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
     private int requestAudioFocus() {
 
+        // ✅ الأذان المكتوم وقت مكالمة مايحتاجش تركيز صوتي - وطلبه بيسحب الصوت من تطبيق المكالمة نفسه
+        if (!this.isUserAction && this.getThikrType() != null
+                && this.getThikrType().contains(MainActivity.DATA_TYPE_ATHAN) && isCallActive()) {
+            lastFocusRequestResult = AudioManager.AUDIOFOCUS_REQUEST_GRANTED;
+            return AudioManager.AUDIOFOCUS_REQUEST_GRANTED;
+        }
+
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
 
             AudioAttributes mPlaybackAttributes = new AudioAttributes.Builder()
@@ -1846,7 +1864,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
             // ✅ شغل الدعاء بعد الأذان - بس لو ده أذان حقيقي فعلاً
             Intent duaIntent = new Intent("com.alaaeltaweel.thikrallah.ATHAN_COMPLETE");
             sendBroadcast(duaIntent);
-            boolean duaWillPlay3 = com.alaaeltaweel.thikrallah.Notification.DuaPlayerHelper.playDuaAfterAthan(getApplicationContext()); // تشغيل الدعاء مستقل عن فتح الشاشة
+            boolean duaWillPlay3 = playDuaAfterAthanIfNoCall(); // تشغيل الدعاء مستقل عن فتح الشاشة
 
             this.resetPlayer();
             if (!duaWillPlay3) {
@@ -2161,7 +2179,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
     final android.media.MediaPlayer playerAtPauseTime = player;
     new Handler(Looper.getMainLooper()).postDelayed(() -> {
         if (player == playerAtPauseTime && player != null && !isPlaying()
-                && !com.alaaeltaweel.thikrallah.Notification.CallStateHelper.isInCall(ThikrMediaPlayerService.this, true)) {
+                && !isCallActive()) {
             Timber.d("transient-pause safety-net: resuming playback, focus was never returned");
             startPlayerIfAllowed();   // لو لسه في مكالمة، startPlayerIfAllowed نفسها بتقفل الصوت
         }
@@ -2269,6 +2287,34 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
 
 
+    /** ✅ هل في مكالمة شغالة دلوقتي؟ (عادية أو إنترنت زي واتساب) - بنشوف وضع الصوت في النظام لأنه بيغطي الاتنين من غير صلاحيات */
+    private boolean isCallActive() {
+        try {
+            AudioManager audioManagerForCall = am != null ? am
+                    : (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+            if (audioManagerForCall != null) {
+                int mode = audioManagerForCall.getMode();
+                if (mode == AudioManager.MODE_IN_CALL || mode == AudioManager.MODE_IN_COMMUNICATION) {
+                    return true;
+                }
+            }
+        } catch (Exception ignored) { }
+        try {
+            return com.alaaeltaweel.thikrallah.Notification.CallStateHelper.isInCall(this, true);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /** ✅ الدعاء بعد الأذان مايشتغلش لو في مكالمة (عادية أو إنترنت) - بيرجع false يعني "الدعاء مش هيشتغل" */
+    private boolean playDuaAfterAthanIfNoCall() {
+        if (isCallActive()) {
+            Timber.d("call in progress - skipping dua after athan");
+            return false;
+        }
+        return com.alaaeltaweel.thikrallah.Notification.DuaPlayerHelper.playDuaAfterAthan(getApplicationContext());
+    }
+
     /** الأذكار والتلاوة (أي حاجة غير الأذان) */
     private boolean isNonAthanType() {
         return !(this.getThikrType() != null && this.getThikrType().contains(MainActivity.DATA_TYPE_ATHAN));
@@ -2276,6 +2322,12 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
 
     /** نوقف الصوت ونقفل الخدمة بسبب مكالمة (نفس خطوات فقدان التركيز الكامل) */
     private void stopBecauseOfCall() {
+        // ✅ لو ده أذان، نبلّغ الشاشة/النافذة العائمة تقفل نفسها
+        try {
+            if (this.getThikrType() != null && this.getThikrType().contains(MainActivity.DATA_TYPE_ATHAN)) {
+                sendBroadcast(new Intent("com.alaaeltaweel.thikrallah.ATHAN_COMPLETE"));
+            }
+        } catch (Exception ignored) { }
         try {
             if (player != null && isPlaying()) player.stop();
         } catch (Exception ignored) { }
@@ -2294,7 +2346,7 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
         for (long d : delays) {
             new Handler(Looper.getMainLooper()).postDelayed(() -> {
                 if (player != null && player == playerAtLoss
-                        && com.alaaeltaweel.thikrallah.Notification.CallStateHelper.isInCall(ThikrMediaPlayerService.this, true)) {
+                        && isCallActive()) {
                     Timber.d("call detected after focus loss - stopping playback");
                     stopBecauseOfCall();
                 }
@@ -2307,11 +2359,17 @@ public class ThikrMediaPlayerService extends Service implements OnCompletionList
         Timber.d("startPlayerIfAllowed called");
 
         // ✅ مكالمة شغالة (عادية أو واتساب/إنترنت): الأذكار والتلاوة مايشتغلوش وقتها حتى بصوت واطي
-        if (isNonAthanType() && !this.isUserAction
-                && com.alaaeltaweel.thikrallah.Notification.CallStateHelper.isInCall(this, true)) {
-            Timber.d("call in progress - not starting non-athan playback");
-            stopBecauseOfCall();
-            return;
+        if (!this.isUserAction && isCallActive()) {
+            if (isNonAthanType()) {
+                Timber.d("call in progress - not starting non-athan playback");
+                stopBecauseOfCall();
+                return;
+            }
+            // ✅ الأذان وقت مكالمة: بيشتغل مكتوم من أول لحظة (زي تصميم الشاشة الأصلي) عشان يخلص في معاده والشاشة تتقفل لوحدها
+            Timber.d("call in progress - athan will play muted");
+            isMutedByFlip = true;
+            lastAthanWasMuted = true;
+            try { if (player != null) player.setVolume(0f, 0f); } catch (Exception ignored) { }
         }
 
         int ret = requestAudioFocus();
