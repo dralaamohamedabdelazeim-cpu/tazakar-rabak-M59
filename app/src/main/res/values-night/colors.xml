@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- ========== الألوان الرئيسية ========== -->
+    <color name="colorPrimary">#1A2744</color>
+    <color name="colorPrimaryDark">#96780A</color>
+    <color name="colorAccent">#D4AF37</color>
+    <color name="ColorPrimary">#1A2744</color>
+    <color name="ColorPrimaryDark">#96780A</color>
+
+    <!-- ========== الخلفيات ========== -->
+    <color name="page_background">#0B1120</color>
+    <color name="panel_background_color">#162235</color>
+    <color name="material_main_bg">#0B1120</color>
+    <color name="material_sub_bg">#1A2744</color>
+    <color name="translation_background_color_night">#0B1120</color>
+    <color name="translation_verse_background_color">#162235</color>
+    <color name="translation_verse_background_night_color">#1A2744</color>
+    <color name="translation_sura_header">#1E2E50</color>
+    <color name="translation_sura_header_night">#0D1B2A</color>
+
+    <!-- ========== الشريط العلوي (Toolbar) ========== -->
+    <color name="toolbar_background">#96780A</color>
+    <color name="toolbar_item_pressed">#33D4AF37</color>
+    <color name="header_background">#0D1B2A</color>
+    <color name="tabsScrollColor">#0D1B2A</color>
+    <color name="transparent_actionbar_color">#CC0B1120</color>
+
+    <!-- ========== ألوان النصوص ========== -->
+    <color name="title_color">#D4AF37</color>
+    <color name="header_text_color">#D4AF37</color>
+    <color name="sura_number_color">#D4AF37</color>
+    <color name="sura_details_color">#C8B88A</color>
+    <color name="overlay_text_color">#8FA3B1</color>
+    <color name="translation_hdr_color">#8FA3B1</color>
+    <color name="translation_text_color">#C8B88A</color>
+    <color name="translation_verse_text_color">#D0C9B0</color>
+    <color name="translation_translator_color">#D4AF37</color>
+    <color name="material_sub_bg_text">#8FA3B1</color>
+    <color name="material_actionbar_title">#FFFFFF</color>
+
+    <!-- ========== الذهبي والتمييز ========== -->
+    <color name="accent_color">#D4AF37</color>
+    <color name="accent_color_dark">#B8962E</color>
+    <color name="color_control_normal">#80D4AF37</color>
+    <color name="color_control_activated">#D4AF37</color>
+    <color name="indicator_color">#D4AF37</color>
+    <color name="panel_label">#D4AF37</color>
+    <color name="ayah_bookmark_color">#D4AF37</color>
+
+    <!-- ========== التحديد والتظليل ========== -->
+    <color name="selection_highlight">#40D4AF37</color>
+    <color name="audio_highlight">#4027AE60</color>
+    <color name="note_highlight">#40F0E040</color>
+    <color name="bookmark_highlight">#40D4AF37</color>
+    <color name="translation_highlight">#D4AF37</color>
+    <color name="translation_ayah_selected_color">#1A2744</color>
+    <color name="translation_ayah_selected_color_night">#0D1B2A</color>
+
+    <!-- ========== الفاصل والحدود ========== -->
+    <color name="translation_divider_color">#1E2E50</color>
+    <color name="card_divider_gray">#1E2E50</color>
+
+    <!-- ========== الإشعارات ========== -->
+    <color name="notification_color">#0B1120</color>
+    <color name="audio_notification_color">#D4AF37</color>
+    <color name="audio_notification_background_color">#1A2744</color>
+
+    <!-- ========== زر التحميل والـ Snackbar ========== -->
+    <color name="download_button_background">#1A2744</color>
+    <color name="snackbar_background_color">#1A2744</color>
+
+    <!-- ========== الطبقات الشفافة ========== -->
+    <color name="ripple_dark">#33D4AF37</color>
+    <color name="overlay_panel">#CC0B1120</color>
+    <item name="transperentwhite" type="color">#33FFFFFF</item>
+
+    <!-- ========== ألوان Material الحمراء (محتفظ بها) ========== -->
+    <color name="red_50">#fde0dc</color>
+    <color name="red_100">#f9bdbb</color>
+    <color name="red_200">#f69988</color>
+    <color name="red_300">#f36c60</color>
+    <color name="red_400">#e84e40</color>
+    <color name="red_500">#e51c23</color>
+    <color name="red_600">#dd191d</color>
+    <color name="red_700">#d01716</color>
+    <color name="red_800">#c41411</color>
+    <color name="red_900">#b0120a</color>
+    <color name="red_A100">#ff7997</color>
+    <color name="red_A200">#ff5177</color>
+    <color name="red_A400">#ff2d6f</color>
+    <color name="red_A700">#e00032</color>
+    <color name="red_700_trans">#e6d01716</color>
+    <color name="colorPrimaryTrans">@color/red_700_trans</color>
+
+    <!-- ========== Night Mode ========== -->
+    <color name="nightModeColorPrimary">#0B1120</color>
+
+
+    <!-- ===== الألوان الجديدة بقيمها الغامقة (نفس شكل التطبيق الأصلي) ===== -->
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#AAAAAA</color>
+    <color name="brand_teal">#D4AF37</color>
+    <color name="brand_gold">#FFD700</color>
+    <color name="card_white">#0B1120</color>
+    <color name="card_stroke">#D4AF37</color>
+    <color name="row_highlight">#1E2E50</color>
+    <color name="banner_bg">#1A2744</color>
+    <color name="on_accent">#1B2234</color>
+    <color name="solid_teal">#2A7771</color>
+    <color name="row_stripe">#162235</color>
+    <color name="tab_unselected">#2D3548</color>
+    <color name="widget_bg">#E6141414</color>
+    <color name="widget_stroke">#D4AF37</color>
+    <color name="splash_bg">#0D4A28</color>
+    <color name="dedication_bg">#0D1B2A</color>
+    <color name="panel_bg">#162235</color>
+</resources>
