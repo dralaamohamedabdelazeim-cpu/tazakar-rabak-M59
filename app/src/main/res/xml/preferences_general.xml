@@ -21,6 +21,18 @@
     </PreferenceCategory>
 
     <PreferenceCategory
+        android:title="مظهر التطبيق"
+        android:layout="@layout/preference_catagory">
+        <ListPreference
+            android:defaultValue="dark"
+            android:entries="@array/app_theme_entries"
+            android:entryValues="@array/app_theme_values"
+            android:key="app_theme_mode"
+            android:title="المظهر"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
         android:title="@string/language"
         android:layout="@layout/preference_catagory">
         <com.alaaeltaweel.thikrallah.Utilities.MyListPreference

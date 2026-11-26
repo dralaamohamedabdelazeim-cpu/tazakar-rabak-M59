@@ -4,7 +4,7 @@
     <PreferenceCategory
         android:title="@string/RemindMeSettings"
         android:layout="@layout/preference_catagory">
-        <CheckBoxPreference
+        <SwitchPreferenceCompat
             android:defaultValue="true"
             android:key="RemindmeThroughTheDay"
             android:title="@string/RemindmeThroughTheDay" />
@@ -29,7 +29,7 @@
     <PreferenceCategory
         android:title="@string/quiet_time"
         android:layout="@layout/preference_catagory">
-        <CheckBoxPreference
+        <SwitchPreferenceCompat
             android:defaultValue="true"
             android:key="quiet_time_choice"
             android:title="@string/quiet_time_choice" />
@@ -41,7 +41,7 @@
             android:defaultValue="@string/quiet_time_endvalue"
             android:key="quiet_time_end"
             android:title="@string/quiet_time_end" />
-        <CheckBoxPreference
+        <SwitchPreferenceCompat
             android:defaultValue="true"
             android:key="quiet_time_after_athan_choice"
             android:title="@string/quiet_time_after_athan_choice"
@@ -51,7 +51,7 @@
     <PreferenceCategory
         android:title="@string/morningThikrSettings"
         android:layout="@layout/preference_catagory">
-        <CheckBoxPreference
+        <SwitchPreferenceCompat
             android:defaultValue="true"
             android:key="remindMeMorningThikr"
             android:title="@string/remindMeMorningThikr" />
@@ -70,7 +70,7 @@
     <PreferenceCategory
         android:title="@string/nightThikrSettings"
         android:layout="@layout/preference_catagory">
-        <CheckBoxPreference
+        <SwitchPreferenceCompat
             android:defaultValue="true"
             android:key="remindMeNightThikr"
             android:title="@string/remindMeNightThikr" />
@@ -95,7 +95,7 @@
             android:entryValues="@array/quran_readers_value"
             android:key="quran_readers_name"
             android:title="@string/favorite_reciter" />
-        <CheckBoxPreference
+        <SwitchPreferenceCompat
             android:defaultValue="true"
             android:key="remindMekahf"
             android:title="@string/remindMekahf" />
@@ -109,7 +109,7 @@
             android:entryValues="@array/RemindmeTypeValues"
             android:key="remindMekahfType"
             android:title="@string/kahf_reminder_type" />
-        <CheckBoxPreference
+        <SwitchPreferenceCompat
             android:defaultValue="true"
             android:key="remindMemulk"
             android:title="@string/remindMemulk" />
@@ -129,7 +129,7 @@
     <PreferenceCategory
         android:title="الفوائد اليومية 📖"
         android:layout="@layout/preference_catagory">
-        <CheckBoxPreference
+        <SwitchPreferenceCompat
             android:defaultValue="true"
             android:key="dailyContent_enabled"
             android:title="إشعارات الفوائد اليومية"
@@ -146,7 +146,7 @@
             android:key="dailyContent_count"
             android:title="عدد الإشعارات في اليوم"
             android:dependency="dailyContent_enabled" />
-        <CheckBoxPreference
+        <SwitchPreferenceCompat
             android:defaultValue="false"
             android:key="dailyContent_fixed"
             android:title="أحدد الأوقات بنفسي"
@@ -192,7 +192,7 @@
             android:key="dailyContent_end"
             android:title="نهاية الفترة"
             android:dependency="dailyContent_enabled" />
-        <CheckBoxPreference
+        <SwitchPreferenceCompat
             android:defaultValue="true"
             android:key="dailyContent_random"
             android:title="أوقات عشوائية"
@@ -211,35 +211,11 @@
             android:summary="بيعرض إشعار من كل نوع فورًا، ويقولك لو في نوع ما اشتغلش وليه" />
     </PreferenceCategory>
 
-    <!-- ✅ إعدادات رمضان -->
-    <PreferenceCategory
-        android:title="إعدادات رمضان 🌙"
-        android:layout="@layout/preference_catagory">
-
-        <CheckBoxPreference
-            android:defaultValue="true"
-            android:key="ramadan_cannon_enabled"
-            android:title="مدفع رمضان 🔊"
-            android:summary="يشتغل وقت الإفطار في رمضان" />
-
-        <CheckBoxPreference
-            android:defaultValue="true"
-            android:key="ramadan_mesaharaty_enabled"
-            android:title="المسحراتي 🥁"
-            android:summary="يشتغل في الوقت الذي تحدده" />
-
-        <com.alaaeltaweel.thikrallah.Utilities.TimePreference
-            android:defaultValue="03:00"
-            android:key="mesaharaty_time"
-            android:title="وقت المسحراتي"
-            android:dependency="ramadan_mesaharaty_enabled" />
-      </PreferenceCategory>
-
     <PreferenceCategory
     android:title="🤲 الدعاء بعد الأذان"
     android:layout="@layout/preference_catagory">
 
-    <CheckBoxPreference
+    <SwitchPreferenceCompat
         android:defaultValue="false"
         android:key="isDuaAfterAthan"
         android:title="تفعيل الدعاء بعد الأذان"
@@ -252,7 +228,7 @@
         android:title="الوضع الصامت أثناء الصلاة 🔕"
         android:layout="@layout/preference_catagory">
 
-        <CheckBoxPreference
+        <SwitchPreferenceCompat
             android:defaultValue="false"
             android:key="isSilentModeDuringPrayer"
             android:title="تفعيل الوضع الصامت وقت الصلاة"
