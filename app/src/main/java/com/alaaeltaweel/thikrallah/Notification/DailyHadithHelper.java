@@ -54,7 +54,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * بتظهر في أوقات متنوعة خلال اليوم (عشوائية أو موزعة بالتساوي) وبعيد عن أوقات الصلاة.
  *
  * المصادر:
- *  - الأحاديث: موسوعة الأحاديث النبوية hadeethenc.com (النص بدون تعديل + ذكر المصدر)
+ *  - الأحاديث: مكتبة التطبيق (رياض الصالحين والأربعون القدسية، المخرّجة في البخاري ومسلم) من غير إنترنت،
+ *    وموسوعة الأحاديث النبوية hadeethenc.com احتياطي ولحديث الجمعة (النص بدون تعديل + ذكر المصدر)
  *  - أسماء الله: قاعدة بيانات rn0x/Names_Of_Allah_Json (رخصة MIT) المبنية على كتاب د. سعيد القحطاني
  *  - الأدعية: حصن المسلم الموجود جوه التطبيق
  *  - الآيات: api.alquran.cloud
@@ -109,6 +110,7 @@ public class DailyHadithHelper {
     private static final AtomicBoolean prefetchBusy = new AtomicBoolean(false);
     private static final Object FILE_LOCK = new Object();
     private static JSONArray namesCache = null;
+    private static JSONArray libPoolCache = null;
 
     // ------------------------------------------------------------------
     // الإعدادات
@@ -422,11 +424,58 @@ public class DailyHadithHelper {
         if (T_AYAH.equals(type)) return pickAyah(day, slot, deadline);
         // حديث
         if (isFriday(day)) {
-            JSONObject rec = pickFridayHadith(app, cache, day, slot, deadline);
-            if (rec != null) return rec;
+            try {
+                JSONObject rec = pickFridayHadith(app, cache, day, slot, deadline);
+                if (rec != null) return rec;
+            } catch (Exception e) {
+                Log.d(TAG, "friday hadith failed: " + e.getMessage());
+            }
             Log.d(TAG, "no friday hadith found, falling back to a regular one");
         }
+        // الأساس: أحاديث صحيحة من مكتبة التطبيق (شغالة من غير إنترنت)
+        try {
+            JSONObject rec = pickLibraryHadith(app, day, slot);
+            if (rec != null) return rec;
+        } catch (Exception e) {
+            Log.d(TAG, "library hadith failed: " + e.getMessage());
+        }
         return pickNormalHadith(app, cache, day, slot, deadline);
+    }
+
+    // ---------------- أحاديث المكتبة (ملف داخل التطبيق، من غير إنترنت) ----------------
+    private static JSONArray loadLibraryPool(Context app) throws Exception {
+        if (libPoolCache != null) return libPoolCache;
+        InputStream in = app.getAssets().open("daily_hadith_pool.json");
+        ByteArrayBuffer buf = new ByteArrayBuffer();
+        byte[] b = new byte[8192];
+        int n;
+        while ((n = in.read(b)) > 0) buf.write(b, 0, n);
+        in.close();
+        libPoolCache = new JSONArray(new String(buf.toByteArray(), "UTF-8"));
+        return libPoolCache;
+    }
+
+    private static long gcd(long a, long b) {
+        return b == 0 ? a : gcd(b, a % b);
+    }
+
+    private static JSONObject pickLibraryHadith(Context app, long day, int slot) throws Exception {
+        JSONArray pool = loadLibraryPool(app);
+        int len = pool.length();
+        if (len == 0) return null;
+        long g = day * MAX_SLOTS + (slot - 1);
+        long stride = 389;                       // خطوة أولية مع الـ len = مفيش تكرار قبل ما المجموعة كلها تخلص
+        while (gcd(stride, len) != 1) stride++;
+        int idx = (int) ((g * stride) % len);
+        JSONArray item = pool.getJSONArray(idx);
+        JSONObject rec = new JSONObject();
+        rec.put("type", T_HADITH);
+        rec.put("id", "lib" + idx);
+        rec.put("text", item.getString(0));      // النص زي ما هو في المكتبة
+        rec.put("source", item.getString(1));
+        rec.put("friday", false);
+        rec.put("lib", true);
+        return rec;
     }
 
     // ---------------- أسماء الله (من ملف داخل التطبيق) ----------------
@@ -915,8 +964,9 @@ public class DailyHadithHelper {
             boolean friday = h.optBoolean("friday", false);
             title = friday ? "حديث يوم الجمعة" : "حديث اليوم";
             big = source.isEmpty() ? text : text + "\n\n" + source;
-            sub = "موسوعة الأحاديث النبوية";
-            summary = "المصدر: hadeethenc.com";
+            boolean fromLib = h.optBoolean("lib", false);
+            sub = fromLib ? "مكتبة الأحاديث" : "موسوعة الأحاديث النبوية";
+            summary = fromLib ? "المصدر: مكتبة التطبيق" : "المصدر: hadeethenc.com";
         }
 
         PendingIntent pi = null;
