@@ -21,7 +21,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
-    android:background="#1A2744"
+    android:background="@color/banner_bg"
     android:gravity="center"
     android:padding="16dp"
     android:layout_marginBottom="8dp">
@@ -95,7 +95,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="--"
-                    android:textColor="#FFFFFF"
+                    android:textColor="@color/text_primary"
                     android:textSize="13sp"
                     android:gravity="center" />
 
@@ -104,7 +104,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="--"
-                    android:textColor="#FFD700"
+                    android:textColor="@color/brand_teal"
                     android:textSize="16sp"
                     android:textStyle="bold"
                     android:layout_marginTop="4dp"
@@ -113,7 +113,7 @@
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
-                    android:background="#FFD700"
+                    android:background="@color/brand_gold"
                     android:layout_marginTop="12dp"
                     android:layout_marginBottom="12dp" />
            <LinearLayout
@@ -138,7 +138,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="--"
-                        android:textColor="#FFFFFF"
+                        android:textColor="@color/text_primary"
                         android:textSize="14sp"
                         android:gravity="center" />
 
@@ -148,7 +148,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="--"
-                    android:textColor="#FFD700"
+                    android:textColor="@color/brand_teal"
                     android:textSize="14sp"
                     android:textStyle="bold"
                     android:gravity="center" />
@@ -168,7 +168,7 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="الإمساك: --"
-                        android:textColor="#FFFFFF"
+                        android:textColor="@color/text_primary"
                         android:textSize="13sp"
                         android:gravity="center" />
 
@@ -178,7 +178,7 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="الإفطار: --"
-                        android:textColor="#FFFFFF"
+                        android:textColor="@color/text_primary"
                         android:textSize="13sp"
                         android:gravity="center" />
 
@@ -189,7 +189,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="--"
-                    android:textColor="#FFD700"
+                    android:textColor="@color/brand_teal"
                     android:textSize="22sp"
                     android:textStyle="bold"
                     android:layout_marginTop="8dp"
@@ -200,9 +200,19 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="--"
-                    android:textColor="#FFFFFF"
+                    android:textColor="@color/text_primary"
                     android:textSize="12sp"
                     android:layout_marginTop="4dp"
+                    android:gravity="center" />
+
+                <TextView
+                    android:id="@+id/text_ramadan_hint"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="اضغط هنا لفتح إمساكية رمضان وإعداداته"
+                    android:textColor="@color/brand_gold"
+                    android:textSize="12sp"
+                    android:layout_marginTop="8dp"
                     android:gravity="center" />
 
             </LinearLayout>
@@ -222,7 +232,7 @@
                     android:background="@drawable/card_bg"
                     android:drawableTop="@drawable/athan"
                     android:text="@string/athan"
-                    android:textColor="#FFFFFF"
+                    android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:gravity="center"
                     android:padding="10dp" />
@@ -236,7 +246,7 @@
                     android:background="@drawable/card_bg"
                     android:drawableTop="@drawable/quran"
                     android:text="@string/quranic_verses"
-                    android:textColor="#FFFFFF"
+                    android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:gravity="center"
                     android:padding="10dp" />
@@ -260,7 +270,7 @@
                     android:background="@drawable/card_bg"
                     android:drawableTop="@drawable/sun"
                     android:text="@string/morningThikr"
-                    android:textColor="#FFFFFF"
+                    android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:gravity="center"
                     android:padding="10dp" />
@@ -274,7 +284,7 @@
                     android:background="@drawable/card_bg"
                     android:drawableTop="@drawable/moon"
                     android:text="@string/nightThikr"
-                    android:textColor="#FFFFFF"
+                    android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:gravity="center"
                     android:padding="10dp" />
@@ -298,7 +308,7 @@
                     android:background="@drawable/card_bg"
                     android:drawableTop="@drawable/my_athkar"
                     android:text="@string/my_athkar"
-                    android:textColor="#FFFFFF"
+                    android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:gravity="center"
                     android:padding="10dp" />
@@ -312,7 +322,7 @@
                     android:background="@drawable/card_bg"
                     android:drawableTop="@drawable/qibla"
                     android:text="@string/qibla"
-                    android:textColor="#FFFFFF"
+                    android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:gravity="center"
                     android:padding="10dp" />
@@ -334,7 +344,7 @@
                     android:background="@drawable/card_bg"
                     android:drawableTop="@drawable/hisn_almuslim"
                     android:text="@string/hisn_almuslim"
-                    android:textColor="#FFFFFF"
+                    android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:gravity="center"
                     android:padding="10dp" />
@@ -348,7 +358,7 @@
                     android:background="@drawable/card_bg"
                     android:drawableTop="@drawable/settings"
                     android:text="@string/Settings"
-                    android:textColor="#FFFFFF"
+                    android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:gravity="center"
                     android:padding="10dp" />
@@ -370,7 +380,7 @@
                     android:background="@drawable/card_bg"
                     android:drawableTop="@drawable/photo_radio"
                     android:text="إذاعات القرآن الكريم"
-                    android:textColor="#FFFFFF"
+                    android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:gravity="center"
                     android:padding="10dp" />
@@ -384,7 +394,7 @@
                     android:background="@drawable/card_bg"
                     android:drawableTop="@drawable/photo_library"
                     android:text="المكتبة: التفسير والأحاديث"
-                    android:textColor="#FFFFFF"
+                    android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:gravity="center"
                     android:padding="10dp" />
@@ -406,7 +416,7 @@
                     android:background="@drawable/card_bg"
                     android:drawableTop="@drawable/photo_prayer"
                     android:text="متتبع الصلاة اليومي"
-                    android:textColor="#FFFFFF"
+                    android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:gravity="center"
                     android:padding="10dp" />
@@ -422,7 +432,7 @@
                 android:background="@drawable/card_bg"
                 android:drawableTop="@drawable/share_button"
                 android:text="@string/sadaqa"
-                android:textColor="#FFFFFF"
+                android:textColor="@color/text_primary"
                 android:textSize="14sp"
                 android:gravity="center"
                 android:padding="10dp" />

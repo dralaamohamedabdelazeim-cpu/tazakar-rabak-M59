@@ -63,8 +63,8 @@
                     android:layout_height="10dp"
                     android:max="5"
                     android:progress="0"
-                    android:progressTint="#D4AF37"
-                    android:progressBackgroundTint="#1E2E50" />
+                    android:progressTint="@color/brand_teal"
+                    android:progressBackgroundTint="@color/row_highlight" />
 
                 <TextView
                     android:id="@+id/text_motivation"
@@ -104,7 +104,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="16dp"
-                    android:buttonTint="#D4AF37"
+                    android:buttonTint="@color/brand_teal"
                     android:scaleX="1.4"
                     android:scaleY="1.4" />
 
@@ -136,7 +136,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="16dp"
-                    android:buttonTint="#D4AF37"
+                    android:buttonTint="@color/brand_teal"
                     android:scaleX="1.4"
                     android:scaleY="1.4" />
 
@@ -168,7 +168,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="16dp"
-                    android:buttonTint="#D4AF37"
+                    android:buttonTint="@color/brand_teal"
                     android:scaleX="1.4"
                     android:scaleY="1.4" />
 
@@ -200,7 +200,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="16dp"
-                    android:buttonTint="#D4AF37"
+                    android:buttonTint="@color/brand_teal"
                     android:scaleX="1.4"
                     android:scaleY="1.4" />
 
@@ -232,7 +232,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="16dp"
-                    android:buttonTint="#D4AF37"
+                    android:buttonTint="@color/brand_teal"
                     android:scaleX="1.4"
                     android:scaleY="1.4" />
 

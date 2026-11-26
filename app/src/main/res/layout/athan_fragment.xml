@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#1B2234">
+    android:background="@color/page_background">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -19,7 +19,7 @@
             android:paddingTop="20dp"
             android:paddingBottom="8dp"
             android:text=""
-            android:textColor="#FFFFFF"
+            android:textColor="@color/text_primary"
             android:textSize="18sp" />
 
         <View
@@ -34,7 +34,7 @@
             android:layout_gravity="center_horizontal"
             android:paddingBottom="12dp"
             android:text=""
-            android:textColor="#4dd0c4"
+            android:textColor="@color/brand_teal"
             android:textSize="16sp" />
 
         <!-- ✅ صف التابات - فجر / ظهر / عصر / مغرب / عشاء -->
@@ -57,7 +57,7 @@
                 android:paddingTop="14dp"
                 android:paddingBottom="14dp"
                 android:text="@string/prayer1"
-                android:textColor="#1B2234"
+                android:textColor="@color/on_accent"
                 android:textSize="14sp"
                 android:textStyle="bold" />
 
@@ -72,7 +72,7 @@
                 android:paddingTop="14dp"
                 android:paddingBottom="14dp"
                 android:text="@string/prayer2"
-                android:textColor="#FFFFFF"
+                android:textColor="@color/text_primary"
                 android:textSize="14sp" />
 
             <TextView
@@ -86,7 +86,7 @@
                 android:paddingTop="14dp"
                 android:paddingBottom="14dp"
                 android:text="@string/prayer3"
-                android:textColor="#FFFFFF"
+                android:textColor="@color/text_primary"
                 android:textSize="14sp" />
 
             <TextView
@@ -100,7 +100,7 @@
                 android:paddingTop="14dp"
                 android:paddingBottom="14dp"
                 android:text="@string/prayer4"
-                android:textColor="#FFFFFF"
+                android:textColor="@color/text_primary"
                 android:textSize="14sp" />
 
             <TextView
@@ -113,7 +113,7 @@
                 android:paddingTop="14dp"
                 android:paddingBottom="14dp"
                 android:text="@string/prayer5"
-                android:textColor="#FFFFFF"
+                android:textColor="@color/text_primary"
                 android:textSize="14sp" />
 
         </LinearLayout>
@@ -124,7 +124,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
-            app:cardBackgroundColor="#2D3548"
+            app:cardBackgroundColor="@color/card_white"
             app:cardCornerRadius="12dp"
             app:cardElevation="4dp">
             <LinearLayout
@@ -144,7 +144,7 @@
                         android:layout_weight="1"
                         android:gravity="end"
                         android:text="@string/prayer1"
-                        android:textColor="#FFFFFF"
+                        android:textColor="@color/text_primary"
                         android:textSize="16sp" />
                     <androidx.appcompat.widget.SwitchCompat
                         android:id="@+id/switch1"
@@ -159,7 +159,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text=""
-                        android:textColor="#FFFFFF"
+                        android:textColor="@color/text_primary"
                         android:textSize="16sp" />
                 </LinearLayout>
                 <LinearLayout
@@ -176,7 +176,7 @@
                         android:layout_weight="1"
                         android:gravity="end"
                         android:text="تنبيه قبلها بـ"
-                        android:textColor="#AAAAAA"
+                        android:textColor="@color/text_secondary"
                         android:textSize="13sp" />
                     <EditText
                         android:id="@+id/pre_athan_minutes1"
@@ -188,14 +188,14 @@
                         android:inputType="number"
                         android:maxLength="3"
                         android:text="15"
-                        android:textColor="#FFFFFF"
+                        android:textColor="@color/text_primary"
                         android:textSize="13sp" />
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="8dp"
                         android:text="دقيقة"
-                        android:textColor="#AAAAAA"
+                        android:textColor="@color/text_secondary"
                         android:textSize="13sp" />
                     <androidx.appcompat.widget.SwitchCompat
                         android:id="@+id/pre_athan_check1"
@@ -217,7 +217,7 @@
                         android:layout_weight="1"
                         android:gravity="end"
                         android:text="إعلان الصلاة قبل الأذان"
-                        android:textColor="#AAAAAA"
+                        android:textColor="@color/text_secondary"
                         android:textSize="13sp" />
                     <androidx.appcompat.widget.SwitchCompat
                         android:id="@+id/announce_check1"
@@ -244,7 +244,7 @@
                             android:layout_weight="1"
                             android:gravity="end"
                             android:text="إقامة بعد الأذان بـ"
-                            android:textColor="#AAAAAA"
+                            android:textColor="@color/text_secondary"
                             android:textSize="13sp" />
                         <EditText
                             android:id="@+id/iqama_minutes1"
@@ -256,14 +256,14 @@
                             android:inputType="number"
                             android:maxLength="3"
                             android:text="10"
-                            android:textColor="#FFFFFF"
+                            android:textColor="@color/text_primary"
                             android:textSize="13sp" />
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginEnd="8dp"
                             android:text="دقيقة"
-                            android:textColor="#AAAAAA"
+                            android:textColor="@color/text_secondary"
                             android:textSize="13sp" />
                         <androidx.appcompat.widget.SwitchCompat
                             android:id="@+id/iqama_check1"
@@ -284,7 +284,7 @@
                             android:layout_weight="1"
                             android:gravity="end"
                             android:text="صوت الإقامة"
-                            android:textColor="#AAAAAA"
+                            android:textColor="@color/text_secondary"
                             android:textSize="13sp" />
                         <RadioGroup
                             android:id="@+id/iqama_sound1"
@@ -292,9 +292,9 @@
                             android:layout_height="wrap_content"
                             android:layout_marginStart="8dp"
                             android:orientation="horizontal">
-                            <RadioButton android:id="@+id/iqama_sound1_1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="1" android:textColor="#FFFFFF" android:checked="true"/>
-                            <RadioButton android:id="@+id/iqama_sound1_2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="2" android:textColor="#FFFFFF"/>
-                            <RadioButton android:id="@+id/iqama_sound1_3" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="3" android:textColor="#FFFFFF"/>
+                            <RadioButton android:id="@+id/iqama_sound1_1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="1" android:textColor="@color/text_primary" android:checked="true"/>
+                            <RadioButton android:id="@+id/iqama_sound1_2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="2" android:textColor="@color/text_primary"/>
+                            <RadioButton android:id="@+id/iqama_sound1_3" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="3" android:textColor="@color/text_primary"/>
                         </RadioGroup>
                     </LinearLayout>
 
@@ -307,7 +307,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
-            app:cardBackgroundColor="#2D3548"
+            app:cardBackgroundColor="@color/card_white"
             app:cardCornerRadius="12dp"
             app:cardElevation="4dp">
             <LinearLayout
@@ -323,7 +323,7 @@
                     android:layout_weight="1"
                     android:gravity="end"
                     android:text="@string/sunrise"
-                    android:textColor="#AAAAAA"
+                    android:textColor="@color/text_secondary"
                     android:textSize="16sp" />
                 <TextView
                     android:id="@+id/sunrise_timing1"
@@ -331,7 +331,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="60dp"
                     android:text=""
-                    android:textColor="#AAAAAA"
+                    android:textColor="@color/text_secondary"
                     android:textSize="16sp" />
             </LinearLayout>
         </androidx.cardview.widget.CardView>
@@ -343,7 +343,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
-            app:cardBackgroundColor="#2D3548"
+            app:cardBackgroundColor="@color/card_white"
             app:cardCornerRadius="12dp"
             app:cardElevation="4dp">
             <LinearLayout
@@ -363,7 +363,7 @@
                         android:layout_weight="1"
                         android:gravity="end"
                         android:text="@string/prayer2"
-                        android:textColor="#FFFFFF"
+                        android:textColor="@color/text_primary"
                         android:textSize="16sp" />
                     <androidx.appcompat.widget.SwitchCompat
                         android:id="@+id/switch2"
@@ -378,7 +378,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text=""
-                        android:textColor="#FFFFFF"
+                        android:textColor="@color/text_primary"
                         android:textSize="16sp" />
                 </LinearLayout>
                 <LinearLayout
@@ -395,7 +395,7 @@
                         android:layout_weight="1"
                         android:gravity="end"
                         android:text="تنبيه قبلها بـ"
-                        android:textColor="#AAAAAA"
+                        android:textColor="@color/text_secondary"
                         android:textSize="13sp" />
                     <EditText
                         android:id="@+id/pre_athan_minutes2"
@@ -407,14 +407,14 @@
                         android:inputType="number"
                         android:maxLength="3"
                         android:text="15"
-                        android:textColor="#FFFFFF"
+                        android:textColor="@color/text_primary"
                         android:textSize="13sp" />
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="8dp"
                         android:text="دقيقة"
-                        android:textColor="#AAAAAA"
+                        android:textColor="@color/text_secondary"
                         android:textSize="13sp" />
                     <androidx.appcompat.widget.SwitchCompat
                         android:id="@+id/pre_athan_check2"
@@ -436,7 +436,7 @@
                         android:layout_weight="1"
                         android:gravity="end"
                         android:text="إعلان الصلاة قبل الأذان"
-                        android:textColor="#AAAAAA"
+                        android:textColor="@color/text_secondary"
                         android:textSize="13sp" />
                     <androidx.appcompat.widget.SwitchCompat
                         android:id="@+id/announce_check2"
@@ -463,7 +463,7 @@
                             android:layout_weight="1"
                             android:gravity="end"
                             android:text="إقامة بعد الأذان بـ"
-                            android:textColor="#AAAAAA"
+                            android:textColor="@color/text_secondary"
                             android:textSize="13sp" />
                         <EditText
                             android:id="@+id/iqama_minutes2"
@@ -475,14 +475,14 @@
                             android:inputType="number"
                             android:maxLength="3"
                             android:text="10"
-                            android:textColor="#FFFFFF"
+                            android:textColor="@color/text_primary"
                             android:textSize="13sp" />
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginEnd="8dp"
                             android:text="دقيقة"
-                            android:textColor="#AAAAAA"
+                            android:textColor="@color/text_secondary"
                             android:textSize="13sp" />
                         <androidx.appcompat.widget.SwitchCompat
                             android:id="@+id/iqama_check2"
@@ -503,7 +503,7 @@
                             android:layout_weight="1"
                             android:gravity="end"
                             android:text="صوت الإقامة"
-                            android:textColor="#AAAAAA"
+                            android:textColor="@color/text_secondary"
                             android:textSize="13sp" />
                         <RadioGroup
                             android:id="@+id/iqama_sound2"
@@ -511,9 +511,9 @@
                             android:layout_height="wrap_content"
                             android:layout_marginStart="8dp"
                             android:orientation="horizontal">
-                            <RadioButton android:id="@+id/iqama_sound2_1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="1" android:textColor="#FFFFFF" android:checked="true"/>
-                            <RadioButton android:id="@+id/iqama_sound2_2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="2" android:textColor="#FFFFFF"/>
-                            <RadioButton android:id="@+id/iqama_sound2_3" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="3" android:textColor="#FFFFFF"/>
+                            <RadioButton android:id="@+id/iqama_sound2_1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="1" android:textColor="@color/text_primary" android:checked="true"/>
+                            <RadioButton android:id="@+id/iqama_sound2_2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="2" android:textColor="@color/text_primary"/>
+                            <RadioButton android:id="@+id/iqama_sound2_3" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="3" android:textColor="@color/text_primary"/>
                         </RadioGroup>
                     </LinearLayout>
 
@@ -528,7 +528,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
-            app:cardBackgroundColor="#2D3548"
+            app:cardBackgroundColor="@color/card_white"
             app:cardCornerRadius="12dp"
             app:cardElevation="4dp">
             <LinearLayout
@@ -548,7 +548,7 @@
                         android:layout_weight="1"
                         android:gravity="end"
                         android:text="@string/prayer3"
-                        android:textColor="#FFFFFF"
+                        android:textColor="@color/text_primary"
                         android:textSize="16sp" />
                     <androidx.appcompat.widget.SwitchCompat
                         android:id="@+id/switch3"
@@ -563,7 +563,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text=""
-                        android:textColor="#FFFFFF"
+                        android:textColor="@color/text_primary"
                         android:textSize="16sp" />
                 </LinearLayout>
                 <LinearLayout
@@ -580,7 +580,7 @@
                         android:layout_weight="1"
                         android:gravity="end"
                         android:text="تنبيه قبلها بـ"
-                        android:textColor="#AAAAAA"
+                        android:textColor="@color/text_secondary"
                         android:textSize="13sp" />
                     <EditText
                         android:id="@+id/pre_athan_minutes3"
@@ -592,14 +592,14 @@
                         android:inputType="number"
                         android:maxLength="3"
                         android:text="15"
-                        android:textColor="#FFFFFF"
+                        android:textColor="@color/text_primary"
                         android:textSize="13sp" />
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="8dp"
                         android:text="دقيقة"
-                        android:textColor="#AAAAAA"
+                        android:textColor="@color/text_secondary"
                         android:textSize="13sp" />
                     <androidx.appcompat.widget.SwitchCompat
                         android:id="@+id/pre_athan_check3"
@@ -621,7 +621,7 @@
                         android:layout_weight="1"
                         android:gravity="end"
                         android:text="إعلان الصلاة قبل الأذان"
-                        android:textColor="#AAAAAA"
+                        android:textColor="@color/text_secondary"
                         android:textSize="13sp" />
                     <androidx.appcompat.widget.SwitchCompat
                         android:id="@+id/announce_check3"
@@ -648,7 +648,7 @@
                             android:layout_weight="1"
                             android:gravity="end"
                             android:text="إقامة بعد الأذان بـ"
-                            android:textColor="#AAAAAA"
+                            android:textColor="@color/text_secondary"
                             android:textSize="13sp" />
                         <EditText
                             android:id="@+id/iqama_minutes3"
@@ -660,14 +660,14 @@
                             android:inputType="number"
                             android:maxLength="3"
                             android:text="10"
-                            android:textColor="#FFFFFF"
+                            android:textColor="@color/text_primary"
                             android:textSize="13sp" />
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginEnd="8dp"
                             android:text="دقيقة"
-                            android:textColor="#AAAAAA"
+                            android:textColor="@color/text_secondary"
                             android:textSize="13sp" />
                         <androidx.appcompat.widget.SwitchCompat
                             android:id="@+id/iqama_check3"
@@ -688,7 +688,7 @@
                             android:layout_weight="1"
                             android:gravity="end"
                             android:text="صوت الإقامة"
-                            android:textColor="#AAAAAA"
+                            android:textColor="@color/text_secondary"
                             android:textSize="13sp" />
                         <RadioGroup
                             android:id="@+id/iqama_sound3"
@@ -696,9 +696,9 @@
                             android:layout_height="wrap_content"
                             android:layout_marginStart="8dp"
                             android:orientation="horizontal">
-                            <RadioButton android:id="@+id/iqama_sound3_1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="1" android:textColor="#FFFFFF" android:checked="true"/>
-                            <RadioButton android:id="@+id/iqama_sound3_2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="2" android:textColor="#FFFFFF"/>
-                            <RadioButton android:id="@+id/iqama_sound3_3" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="3" android:textColor="#FFFFFF"/>
+                            <RadioButton android:id="@+id/iqama_sound3_1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="1" android:textColor="@color/text_primary" android:checked="true"/>
+                            <RadioButton android:id="@+id/iqama_sound3_2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="2" android:textColor="@color/text_primary"/>
+                            <RadioButton android:id="@+id/iqama_sound3_3" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="3" android:textColor="@color/text_primary"/>
                         </RadioGroup>
                     </LinearLayout>
 
@@ -713,7 +713,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
-            app:cardBackgroundColor="#2D3548"
+            app:cardBackgroundColor="@color/card_white"
             app:cardCornerRadius="12dp"
             app:cardElevation="4dp">
             <LinearLayout
@@ -733,7 +733,7 @@
                         android:layout_weight="1"
                         android:gravity="end"
                         android:text="@string/prayer4"
-                        android:textColor="#FFFFFF"
+                        android:textColor="@color/text_primary"
                         android:textSize="16sp" />
                     <androidx.appcompat.widget.SwitchCompat
                         android:id="@+id/switch4"
@@ -748,7 +748,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text=""
-                        android:textColor="#FFFFFF"
+                        android:textColor="@color/text_primary"
                         android:textSize="16sp" />
                 </LinearLayout>
                 <LinearLayout
@@ -765,7 +765,7 @@
                         android:layout_weight="1"
                         android:gravity="end"
                         android:text="تنبيه قبلها بـ"
-                        android:textColor="#AAAAAA"
+                        android:textColor="@color/text_secondary"
                         android:textSize="13sp" />
                     <EditText
                         android:id="@+id/pre_athan_minutes4"
@@ -777,14 +777,14 @@
                         android:inputType="number"
                         android:maxLength="3"
                         android:text="15"
-                        android:textColor="#FFFFFF"
+                        android:textColor="@color/text_primary"
                         android:textSize="13sp" />
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="8dp"
                         android:text="دقيقة"
-                        android:textColor="#AAAAAA"
+                        android:textColor="@color/text_secondary"
                         android:textSize="13sp" />
                     <androidx.appcompat.widget.SwitchCompat
                         android:id="@+id/pre_athan_check4"
@@ -806,7 +806,7 @@
                         android:layout_weight="1"
                         android:gravity="end"
                         android:text="إعلان الصلاة قبل الأذان"
-                        android:textColor="#AAAAAA"
+                        android:textColor="@color/text_secondary"
                         android:textSize="13sp" />
                     <androidx.appcompat.widget.SwitchCompat
                         android:id="@+id/announce_check4"
@@ -833,7 +833,7 @@
                             android:layout_weight="1"
                             android:gravity="end"
                             android:text="إقامة بعد الأذان بـ"
-                            android:textColor="#AAAAAA"
+                            android:textColor="@color/text_secondary"
                             android:textSize="13sp" />
                         <EditText
                             android:id="@+id/iqama_minutes4"
@@ -845,14 +845,14 @@
                             android:inputType="number"
                             android:maxLength="3"
                             android:text="10"
-                            android:textColor="#FFFFFF"
+                            android:textColor="@color/text_primary"
                             android:textSize="13sp" />
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginEnd="8dp"
                             android:text="دقيقة"
-                            android:textColor="#AAAAAA"
+                            android:textColor="@color/text_secondary"
                             android:textSize="13sp" />
                         <androidx.appcompat.widget.SwitchCompat
                             android:id="@+id/iqama_check4"
@@ -873,7 +873,7 @@
                             android:layout_weight="1"
                             android:gravity="end"
                             android:text="صوت الإقامة"
-                            android:textColor="#AAAAAA"
+                            android:textColor="@color/text_secondary"
                             android:textSize="13sp" />
                         <RadioGroup
                             android:id="@+id/iqama_sound4"
@@ -881,9 +881,9 @@
                             android:layout_height="wrap_content"
                             android:layout_marginStart="8dp"
                             android:orientation="horizontal">
-                            <RadioButton android:id="@+id/iqama_sound4_1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="1" android:textColor="#FFFFFF" android:checked="true"/>
-                            <RadioButton android:id="@+id/iqama_sound4_2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="2" android:textColor="#FFFFFF"/>
-                            <RadioButton android:id="@+id/iqama_sound4_3" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="3" android:textColor="#FFFFFF"/>
+                            <RadioButton android:id="@+id/iqama_sound4_1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="1" android:textColor="@color/text_primary" android:checked="true"/>
+                            <RadioButton android:id="@+id/iqama_sound4_2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="2" android:textColor="@color/text_primary"/>
+                            <RadioButton android:id="@+id/iqama_sound4_3" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="3" android:textColor="@color/text_primary"/>
                         </RadioGroup>
                     </LinearLayout>
 
@@ -898,7 +898,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            app:cardBackgroundColor="#2D3548"
+            app:cardBackgroundColor="@color/card_white"
             app:cardCornerRadius="12dp"
             app:cardElevation="4dp">
             <LinearLayout
@@ -918,7 +918,7 @@
                         android:layout_weight="1"
                         android:gravity="end"
                         android:text="@string/prayer5"
-                        android:textColor="#FFFFFF"
+                        android:textColor="@color/text_primary"
                         android:textSize="16sp" />
                     <androidx.appcompat.widget.SwitchCompat
                         android:id="@+id/switch5"
@@ -933,7 +933,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text=""
-                        android:textColor="#FFFFFF"
+                        android:textColor="@color/text_primary"
                         android:textSize="16sp" />
                 </LinearLayout>
                 <LinearLayout
@@ -950,7 +950,7 @@
                         android:layout_weight="1"
                         android:gravity="end"
                         android:text="تنبيه قبلها بـ"
-                        android:textColor="#AAAAAA"
+                        android:textColor="@color/text_secondary"
                         android:textSize="13sp" />
                     <EditText
                         android:id="@+id/pre_athan_minutes5"
@@ -962,14 +962,14 @@
                         android:inputType="number"
                         android:maxLength="3"
                         android:text="15"
-                        android:textColor="#FFFFFF"
+                        android:textColor="@color/text_primary"
                         android:textSize="13sp" />
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="8dp"
                         android:text="دقيقة"
-                        android:textColor="#AAAAAA"
+                        android:textColor="@color/text_secondary"
                         android:textSize="13sp" />
                     <androidx.appcompat.widget.SwitchCompat
                         android:id="@+id/pre_athan_check5"
@@ -991,7 +991,7 @@
                         android:layout_weight="1"
                         android:gravity="end"
                         android:text="إعلان الصلاة قبل الأذان"
-                        android:textColor="#AAAAAA"
+                        android:textColor="@color/text_secondary"
                         android:textSize="13sp" />
                     <androidx.appcompat.widget.SwitchCompat
                         android:id="@+id/announce_check5"
@@ -1018,7 +1018,7 @@
                             android:layout_weight="1"
                             android:gravity="end"
                             android:text="إقامة بعد الأذان بـ"
-                            android:textColor="#AAAAAA"
+                            android:textColor="@color/text_secondary"
                             android:textSize="13sp" />
                         <EditText
                             android:id="@+id/iqama_minutes5"
@@ -1030,14 +1030,14 @@
                             android:inputType="number"
                             android:maxLength="3"
                             android:text="10"
-                            android:textColor="#FFFFFF"
+                            android:textColor="@color/text_primary"
                             android:textSize="13sp" />
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginEnd="8dp"
                             android:text="دقيقة"
-                            android:textColor="#AAAAAA"
+                            android:textColor="@color/text_secondary"
                             android:textSize="13sp" />
                         <androidx.appcompat.widget.SwitchCompat
                             android:id="@+id/iqama_check5"
@@ -1058,7 +1058,7 @@
                             android:layout_weight="1"
                             android:gravity="end"
                             android:text="صوت الإقامة"
-                            android:textColor="#AAAAAA"
+                            android:textColor="@color/text_secondary"
                             android:textSize="13sp" />
                         <RadioGroup
                             android:id="@+id/iqama_sound5"
@@ -1066,9 +1066,9 @@
                             android:layout_height="wrap_content"
                             android:layout_marginStart="8dp"
                             android:orientation="horizontal">
-                            <RadioButton android:id="@+id/iqama_sound5_1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="1" android:textColor="#FFFFFF" android:checked="true"/>
-                            <RadioButton android:id="@+id/iqama_sound5_2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="2" android:textColor="#FFFFFF"/>
-                            <RadioButton android:id="@+id/iqama_sound5_3" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="3" android:textColor="#FFFFFF"/>
+                            <RadioButton android:id="@+id/iqama_sound5_1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="1" android:textColor="@color/text_primary" android:checked="true"/>
+                            <RadioButton android:id="@+id/iqama_sound5_2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="2" android:textColor="@color/text_primary"/>
+                            <RadioButton android:id="@+id/iqama_sound5_3" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="3" android:textColor="@color/text_primary"/>
                         </RadioGroup>
                     </LinearLayout>
 
@@ -1086,7 +1086,7 @@
             android:layout_gravity="center_horizontal"
             android:gravity="center_horizontal"
             android:text="@string/current_location"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/text_primary"
             android:textSize="16sp" />
 
         <View
@@ -1103,7 +1103,7 @@
             android:gravity="center_horizontal"
             android:paddingTop="10dp"
             android:text="@string/location_adjustment"
-            android:textColor="#AAAAAA"
+            android:textColor="@color/text_secondary"
             android:textSize="14sp" />
 
         <CheckBox
@@ -1113,7 +1113,7 @@
             android:layout_marginBottom="20dp"
             android:layoutDirection="locale"
             android:text="@string/override_location"
-            android:textColor="#AAAAAA" />
+            android:textColor="@color/text_secondary" />
 
     </LinearLayout>
 </ScrollView>
