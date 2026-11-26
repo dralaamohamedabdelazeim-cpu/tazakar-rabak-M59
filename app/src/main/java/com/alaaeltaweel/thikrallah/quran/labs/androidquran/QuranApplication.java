@@ -25,6 +25,7 @@ public class QuranApplication extends Application {
   @Override
   public void onCreate() {
     super.onCreate();
+    com.alaaeltaweel.thikrallah.Utilities.ThemeHelper.apply(this);
     Timber.plant(new RecordingLogTree());
     this.applicationComponent = initializeInjector();
     ApplicationStarter.initialize(this, true);
