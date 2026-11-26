@@ -1,13 +1,15 @@
 <resources>
 
-    <style name="AppBaseTheme" parent="Theme.AppCompat">
+    <style name="AppBaseTheme" parent="Theme.AppCompat.DayNight.DarkActionBar">
     </style>
 
  <style name="AppTheme" parent="AppBaseTheme">
     <item name="android:windowBackground">@color/page_background</item>
-    <item name="colorPrimary">#96780A</item>
-    <item name="colorPrimaryDark">#7A6008</item>
+    <item name="colorPrimary">@color/colorPrimary</item>
+    <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
     <item name="colorAccent">@color/colorAccent</item>
+    <item name="android:textColorPrimary">@color/title_color</item>
+    <item name="android:textColorSecondary">@color/sura_details_color</item>
 </style>
     <style name="Divider">
         <item name="android:layout_width">match_parent</item>
@@ -18,7 +20,7 @@
         <item name="android:layout_marginBottom">4dp</item>
     </style>
 
-    <style name="AppTheme.Base" parent="Theme.AppCompat.Light.NoActionBar">
+    <style name="AppTheme.Base" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>

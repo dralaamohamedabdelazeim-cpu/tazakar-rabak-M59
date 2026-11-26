@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="app_theme_entries">
+        <item>داكن (الأصلي)</item>
+        <item>فاتح</item>
+        <item>حسب الموبايل</item>
+    </string-array>
+    <string-array name="app_theme_values">
+        <item>dark</item>
+        <item>light</item>
+        <item>system</item>
+    </string-array>
+</resources>
