@@ -7,15 +7,26 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import androidx.core.content.ContextCompat;
+
 import com.alaaeltaweel.thikrallah.R;
 
 /** أدوات صغيرة لبناء شاشات المكتبة بالكود (نفس ألوان التطبيق). */
 final class LibUi {
-    static final int GOLD = 0xFFD4AF37;
-    static final int WHITE = 0xFFFFFFFF;
-    static final int GREY = 0xFF8FA3B1;
-    static final int PAGE_BG = 0xFF0B1120;
-    static final int PANEL_BG = 0xFF162235;
+    // الألوان بتتحدد حسب الثيم (فاتح/غامق) وقت فتح الشاشة
+    static int GOLD;      // اللون المميز
+    static int TEXT;
+    static int GREY;
+    static int PAGE_BG;
+    static int PANEL_BG;
+
+    static void init(Context c) {
+        GOLD = ContextCompat.getColor(c, R.color.brand_teal);
+        TEXT = ContextCompat.getColor(c, R.color.text_primary);
+        GREY = ContextCompat.getColor(c, R.color.text_secondary);
+        PAGE_BG = ContextCompat.getColor(c, R.color.page_background);
+        PANEL_BG = ContextCompat.getColor(c, R.color.panel_bg);
+    }
 
     private LibUi() {
     }
@@ -48,7 +59,7 @@ final class LibUi {
     static Button button(Context c, String s) {
         Button b = new Button(c);
         b.setText(s);
-        b.setTextColor(WHITE);
+        b.setTextColor(TEXT);
         b.setAllCaps(false);
         b.setBackgroundResource(R.drawable.card_bg);
         b.setPadding(dp(c, 12), dp(c, 8), dp(c, 12), dp(c, 8));

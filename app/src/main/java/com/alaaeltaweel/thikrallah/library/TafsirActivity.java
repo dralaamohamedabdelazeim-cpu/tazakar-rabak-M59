@@ -49,6 +49,7 @@ public class TafsirActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        LibUi.init(this);
         prefs = getSharedPreferences("library_prefs", MODE_PRIVATE);
         suraNames = getResources().getStringArray(R.array.sura_names);
 
@@ -103,7 +104,7 @@ public class TafsirActivity extends AppCompatActivity {
 
         TextView msg = LibUi.text(this,
                 "لسه ما حمّلتش أي تفسير.\nافتح المكتبة وحمّل التفسير اللي تحبه مرة واحدة، وبعدها يشتغل بدون إنترنت.",
-                17, LibUi.WHITE);
+                17, LibUi.TEXT);
         msg.setGravity(android.view.Gravity.CENTER);
         root.addView(msg);
 
@@ -185,7 +186,7 @@ public class TafsirActivity extends AppCompatActivity {
         root.addView(header);
 
         scroll = new ScrollView(this);
-        body = LibUi.text(this, "", textSp, LibUi.WHITE);
+        body = LibUi.text(this, "", textSp, LibUi.TEXT);
         body.setLineSpacing(0f, 1.4f);
         body.setTextIsSelectable(true);
         int pad = LibUi.dp(this, 12);
@@ -323,7 +324,7 @@ public class TafsirActivity extends AppCompatActivity {
         input.setInputType(InputType.TYPE_CLASS_NUMBER);
         input.setText("1");
         input.setSelectAllOnFocus(true);
-        input.setTextColor(LibUi.WHITE);
+        input.setTextColor(LibUi.TEXT);
         new AlertDialog.Builder(this)
                 .setTitle("سورة " + suraNames[s - 1] + " - رقم الآية (1 إلى " + max + ")")
                 .setView(input)

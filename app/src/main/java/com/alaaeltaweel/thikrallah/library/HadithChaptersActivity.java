@@ -33,6 +33,7 @@ public class HadithChaptersActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        LibUi.init(this);
         bookId = getIntent().getStringExtra("book");
         if (bookId == null) {
             bookId = HadithData.BOOK_IDS[0];
@@ -56,7 +57,7 @@ public class HadithChaptersActivity extends AppCompatActivity {
         searchBox = new EditText(this);
         searchBox.setHint("ابحث في الكتاب (بدون تشكيل)");
         searchBox.setHintTextColor(LibUi.GREY);
-        searchBox.setTextColor(LibUi.WHITE);
+        searchBox.setTextColor(LibUi.TEXT);
         searchBox.setSingleLine(true);
         searchBox.setImeOptions(EditorInfo.IME_ACTION_SEARCH);
         searchBox.setTextDirection(View.TEXT_DIRECTION_RTL);
@@ -74,7 +75,7 @@ public class HadithChaptersActivity extends AppCompatActivity {
         root.addView(statusText);
 
         listView = new ListView(this);
-        listView.setDivider(new ColorDrawable(0x33D4AF37));
+        listView.setDivider(new ColorDrawable(androidx.core.graphics.ColorUtils.setAlphaComponent(LibUi.GOLD, 0x33)));
         listView.setDividerHeight(1);
         root.addView(listView, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
@@ -138,7 +139,7 @@ public class HadithChaptersActivity extends AppCompatActivity {
             @Override
             public View getView(int position, View convertView, ViewGroup parent) {
                 TextView tv = (TextView) super.getView(position, convertView, parent);
-                tv.setTextColor(LibUi.WHITE);
+                tv.setTextColor(LibUi.TEXT);
                 tv.setTextSize(18);
                 tv.setTextDirection(View.TEXT_DIRECTION_RTL);
                 int pad = LibUi.dp(getContext(), 14);

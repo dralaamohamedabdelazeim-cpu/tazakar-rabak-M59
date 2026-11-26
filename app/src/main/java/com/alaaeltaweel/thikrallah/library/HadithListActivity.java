@@ -37,6 +37,7 @@ public class HadithListActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        LibUi.init(this);
         bookId = getIntent().getStringExtra("book");
         if (bookId == null) {
             bookId = HadithData.BOOK_IDS[0];
@@ -60,7 +61,7 @@ public class HadithListActivity extends AppCompatActivity {
         root.addView(statusText);
 
         listView = new ListView(this);
-        listView.setDivider(new ColorDrawable(0x33D4AF37));
+        listView.setDivider(new ColorDrawable(androidx.core.graphics.ColorUtils.setAlphaComponent(LibUi.GOLD, 0x33)));
         listView.setDividerHeight(1);
         root.addView(listView, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
@@ -136,7 +137,7 @@ public class HadithListActivity extends AppCompatActivity {
             @Override
             public View getView(int position, View convertView, ViewGroup parent) {
                 TextView tv = (TextView) super.getView(position, convertView, parent);
-                tv.setTextColor(LibUi.WHITE);
+                tv.setTextColor(LibUi.TEXT);
                 tv.setTextSize(16);
                 tv.setTextDirection(View.TEXT_DIRECTION_RTL);
                 int pad = LibUi.dp(getContext(), 12);
@@ -157,7 +158,7 @@ public class HadithListActivity extends AppCompatActivity {
         final String body = data.texts[idx];
 
         ScrollView sv = new ScrollView(this);
-        TextView tv = LibUi.text(this, body, 20, LibUi.WHITE);
+        TextView tv = LibUi.text(this, body, 20, LibUi.TEXT);
         tv.setLineSpacing(0f, 1.4f);
         tv.setTextIsSelectable(true);
         int pad = LibUi.dp(this, 16);

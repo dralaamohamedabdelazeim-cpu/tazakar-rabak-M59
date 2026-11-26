@@ -32,6 +32,7 @@ public class LibraryActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        LibUi.init(this);
         if (getSupportActionBar() != null) {
             getSupportActionBar().setTitle("المكتبة");
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
@@ -105,7 +106,7 @@ public class LibraryActivity extends AppCompatActivity {
 
             LinearLayout info = new LinearLayout(this);
             info.setOrientation(LinearLayout.VERTICAL);
-            TextView title = LibUi.text(this, name, 17, LibUi.WHITE);
+            TextView title = LibUi.text(this, name, 17, LibUi.TEXT);
             info.addView(title);
             String stateText = "لم يُحمَّل بعد";
             if (installed) {
@@ -195,7 +196,7 @@ public class LibraryActivity extends AppCompatActivity {
         int pad = LibUi.dp(this, 20);
         box.setPadding(pad, pad, pad, pad);
         LibUi.rtl(box);
-        statusText = LibUi.text(this, "جاري التحضير…", 15, LibUi.WHITE);
+        statusText = LibUi.text(this, "جاري التحضير…", 15, LibUi.TEXT);
         bar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
         bar.setMax(TafsirStore.TOTAL_SURAS);
         box.addView(statusText);
