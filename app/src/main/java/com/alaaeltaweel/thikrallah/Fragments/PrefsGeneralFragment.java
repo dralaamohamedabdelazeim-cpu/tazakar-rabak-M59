@@ -61,6 +61,16 @@ public class PrefsGeneralFragment extends PreferenceFragmentCompat implements On
         mContext = this.getContext();
 
         // ✅ زرار "تحسين إعدادات الجهاز" - شغال بنفسه من غير ما يعتمد على نوع الـ Activity المضيفة
+        // ✅ زرار "شاشة رمضان" - بيفتح الإمساكية وإعدادات المدفع والمسحراتي
+        Preference ramadanPref = findPreference("open_ramadan_screen");
+        if (ramadanPref != null) {
+            ramadanPref.setOnPreferenceClickListener(preference -> {
+                try {
+                    startActivity(new Intent(requireContext(), com.alaaeltaweel.thikrallah.ramadan.RamadanActivity.class));
+                } catch (Exception ignored) {}
+                return true;
+            });
+        }
         Preference deviceOptimizationPref = findPreference("device_optimization_button");
         if (deviceOptimizationPref != null) {
             deviceOptimizationPref.setOnPreferenceClickListener(preference -> {

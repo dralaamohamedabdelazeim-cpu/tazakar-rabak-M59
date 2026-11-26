@@ -172,6 +172,15 @@ public class MainFragment extends Fragment {
             intent.setClass(v.getContext(), LibraryActivity.class);
             startActivity(intent);
         });
+        // ✅ زرار "رمضان" في شبكة الشاشات الرئيسية (جنب متتبع الصلاة)
+        View buttonRamadan = view.findViewById(R.id.button_ramadan);
+        if (buttonRamadan != null) {
+            buttonRamadan.setOnClickListener(v -> {
+                Intent intent = new Intent();
+                intent.setClass(v.getContext(), com.alaaeltaweel.thikrallah.ramadan.RamadanActivity.class);
+                startActivity(intent);
+            });
+        }
         // ✅ كارد التاريخ والرمضان: الضغط عليه بيفتح شاشة رمضان (الإمساكية + إعدادات المدفع والمسحراتي)
         View dateRamadanCard = view.findViewById(R.id.date_ramadan_card);
         if (dateRamadanCard != null) {
