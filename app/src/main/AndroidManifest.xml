@@ -378,6 +378,10 @@
         </service>
   <activity android:name=".PrayerTrackerActivity"
     android:exported="false" />
+  <activity android:name="com.alaaeltaweel.thikrallah.ramadan.RamadanActivity"
+    android:configChanges="orientation|screenSize|keyboardHidden"
+    android:exported="false"
+    android:theme="@style/AppTheme" />
   <activity android:name="com.alaaeltaweel.thikrallah.library.LibraryActivity"
     android:configChanges="orientation|screenSize|keyboardHidden"
     android:exported="false"
