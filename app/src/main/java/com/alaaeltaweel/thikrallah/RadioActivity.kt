@@ -39,6 +39,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -124,8 +125,15 @@ class RadioActivity : AppCompatActivity() {
         var playingId by remember { mutableIntStateOf(-1) }
         var loadingId by remember { mutableIntStateOf(-1) }
 
-        val dark = Color(0xFF0B1120)
-        val gold = Color(0xFFD4AF37)
+        val dark = Color.White
+        val gold = colorResource(R.color.brand_gold)
+        val tealSolid = colorResource(R.color.solid_teal)
+        val pageBg = colorResource(R.color.page_background)
+        val cardBg = colorResource(R.color.card_white)
+        val rowHi = colorResource(R.color.row_highlight)
+        val cardStroke = colorResource(R.color.card_stroke)
+        val brandAccent = colorResource(R.color.brand_teal)
+        val txt = colorResource(R.color.text_primary)
         val rowShape = RoundedCornerShape(18.dp)
 
         Column(
@@ -133,7 +141,7 @@ class RadioActivity : AppCompatActivity() {
                 .fillMaxSize()
                 .background(
                     Brush.verticalGradient(
-                        listOf(Color(0xFF0F2A43), dark, Color(0xFF0E2F2A))
+                        listOf(pageBg, pageBg)
                     )
                 )
         ) {
@@ -142,7 +150,7 @@ class RadioActivity : AppCompatActivity() {
                     .fillMaxWidth()
                     .background(
                         Brush.horizontalGradient(
-                            listOf(Color(0xFF1B5E20), Color(0xFF2E7D32), Color(0xFF1B5E20))
+                            listOf(tealSolid, tealSolid)
                         )
                     )
                     .padding(horizontal = 16.dp, vertical = 16.dp),
@@ -178,11 +186,11 @@ class RadioActivity : AppCompatActivity() {
                     val isPlaying = playingId == channel.id
                     val isLoading = loadingId == channel.id
                     val rowBrush = if (isPlaying) {
-                        Brush.horizontalGradient(listOf(Color(0xFF1B5E20), Color(0xFF16233F)))
+                        Brush.horizontalGradient(listOf(rowHi, cardBg))
                     } else {
-                        Brush.horizontalGradient(listOf(Color(0xFF182847), Color(0xFF14213D)))
+                        Brush.horizontalGradient(listOf(cardBg, cardBg))
                     }
-                    val borderColor = if (isPlaying) Color(0xFF66BB6A) else Color(0x80D4AF37)
+                    val borderColor = if (isPlaying) brandAccent else cardStroke
 
                     Row(
                         modifier = Modifier
@@ -231,13 +239,13 @@ class RadioActivity : AppCompatActivity() {
                                 text = channel.name,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isPlaying) Color(0xFFFFE082) else Color.White
+                                color = if (isPlaying) brandAccent else txt
                             )
                             if (isPlaying) {
                                 Text(
                                     text = "يعمل الآن",
                                     fontSize = 12.sp,
-                                    color = Color(0xFF81C784),
+                                    color = brandAccent,
                                     modifier = Modifier.padding(top = 2.dp)
                                 )
                             }
@@ -248,7 +256,7 @@ class RadioActivity : AppCompatActivity() {
                                 .clip(CircleShape)
                                 .background(
                                     Brush.verticalGradient(
-                                        listOf(Color(0xFFF7DC6F), gold)
+                                        listOf(tealSolid, tealSolid)
                                     )
                                 ),
                             contentAlignment = Alignment.Center
