@@ -143,6 +143,12 @@ public class PrefsGeneralFragment extends PreferenceFragmentCompat implements On
     }
 
     private void updatePrefSummary(Preference pref) {
+        // ✅ تفضيل "المظهر" (app_theme_mode) ليه SummaryProvider جاهز (useSimpleSummaryProvider في الـ XML)،
+        // ومكتبة androidx.preference بترمي IllegalStateException لو حاولنا نعمل setSummary يدوي عليه.
+        // ده كان بيعمل Crash فوري أول ما تتفتح شاشة الإعدادات. نسيب الـ SummaryProvider يشتغل لوحده.
+        if (pref == null || pref.getSummaryProvider() != null) {
+            return;
+        }
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this.getActivity().getApplicationContext());
         if (pref instanceof ListPreference) {
             Timber.tag("prefs").d("pref is instance of listpreference");
