@@ -118,4 +118,10 @@
     <color name="dedication_bg">#2A7771</color>
     <color name="panel_bg">#FFFFFF</color>
     <color name="ramadan_icon_circle">#1F5E59</color>
+    <!-- شريط رمضان: فاتح = أخضر بنص أبيض، غامق = كحلي بإطار وخط ذهبي -->
+    <color name="ramadan_strip_fill">#2A7771</color>
+    <color name="ramadan_strip_stroke">#2A7771</color>
+    <color name="ramadan_strip_title">#FFFFFF</color>
+    <color name="ramadan_strip_sub">#D3ECEA</color>
+    <color name="ramadan_icon_tint">#FFFFFF</color>
 </resources>
