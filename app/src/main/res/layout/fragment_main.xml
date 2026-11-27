@@ -205,15 +205,61 @@
                     android:layout_marginTop="4dp"
                     android:gravity="center" />
 
-                <TextView
-                    android:id="@+id/text_ramadan_hint"
-                    android:layout_width="wrap_content"
+                <!-- شريط رمضان: المدخل الوحيد لشاشة رمضان -->
+                <LinearLayout
+                    android:id="@+id/ramadan_strip"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="اضغط هنا لفتح إمساكية رمضان وإعداداته"
-                    android:textColor="@color/brand_gold"
-                    android:textSize="12sp"
-                    android:layout_marginTop="8dp"
-                    android:gravity="center" />
+                    android:layout_marginTop="14dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layoutDirection="rtl"
+                    android:padding="12dp"
+                    android:background="@drawable/ramadan_strip_bg"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground">
+
+                    <ImageView
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:background="@drawable/ramadan_icon_circle"
+                        android:padding="10dp"
+                        android:src="@drawable/ic_ramadan_moon"
+                        android:importantForAccessibility="no" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="12dp"
+                        android:layout_marginEnd="12dp"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="رمضان"
+                            android:textColor="#FFFFFF"
+                            android:textSize="17sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="الإمساكية • المدفع • المسحراتي • الأصوات"
+                            android:textColor="#D3ECEA"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="‹"
+                        android:textColor="#FFFFFF"
+                        android:textSize="30sp" />
+                </LinearLayout>
 
             </LinearLayout>
 
@@ -416,20 +462,6 @@
                     android:background="@drawable/card_bg"
                     android:drawableTop="@drawable/photo_prayer"
                     android:text="متتبع الصلاة اليومي"
-                    android:textColor="@color/text_primary"
-                    android:textSize="14sp"
-                    android:gravity="center"
-                    android:padding="10dp" />
-
-                <Button
-                    android:id="@+id/button_ramadan"
-                    android:layout_width="0dp"
-                    android:layout_height="130dp"
-                    android:layout_weight="1"
-                    android:layout_margin="8dp"
-                    android:background="@drawable/card_bg"
-                    android:drawableTop="@drawable/photo_ramadan"
-                    android:text="رمضان: الإمساكية والمدفع والمسحراتي"
                     android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:gravity="center"
