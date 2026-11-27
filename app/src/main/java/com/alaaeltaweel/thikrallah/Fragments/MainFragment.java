@@ -47,6 +47,7 @@ public class MainFragment extends Fragment {
     private TextView textIftar;
     private TextView textCountdown;
     private TextView textCountdownLabel;
+    private TextView textRamadanCaption;
     private LinearLayout layoutSuhoorIftar;
     private TextView textWeather;
     private TextView textWeatherIcon;
@@ -102,6 +103,7 @@ public class MainFragment extends Fragment {
         textIftar          = view.findViewById(R.id.text_iftar);
         textCountdown      = view.findViewById(R.id.text_countdown);
         textCountdownLabel = view.findViewById(R.id.text_countdown_label);
+        textRamadanCaption = view.findViewById(R.id.text_ramadan_caption);
         layoutSuhoorIftar  = view.findViewById(R.id.layout_suhoor_iftar);
         textWeather     = view.findViewById(R.id.text_weather);
         textWeatherIcon = view.findViewById(R.id.text_weather_icon);
@@ -215,7 +217,7 @@ public class MainFragment extends Fragment {
                     "رمضان", "شوال", "ذو القعدة", "ذو الحجة"
             };
 
-            textHijriDate.setText(hijriDay + " " + hijriMonths[hijriMonth] + " " + hijriYear);
+            textHijriDate.setText(toArabicDigits(hijriDay + " " + hijriMonths[hijriMonth] + " " + hijriYear));
             // أوقات الصلاة من PrayTime
             PrayTime prayersObject = PrayTime.instancePrayTime(mContext);
             String[] times = prayersObject.getPrayerTimes(mContext);
@@ -224,11 +226,15 @@ public class MainFragment extends Fragment {
             boolean isRamadan = (hijriMonth == 8);
 
             if (isRamadan) {
-                textRamadanInfo.setText("🌙 رمضان كريم - اليوم " + hijriDay);
+                textRamadanInfo.setText(toArabicDigits("🌙 رمضان كريم - اليوم " + hijriDay));
+                textRamadanInfo.setVisibility(View.VISIBLE);
+                textCountdown.setVisibility(View.VISIBLE);
+                textCountdownLabel.setVisibility(View.VISIBLE);
+                if (textRamadanCaption != null) textRamadanCaption.setVisibility(View.GONE);
                 layoutSuhoorIftar.setVisibility(View.VISIBLE);
                 if (times != null && times.length >= 5) {
-                    textSuhoor.setText("الإمساك: " + times[0]);
-                    textIftar.setText("الإفطار: " + times[4]);
+                    textSuhoor.setText("الإمساك: " + toArabicDigits(times[0]));
+                    textIftar.setText("الإفطار: " + toArabicDigits(times[4]));
                 }
             } else {
                 // كم يوم فاضل على رمضان
@@ -237,10 +243,19 @@ net.time4j.calendar.HijriCalendar nextRamadan = net.time4j.calendar.HijriCalenda
         net.time4j.calendar.HijriCalendar.VARIANT_UMALQURA, targetRamadanYear, 9, 1);
 long daysToRamadan = net.time4j.calendar.HijriCalendar.Unit.DAYS.between(
         hijriToday, nextRamadan, net.time4j.calendar.HijriCalendar.VARIANT_UMALQURA);
-                textRamadanInfo.setText("🌙 " + hijriMonths[hijriMonth]);
-                textCountdownLabel.setText("باقي على رمضان");
-                textCountdown.setText(daysToRamadan + " يوم");
-                layoutSuhoorIftar.setVisibility(View.GONE);
+                // خارج رمضان: الفجر والمغرب + سطر صغير تحت شريط رمضان
+                textRamadanInfo.setVisibility(View.GONE);
+                textCountdown.setVisibility(View.GONE);
+                textCountdownLabel.setVisibility(View.GONE);
+                layoutSuhoorIftar.setVisibility(View.VISIBLE);
+                if (times != null && times.length >= 5) {
+                    textSuhoor.setText("الفجر: " + toArabicDigits(times[0]));
+                    textIftar.setText("المغرب: " + toArabicDigits(times[4]));
+                }
+                if (textRamadanCaption != null) {
+                    textRamadanCaption.setText(toArabicDigits("باقي " + daysToRamadan + " يوم على أول رمضان"));
+                    textRamadanCaption.setVisibility(View.VISIBLE);
+                }
             }
 
         } catch (Exception e) {
@@ -287,7 +302,7 @@ long daysToRamadan = net.time4j.calendar.HijriCalendar.Unit.DAYS.between(
                                 long hours   = diff / (1000 * 60 * 60);
                                 long minutes = (diff % (1000 * 60 * 60)) / (1000 * 60);
                                 long seconds = (diff % (1000 * 60)) / 1000;
-                                textCountdown.setText(String.format("%02d:%02d:%02d", hours, minutes, seconds));
+                                textCountdown.setText(toArabicDigits(String.format(Locale.US, "%02d:%02d:%02d", hours, minutes, seconds)));
                             } else {
                                 textCountdown.setText("🌙");
                             }
@@ -301,6 +316,17 @@ long daysToRamadan = net.time4j.calendar.HijriCalendar.Unit.DAYS.between(
             }
         };
         countdownHandler.post(countdownRunnable);
+    }
+
+    /** يحوّل الأرقام الإنجليزية (0-9) لأرقام عربية (٠-٩) للعرض بس */
+    private static String toArabicDigits(String input) {
+        if (input == null) return null;
+        StringBuilder sb = new StringBuilder(input.length());
+        for (int i = 0; i < input.length(); i++) {
+            char c = input.charAt(i);
+            sb.append(c >= '0' && c <= '9' ? (char) ('\u0660' + (c - '0')) : c);
+        }
+        return sb.toString();
     }
 
     private long parseTimeToMs(String timeStr) {
