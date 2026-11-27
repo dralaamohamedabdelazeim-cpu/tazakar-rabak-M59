@@ -13,15 +13,6 @@
     </PreferenceCategory>
 
     <PreferenceCategory
-        android:title="رمضان"
-        android:layout="@layout/preference_catagory">
-        <Preference
-            android:key="open_ramadan_screen"
-            android:title="شاشة رمضان"
-            android:summary="الإمساكية، مدفع الإفطار، والمسحراتي" />
-    </PreferenceCategory>
-
-    <PreferenceCategory
         android:title="إهداء"
         android:layout="@layout/preference_catagory">
         <Preference
