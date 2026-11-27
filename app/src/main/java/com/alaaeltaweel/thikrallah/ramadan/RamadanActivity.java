@@ -19,6 +19,11 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.TimePicker;
+import android.widget.RadioButton;
+import android.widget.Toast;
+import android.media.MediaPlayer;
+import android.content.res.AssetFileDescriptor;
+import androidx.appcompat.app.AlertDialog;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SwitchCompat;
@@ -357,6 +362,8 @@ public class RamadanActivity extends AppCompatActivity {
         LinearLayout card = card();
         card.addView(switchRow("🔊  مدفع الإفطار", "يشتغل وقت الإفطار في رمضان",
                 prefs.getBoolean("ramadan_cannon_enabled", true), "ramadan_cannon_enabled"));
+        card.addView(divider());
+        card.addView(soundRow(RamadanSounds.TYPE_CANNON, "صوت المدفع"));
         root.addView(card, cardParams());
     }
 
@@ -373,6 +380,9 @@ public class RamadanActivity extends AppCompatActivity {
         llp.topMargin = dp(12);
         llp.bottomMargin = dp(12);
         card.addView(line, llp);
+
+        card.addView(soundRow(RamadanSounds.TYPE_MESAHARATY, "صوت المسحراتي"));
+        card.addView(divider());
 
         LinearLayout timeRow = new LinearLayout(this);
         timeRow.setOrientation(LinearLayout.HORIZONTAL);
@@ -457,6 +467,149 @@ public class RamadanActivity extends AppCompatActivity {
         } catch (Exception ignored) {
             // لو حصل خطأ هيتظبط في أول جدولة عادية
         }
+    }
+
+    // ===================== اختيار الصوت =====================
+
+    private MediaPlayer previewPlayer;
+    private Button previewButton;
+
+    private View divider() {
+        View line = new View(this);
+        line.setBackgroundColor(STROKE);
+        LinearLayout.LayoutParams llp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(1));
+        llp.topMargin = dp(12);
+        llp.bottomMargin = dp(12);
+        line.setLayoutParams(llp);
+        return line;
+    }
+
+    /** سطر "الصوت": خانة اختيار منسدلة (فيها "عشوائي") + زر تجربة الصوت. */
+    private View soundRow(final String type, String label) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        row.addView(text(label, 16, TEXT), new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+
+        // الخانة المنسدلة
+        final LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.HORIZONTAL);
+        box.setGravity(Gravity.CENTER_VERTICAL);
+        box.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        GradientDrawable boxBg = new GradientDrawable();
+        boxBg.setColor(CARD);
+        boxBg.setCornerRadius(dp(26));
+        boxBg.setStroke(dp(2), TEXT2);
+        box.setBackground(boxBg);
+        box.setPadding(dp(16), dp(10), dp(16), dp(10));
+        box.setClickable(true);
+
+        final TextView current = text(RamadanSounds.selectedLabel(this, type), 14, TEXT);
+        current.setGravity(Gravity.CENTER);
+        box.addView(current, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        TextView arrow = text("\u25BE", 18, TEXT);
+        box.addView(arrow);
+        box.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showSoundMenu(type, box, current);
+            }
+        });
+        LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.5f);
+        row.addView(box, blp);
+
+        // زر تجربة الصوت المختار
+        final Button play = new Button(this);
+        play.setAllCaps(false);
+        play.setTextColor(Color.WHITE);
+        play.setTextSize(16);
+        play.setBackgroundColor(TEAL);
+        play.setText("\u25B6");
+        play.setPadding(0, 0, 0, 0);
+        play.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                togglePreview(RamadanSounds.selected(RamadanActivity.this, type), play);
+            }
+        });
+        LinearLayout.LayoutParams plp = new LinearLayout.LayoutParams(dp(44), dp(44));
+        plp.setMarginStart(dp(8));
+        row.addView(play, plp);
+        return row;
+    }
+
+    private void showSoundMenu(final String type, View anchor, final TextView current) {
+        final String[] labels = RamadanSounds.labels(type);
+        final RamadanSounds.Option[] opts = RamadanSounds.options(type);
+        androidx.appcompat.widget.PopupMenu menu = new androidx.appcompat.widget.PopupMenu(this, anchor);
+        for (int i = 0; i < labels.length; i++) {
+            menu.getMenu().add(0, i, i, labels[i]);
+        }
+        menu.setOnMenuItemClickListener(new androidx.appcompat.widget.PopupMenu.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+                int idx = item.getItemId();
+                String id = (idx == 0) ? RamadanSounds.RANDOM_ID : opts[idx - 1].id;
+                RamadanSounds.select(RamadanActivity.this, type, id);
+                current.setText(labels[idx]);
+                stopPreview();
+                return true;
+            }
+        });
+        menu.show();
+    }
+
+    private void togglePreview(RamadanSounds.Option o, Button btn) {
+        boolean sameButton = (previewPlayer != null && btn == previewButton);
+        stopPreview();
+        if (sameButton) {
+            return;
+        }
+        try {
+            AssetFileDescriptor afd = getAssets().openFd(o.assetPath);
+            MediaPlayer mp = new MediaPlayer();
+            mp.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
+            afd.close();
+            mp.prepare();
+            mp.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                @Override
+                public void onCompletion(MediaPlayer player) {
+                    stopPreview();
+                }
+            });
+            mp.start();
+            previewPlayer = mp;
+            previewButton = btn;
+            btn.setText("\u25A0");
+        } catch (Exception e) {
+            previewPlayer = null;
+            previewButton = null;
+            Toast.makeText(this, "تعذّر تشغيل الصوت", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void stopPreview() {
+        if (previewPlayer != null) {
+            try {
+                previewPlayer.stop();
+            } catch (Exception ignored) {
+                // مفيش مشكلة لو كان واقف
+            }
+            previewPlayer.release();
+            previewPlayer = null;
+        }
+        if (previewButton != null) {
+            previewButton.setText("\u25B6");
+            previewButton = null;
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        stopPreview();
+        super.onPause();
     }
 
     // ===================== أدوات صغيرة =====================
