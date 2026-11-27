@@ -14,6 +14,7 @@ import android.util.Log;
 import androidx.core.app.NotificationCompat;
 
 import com.alaaeltaweel.thikrallah.R;
+import com.alaaeltaweel.thikrallah.ramadan.RamadanSounds;
 
 public class RamadanSoundService extends Service {
 
@@ -44,15 +45,15 @@ public class RamadanSoundService extends Service {
         String soundFile = null;
 
         if (ACTION_CANNON.equals(action)) {
-            soundFile = "cannon.mp3";
+            soundFile = RamadanSounds.selected(this, RamadanSounds.TYPE_CANNON).assetPath;
             Log.d(TAG, "Playing cannon sound");
         } else if (ACTION_MESAHARATY.equals(action)) {
-            soundFile = "mesaharaty.mp3";
+            soundFile = RamadanSounds.selected(this, RamadanSounds.TYPE_MESAHARATY).assetPath;
             Log.d(TAG, "Playing mesaharaty sound");
         }
 
         if (soundFile != null) {
-            playSound(soundFile);
+            playSound(soundFile, ACTION_CANNON.equals(action) ? "cannon.mp3" : "mesaharaty.mp3");
         } else {
             stopSelf();
         }
@@ -60,7 +61,7 @@ public class RamadanSoundService extends Service {
         return START_NOT_STICKY;
     }
 
-    private void playSound(String fileName) {
+    private void playSound(String fileName, String fallbackFile) {
         try {
             if (mediaPlayer != null) {
                 mediaPlayer.release();
@@ -68,7 +69,14 @@ public class RamadanSoundService extends Service {
             }
 
             mediaPlayer = new MediaPlayer();
-            AssetFileDescriptor afd = getAssets().openFd(fileName);
+            AssetFileDescriptor afd;
+            try {
+                afd = getAssets().openFd(fileName);
+            } catch (Exception missing) {
+                // لو الصوت المختار مش موجود نرجع للصوت الأصلي
+                Log.e(TAG, "selected sound missing, using default: " + missing.getMessage());
+                afd = getAssets().openFd(fallbackFile);
+            }
             mediaPlayer.setDataSource(
                 afd.getFileDescriptor(),
                 afd.getStartOffset(),
