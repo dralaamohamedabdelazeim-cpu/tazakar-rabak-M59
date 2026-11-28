@@ -41,7 +41,7 @@ public final class RamadanSounds {
 
     // مقاطع سيد مكاوي مقطوعة من التسجيل الكامل، وأسماؤها حسب ترتيب الأغاني في صورة المرجع (راجعها بالسماع)
     private static final Option[] MESAHARATY = {
-            new Option("1", "المسحراتي الأصلي", "mesaharaty.mp3", 42),
+            new Option("1", "المسحراتي كامل - سيد مكاوي", "mesaharaty.mp3", 42),
             new Option("2", "اصحى يا نايم - سيد مكاوي", "ramadan_sounds/mesaharaty_2.mp3", 31),
             new Option("3", "مسحراتى  - سيد مكاوي", "ramadan_sounds/mesaharaty_3.mp3", 35),
             new Option("4", "اهدينى رحمة - سيد مكاوي", "ramadan_sounds/mesaharaty_4.mp3", 35),
