@@ -166,9 +166,15 @@ public class MainFragment extends Fragment {
        startActivityForResult(intent, 0);
        });
        button_cards.setOnClickListener(v -> {
-       Intent intent = new Intent();
-       intent.setClass(v.getContext(), com.alaaeltaweel.thikrallah.cards.GreetingCardsActivity.class);
-       startActivity(intent);
+       try {
+           Intent intent = new Intent();
+           intent.setClass(v.getContext(), com.alaaeltaweel.thikrallah.cards.GreetingCardsActivity.class);
+           startActivity(intent);
+       } catch (Throwable e) {
+           android.widget.Toast.makeText(v.getContext(),
+                   "تعذّر فتح بطاقات التهنئة: " + e.getClass().getSimpleName() + " - " + e.getMessage(),
+                   android.widget.Toast.LENGTH_LONG).show();
+       }
        });
     button_radio.setOnClickListener(v -> {
             Intent intent = new Intent();
