@@ -382,6 +382,14 @@
     android:configChanges="orientation|screenSize|keyboardHidden"
     android:exported="false"
     android:theme="@style/AppTheme" />
+  <activity android:name="com.alaaeltaweel.thikrallah.cards.GreetingCardsActivity"
+    android:exported="false"
+    android:theme="@style/AppTheme" />
+  <activity android:name="com.alaaeltaweel.thikrallah.cards.CardEditorActivity"
+    android:exported="false"
+    android:parentActivityName="com.alaaeltaweel.thikrallah.cards.GreetingCardsActivity"
+    android:theme="@style/AppTheme"
+    android:windowSoftInputMode="stateHidden|adjustResize" />
   <activity android:name="com.alaaeltaweel.thikrallah.library.LibraryActivity"
     android:configChanges="orientation|screenSize|keyboardHidden"
     android:exported="false"
