@@ -316,7 +316,7 @@ public class PrayerReminderSoundService extends Service {
             p.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
             afd.close();
             // الإقامة بتاخد "مستوى صوت الأذان"، و"اقتربت الصلاة" فاضلة على "مستوى صوت التذكير"
-            float rv = KIND_IQAMA.equals(kind) ? athanVolume() : reminderVolume();
+            float rv = athanVolume();
             p.setVolume(rv, rv);
             p.setOnCompletionListener(mp -> finishAndStop());
             p.setOnErrorListener((mp, what, extra) -> {
