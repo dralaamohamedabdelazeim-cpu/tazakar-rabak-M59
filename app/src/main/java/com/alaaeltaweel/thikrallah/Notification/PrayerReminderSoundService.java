@@ -295,6 +295,12 @@ public class PrayerReminderSoundService extends Service {
         return Math.max(0.01f, Math.min(1f, v));
     }
 
+    /** "مستوى صوت الأذان" (athan_volume) بنفس التحويل الخطي المستخدم في الأذان */
+    private float athanVolume() {
+        int level = PreferenceManager.getDefaultSharedPreferences(this).getInt("athan_volume", 100);
+        return Math.max(0f, Math.min(1f, level / 100f));
+    }
+
     private void playSound(String kind, String prayer, int iqamaSound) {
         releasePlayer();
         int res = KIND_IQAMA.equals(kind) ? iqamaRes(iqamaSound) : preAthanRes(prayer);   // الجمعة: بيستخدم pre_jumuah لو الملف موجود
@@ -309,7 +315,8 @@ public class PrayerReminderSoundService extends Service {
             AssetFileDescriptor afd = getResources().openRawResourceFd(res);
             p.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
             afd.close();
-            float rv = reminderVolume();
+            // الإقامة بتاخد "مستوى صوت الأذان"، و"اقتربت الصلاة" فاضلة على "مستوى صوت التذكير"
+            float rv = KIND_IQAMA.equals(kind) ? athanVolume() : reminderVolume();
             p.setVolume(rv, rv);
             p.setOnCompletionListener(mp -> finishAndStop());
             p.setOnErrorListener((mp, what, extra) -> {

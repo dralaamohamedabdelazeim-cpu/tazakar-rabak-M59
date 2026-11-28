@@ -7,6 +7,10 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Build;
 import android.os.Bundle;
+import android.animation.ObjectAnimator;
+import android.animation.PropertyValuesHolder;
+import android.view.View;
+import android.view.animation.LinearInterpolator;
 import android.os.Handler;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
@@ -48,6 +52,8 @@ public class AthanScreenActivity extends AppCompatActivity {
 
     private static final int AUTO_DISMISS_DELAY  = 4 * 60 * 1000;
     private static final int SLIDESHOW_INTERVAL  = 30 * 1000; // 30 ثانية
+    private static final int CROSSFADE_MS = 1800;
+    private static final float PHOTO_ALPHA = 0.18f;
     private static final String TAG = "AthanScreenActivity";
     // ✅ معرّف جديد (v2) عشان إعداد "بدون صوت" يتطبق حتى على اللي مثبتين التطبيق بالفعل
     private static final String NOTIF_CHANNEL_ID = "athan_screen_channel_v2";
@@ -60,6 +66,7 @@ public class AthanScreenActivity extends AppCompatActivity {
     private boolean athanPlayed = false;
     private TelephonyManager telephonyManager;
     private ImageView fatherBgView;
+    private ImageView fatherBgNextView;
     private TextView athanLinesText;
     private int currentPhotoIndex = 0;
     private int currentAthanLine = 0;
@@ -86,7 +93,6 @@ public class AthanScreenActivity extends AppCompatActivity {
         R.drawable.father_bg2,
         R.drawable.father_bg3,
         R.drawable.father_bg4,
-        R.drawable.father_bg5,
         R.drawable.father_bg6,
         R.drawable.father_bg7
     };
@@ -177,6 +183,8 @@ public class AthanScreenActivity extends AppCompatActivity {
         isCallInProgress = getIntent().getBooleanExtra("isCallInProgress", false);
 
         fatherBgView = findViewById(R.id.father_bg);
+        fatherBgNextView = findViewById(R.id.father_bg_next);
+        startSlowZoom(fatherBgView);
         athanLinesText = findViewById(R.id.allahu_akbar_text);
         TextView prayerNameText = findViewById(R.id.prayer_name_text);
         TextView athanText = findViewById(R.id.athan_text);
@@ -256,22 +264,35 @@ public class AthanScreenActivity extends AppCompatActivity {
         }
     }
 
+    // الصورة الجديدة بتظهر فوق القديمة وهي بتختفي، فالخلفية مبتبانش فاضية أبدًا
     private void changePhotoWithAnimation(final int newPhotoRes) {
-        AlphaAnimation fadeOut = new AlphaAnimation(0.18f, 0f);
-        fadeOut.setDuration(1000);
-        fadeOut.setAnimationListener(new Animation.AnimationListener() {
-            @Override public void onAnimationStart(Animation a) {}
-            @Override public void onAnimationRepeat(Animation a) {}
-            @Override
-            public void onAnimationEnd(Animation a) {
-                fatherBgView.setImageResource(newPhotoRes);
-                AlphaAnimation fadeIn = new AlphaAnimation(0f, 0.18f);
-                fadeIn.setDuration(1000);
-                fatherBgView.startAnimation(fadeIn);
-                fatherBgView.setAlpha(0.18f);
-            }
-        });
-        fatherBgView.startAnimation(fadeOut);
+        final ImageView outgoing = fatherBgView;
+        final ImageView incoming = fatherBgNextView;
+
+        incoming.animate().cancel();
+        outgoing.animate().cancel();
+        incoming.setImageResource(newPhotoRes);
+        startSlowZoom(incoming);
+
+        incoming.animate().alpha(PHOTO_ALPHA).setDuration(CROSSFADE_MS).start();
+        outgoing.animate().alpha(0f).setDuration(CROSSFADE_MS).start();
+
+        // نبدّل الأدوار للمرة الجاية
+        fatherBgView = incoming;
+        fatherBgNextView = outgoing;
+    }
+
+    // تكبير بطيء طول مدة عرض الصورة عشان تبان حية
+    private void startSlowZoom(ImageView view) {
+        Object running = view.getTag();
+        if (running instanceof ObjectAnimator) ((ObjectAnimator) running).cancel();
+        ObjectAnimator zoom = ObjectAnimator.ofPropertyValuesHolder(view,
+                PropertyValuesHolder.ofFloat(View.SCALE_X, 1f, 1.12f),
+                PropertyValuesHolder.ofFloat(View.SCALE_Y, 1f, 1.12f));
+        zoom.setDuration(SLIDESHOW_INTERVAL + CROSSFADE_MS);
+        zoom.setInterpolator(new LinearInterpolator());
+        view.setTag(zoom);
+        zoom.start();
     }
 
     @Override

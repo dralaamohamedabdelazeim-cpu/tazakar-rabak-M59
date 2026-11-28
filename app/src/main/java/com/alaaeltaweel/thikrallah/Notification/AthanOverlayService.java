@@ -56,7 +56,6 @@ public class AthanOverlayService extends Service {
             R.drawable.father_bg2,
             R.drawable.father_bg3,
             R.drawable.father_bg4,
-            R.drawable.father_bg5,
             R.drawable.father_bg6,
             R.drawable.father_bg7
     };
@@ -65,6 +64,7 @@ public class AthanOverlayService extends Service {
     private WindowManager windowManager;
     private FrameLayout overlayView;
     private ImageView backgroundImage;
+    private ImageView nextBackgroundImage;
     private TextView clockView;
     private String dataType;
 
@@ -78,12 +78,26 @@ public class AthanOverlayService extends Service {
             if (backgroundImage != null) {
                 currentPhotoIndex = (currentPhotoIndex + 1) % photos.length;
                 try {
-                    backgroundImage.setImageResource(photos[currentPhotoIndex]);
+                    crossfadeTo(photos[currentPhotoIndex]);
                 } catch (Exception ignored) {}
             }
             slideshowHandler.postDelayed(this, PHOTO_CHANGE_INTERVAL);
         }
     };
+
+    // انتقال متداخل: القديمة تفضل ظاهرة تحت لحد ما الجديدة تغطيها بالكامل
+    private void crossfadeTo(int photoRes) {
+        final ImageView base = backgroundImage;
+        final ImageView top = nextBackgroundImage;
+        if (base == null || top == null) return;
+        top.animate().cancel();
+        top.setAlpha(0f);
+        top.setImageResource(photoRes);
+        top.animate().alpha(1f).setDuration(1500).withEndAction(() -> {
+            base.setImageResource(photoRes);
+            top.setAlpha(0f);
+        }).start();
+    }
 
     private final Runnable clockRunnable = new Runnable() {
         @Override
@@ -228,6 +242,12 @@ public class AthanOverlayService extends Service {
         overlayView.addView(backgroundImage, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
 
+        nextBackgroundImage = new ImageView(this);
+        nextBackgroundImage.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        nextBackgroundImage.setAlpha(0f);
+        overlayView.addView(nextBackgroundImage, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+
         // ✅ طبقة غامقة شبه شفافة فوق الصورة عشان النص يبان واضح
         android.view.View dimOverlay = new android.view.View(this);
         dimOverlay.setBackgroundColor(Color.parseColor("#99000000"));
@@ -343,6 +363,7 @@ public class AthanOverlayService extends Service {
             } catch (Exception ignored) {}
             overlayView = null;
             backgroundImage = null;
+            nextBackgroundImage = null;
             clockView = null;
         }
     }
