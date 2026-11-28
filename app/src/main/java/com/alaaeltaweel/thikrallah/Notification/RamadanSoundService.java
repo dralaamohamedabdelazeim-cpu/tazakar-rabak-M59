@@ -7,6 +7,7 @@ import android.app.Service;
 import android.content.Intent;
 import android.content.res.AssetFileDescriptor;
 import android.media.MediaPlayer;
+import android.media.audiofx.LoudnessEnhancer;
 import android.os.Build;
 import android.os.IBinder;
 import android.util.Log;
@@ -23,6 +24,14 @@ public class RamadanSoundService extends Service {
     public static final String ACTION_MESAHARATY = "com.alaaeltaweel.thikrallah.ACTION_MESAHARATY";
 
     private MediaPlayer mediaPlayer;
+    private LoudnessEnhancer loudnessEnhancer;
+
+    /**
+     * ✅ رفع صوت المسحراتي: ملفات المسحراتي مسجلة بمستوى منخفض (حوالي -21 LUFS)،
+     * فبنزودها بالـ LoudnessEnhancer. الوحدة millibel (100 = 1 ديسيبل).
+     * ممكن تزودها (مثلًا 1000) لو لسه محتاج أعلى، أو تقللها لو سمعت تشويش.
+     */
+    private static final int MESAHARATY_BOOST_MB = 800;
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -53,7 +62,8 @@ public class RamadanSoundService extends Service {
         }
 
         if (soundFile != null) {
-            playSound(soundFile, ACTION_CANNON.equals(action) ? "cannon.mp3" : "mesaharaty.mp3");
+            playSound(soundFile, ACTION_CANNON.equals(action) ? "cannon.mp3" : "mesaharaty.mp3",
+                    ACTION_MESAHARATY.equals(action) ? MESAHARATY_BOOST_MB : 0);
         } else {
             stopSelf();
         }
@@ -61,12 +71,20 @@ public class RamadanSoundService extends Service {
         return START_NOT_STICKY;
     }
 
-    private void playSound(String fileName, String fallbackFile) {
+    private void releasePlayer() {
+        if (loudnessEnhancer != null) {
+            try { loudnessEnhancer.release(); } catch (Exception ignored) { }
+            loudnessEnhancer = null;
+        }
+        if (mediaPlayer != null) {
+            try { mediaPlayer.release(); } catch (Exception ignored) { }
+            mediaPlayer = null;
+        }
+    }
+
+    private void playSound(String fileName, String fallbackFile, int boostMb) {
         try {
-            if (mediaPlayer != null) {
-                mediaPlayer.release();
-                mediaPlayer = null;
-            }
+            releasePlayer();
 
             mediaPlayer = new MediaPlayer();
             AssetFileDescriptor afd;
@@ -84,11 +102,23 @@ public class RamadanSoundService extends Service {
             );
             afd.close();
             mediaPlayer.prepare();
+
+            if (boostMb > 0) {
+                try {
+                    loudnessEnhancer = new LoudnessEnhancer(mediaPlayer.getAudioSessionId());
+                    loudnessEnhancer.setTargetGain(boostMb);
+                    loudnessEnhancer.setEnabled(true);
+                } catch (Throwable e) {
+                    // لو الجهاز مش داعم التأثير نكمل بالصوت العادي
+                    Log.w(TAG, "LoudnessEnhancer unavailable: " + e.getMessage());
+                    loudnessEnhancer = null;
+                }
+            }
+            mediaPlayer.setVolume(1f, 1f);
             mediaPlayer.start();
 
             mediaPlayer.setOnCompletionListener(mp -> {
-                mp.release();
-                mediaPlayer = null;
+                releasePlayer();
                 stopForeground(true);
                 stopSelf();
             });
@@ -120,10 +150,7 @@ public class RamadanSoundService extends Service {
 
     @Override
     public void onDestroy() {
-        if (mediaPlayer != null) {
-            mediaPlayer.release();
-            mediaPlayer = null;
-        }
+        releasePlayer();
         super.onDestroy();
     }
 
