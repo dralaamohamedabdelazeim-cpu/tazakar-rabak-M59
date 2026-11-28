@@ -50,23 +50,25 @@ import java.util.concurrent.Executors;
 public class CardEditorActivity extends AppCompatActivity {
 
     public static final String EXTRA_TEMPLATE_ID = "card_template_id";
+    public static final String EXTRA_SAVED_ID = "card_saved_id";
     private static final String PREF_SENDER = "cards_sender_name";
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler main = new Handler(Looper.getMainLooper());
-    private final LruCache<Integer, Bitmap> bgThumbs = new LruCache<Integer, Bitmap>(24);
+    private final LruCache<String, Bitmap> bgThumbs = new LruCache<String, Bitmap>(40);
 
     private CardState state;
+    private String savedId = null;
     private boolean colorTouched = false;
     private boolean destroyed = false;
     private int renderToken = 0;
 
     private ImageView preview;
-    private EditText editHeadline, editBody, editSender;
-    private LinearLayout fontsContainer, colorsContainer, formatContainer;
+    private EditText editHeadline, editBody, editDetails, editSender;
+    private LinearLayout fontsContainer, colorsContainer, formatContainer, palettesContainer;
     private RecyclerView recyclerBackgrounds;
     private BackgroundAdapter bgAdapter;
-    private Button btnShare, btnSave;
+    private Button btnShare, btnSave, btnKeep;
     private SharedPreferences prefs;
 
     private final Runnable renderRunnable = new Runnable() {
@@ -79,6 +81,16 @@ public class CardEditorActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        try {
+            initEditor();
+        } catch (Throwable t) {
+            // لو حصل أي خطأ نبيّنه بدل ما التطبيق يقفل بصمت
+            toast("تعذّر فتح تعديل البطاقة: " + t.getClass().getSimpleName() + " - " + t.getMessage());
+            finish();
+        }
+    }
+
+    private void initEditor() {
         setContentView(R.layout.activity_card_editor);
 
         if (getSupportActionBar() != null) {
@@ -96,24 +108,35 @@ public class CardEditorActivity extends AppCompatActivity {
 
         prefs = PreferenceManager.getDefaultSharedPreferences(this);
 
-        CardCatalog.Template t = CardCatalog.findTemplate(getIntent().getStringExtra(EXTRA_TEMPLATE_ID));
-        if (t == null) t = CardCatalog.templateOfDay(this);
-        state = CardState.fromTemplate(t, prefs.getString(PREF_SENDER, ""));
+        MyCardsStore.Saved saved = MyCardsStore.find(this, getIntent().getStringExtra(EXTRA_SAVED_ID));
+        if (saved != null) {
+            savedId = saved.id;
+            state = saved.state.copy();
+            colorTouched = true;
+        } else {
+            CardCatalog.Template t = CardCatalog.findTemplate(getIntent().getStringExtra(EXTRA_TEMPLATE_ID));
+            if (t == null) t = CardCatalog.templateOfDay(this);
+            state = CardState.fromTemplate(t, prefs.getString(PREF_SENDER, ""));
+        }
 
         preview = findViewById(R.id.img_preview);
         editHeadline = findViewById(R.id.edit_headline);
         editBody = findViewById(R.id.edit_body);
+        editDetails = findViewById(R.id.edit_details);
         editSender = findViewById(R.id.edit_sender);
         fontsContainer = findViewById(R.id.fonts_container);
         colorsContainer = findViewById(R.id.colors_container);
         formatContainer = findViewById(R.id.format_container);
+        palettesContainer = findViewById(R.id.palettes_container);
         recyclerBackgrounds = findViewById(R.id.recycler_backgrounds);
         btnShare = findViewById(R.id.btn_share);
         btnSave = findViewById(R.id.btn_save);
+        btnKeep = findViewById(R.id.btn_keep);
         SeekBar seek = findViewById(R.id.seek_size);
 
         editHeadline.setText(state.headline);
         editBody.setText(state.body);
+        editDetails.setText(state.details);
         editSender.setText(state.sender);
 
         editHeadline.addTextChangedListener(new SimpleWatcher() {
@@ -130,6 +153,13 @@ public class CardEditorActivity extends AppCompatActivity {
                 scheduleRender();
             }
         });
+        editDetails.addTextChangedListener(new SimpleWatcher() {
+            @Override
+            void changed(String text) {
+                state.details = text;
+                scheduleRender();
+            }
+        });
         editSender.addTextChangedListener(new SimpleWatcher() {
             @Override
             void changed(String text) {
@@ -138,7 +168,7 @@ public class CardEditorActivity extends AppCompatActivity {
             }
         });
 
-        seek.setProgress(30);
+        seek.setProgress(Math.max(0, Math.min(60, Math.round((state.sizeScale - 0.7f) * 100f))));
         seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -160,9 +190,11 @@ public class CardEditorActivity extends AppCompatActivity {
         buildFormatChips();
         buildFontChips();
         buildColorSwatches();
+        buildPaletteSwatches();
 
         btnShare.setOnClickListener(v -> exportCard(true));
         btnSave.setOnClickListener(v -> exportCard(false));
+        btnKeep.setOnClickListener(v -> keepCard());
 
         doRender();
     }
@@ -291,7 +323,58 @@ public class CardEditorActivity extends AppCompatActivity {
     }
 
     // ------------------------------------------------------------------
-    // اختيار الخلفية
+    // ألوان الخلفية + الحفظ في كروتي
+    // ------------------------------------------------------------------
+
+    private void buildPaletteSwatches() {
+        palettesContainer.removeAllViews();
+        for (int i = 0; i < CardCatalog.PALETTES.length; i++) {
+            final int idx = i;
+            CardCatalog.Palette p = CardCatalog.PALETTES[i];
+            View swatch = new View(this);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dp(40), dp(40));
+            lp.setMargins(dp(5), dp(4), dp(5), dp(4));
+            swatch.setLayoutParams(lp);
+            GradientDrawable gd = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
+                    new int[]{p.top, p.bottom});
+            gd.setShape(GradientDrawable.OVAL);
+            boolean selected = state.paletteIndex == i;
+            gd.setStroke(dp(selected ? 3 : 1),
+                    ContextCompat.getColor(this, selected ? R.color.brand_gold : R.color.card_stroke));
+            swatch.setBackground(gd);
+            swatch.setContentDescription(p.name);
+            swatch.setOnClickListener(v -> {
+                state.paletteIndex = idx;
+                if (!colorTouched) {
+                    state.textColor = CardCatalog.PALETTES[idx].defaultTextColor;
+                    buildColorSwatches();
+                }
+                buildPaletteSwatches();
+                bgThumbs.evictAll();
+                bgAdapter.notifyDataSetChanged();
+                scheduleRender();
+            });
+            palettesContainer.addView(swatch);
+        }
+    }
+
+    private void keepCard() {
+        try {
+            String id = MyCardsStore.save(this, savedId, state);
+            if (id != null) {
+                boolean updated = savedId != null;
+                savedId = id;
+                toast(updated ? "تم تحديث الكارت في كروتي ⭐" : "تم حفظ الكارت في كروتي ⭐");
+            } else {
+                toast("تعذّر الحفظ في كروتي");
+            }
+        } catch (Throwable e) {
+            toast("تعذّر الحفظ في كروتي");
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // اختيار نمط الخلفية
     // ------------------------------------------------------------------
 
     private final class BackgroundAdapter extends RecyclerView.Adapter<BackgroundAdapter.VH> {
@@ -314,21 +397,18 @@ public class CardEditorActivity extends AppCompatActivity {
 
         @Override
         public void onBindViewHolder(@NonNull VH holder, final int position) {
-            Bitmap b = bgThumbs.get(position);
+            String key = position + "_" + state.paletteIndex;
+            Bitmap b = bgThumbs.get(key);
             if (b == null) {
-                b = CardRenderer.renderBackground(CardEditorActivity.this, position, 160);
-                bgThumbs.put(position, b);
+                b = CardRenderer.renderBackground(CardEditorActivity.this, position, state.paletteIndex, 160);
+                bgThumbs.put(key, b);
             }
             holder.image.setImageBitmap(b);
-            holder.itemView.setBackgroundResource(position == state.backgroundIndex
+            holder.itemView.setBackgroundResource(position == state.styleIndex
                     ? R.drawable.card_thumb_selected : 0);
-            holder.itemView.setContentDescription(CardCatalog.BACKGROUNDS[position].name);
+            holder.itemView.setContentDescription(CardCatalog.STYLES[position].name);
             holder.itemView.setOnClickListener(v -> {
-                state.backgroundIndex = position;
-                if (!colorTouched) {
-                    state.textColor = CardCatalog.BACKGROUNDS[position].defaultTextColor;
-                    buildColorSwatches();
-                }
+                state.styleIndex = position;
                 notifyDataSetChanged();
                 scheduleRender();
             });
@@ -336,7 +416,7 @@ public class CardEditorActivity extends AppCompatActivity {
 
         @Override
         public int getItemCount() {
-            return CardCatalog.BACKGROUNDS.length;
+            return CardCatalog.STYLES.length;
         }
     }
 

@@ -55,9 +55,10 @@ public final class CardRenderer {
     }
 
     /** الخلفية بس (من غير نصوص) لمعاينات اختيار الخلفية. */
-    public static Bitmap renderBackground(Context ctx, int backgroundIndex, int size) {
+    public static Bitmap renderBackground(Context ctx, int styleIndex, int paletteIndex, int size) {
         CardState s = new CardState();
-        s.backgroundIndex = backgroundIndex;
+        s.styleIndex = styleIndex;
+        s.paletteIndex = paletteIndex;
         Bitmap bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
         draw(ctx, new Canvas(bmp), s, size, size, false);
         return bmp;
@@ -66,33 +67,38 @@ public final class CardRenderer {
     // ------------------------------------------------------------------
 
     private static void draw(Context ctx, Canvas c, CardState s, int w, int h, boolean withText) {
-        int bgIdx = Math.max(0, Math.min(CardCatalog.BACKGROUNDS.length - 1, s.backgroundIndex));
-        CardCatalog.Background bg = CardCatalog.BACKGROUNDS[bgIdx];
+        int styleIdx = Math.max(0, Math.min(CardCatalog.STYLES.length - 1, s.styleIndex));
+        int palIdx = Math.max(0, Math.min(CardCatalog.PALETTES.length - 1, s.paletteIndex));
+        int orn = CardCatalog.STYLES[styleIdx].ornaments;
+        CardCatalog.Palette pal = CardCatalog.PALETTES[palIdx];
 
         Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
-        p.setShader(new LinearGradient(0, 0, 0, h, bg.top, bg.bottom, Shader.TileMode.CLAMP));
+        p.setShader(new LinearGradient(0, 0, 0, h, pal.top, pal.bottom, Shader.TileMode.CLAMP));
         c.drawRect(0, 0, w, h, p);
         p.setShader(null);
 
         float zoneH = Math.min(h * 0.32f, w * 0.5f);
         float topY = h * 0.05f;
-        boolean hasMoon = (bg.ornaments & CardCatalog.ORN_MOON) != 0;
-        boolean hasMosque = (bg.ornaments & CardCatalog.ORN_MOSQUE) != 0;
+        boolean hasMoon = (orn & CardCatalog.ORN_MOON) != 0;
+        boolean hasMosque = (orn & CardCatalog.ORN_MOSQUE) != 0;
+        boolean hasArch = (orn & CardCatalog.ORN_ARCH) != 0;
         float mosqueH = Math.min(h * 0.12f, w * 0.15f);
 
-        if ((bg.ornaments & CardCatalog.ORN_GEO) != 0) drawGeometric(c, w, h, bg.ornamentColor);
-        if ((bg.ornaments & CardCatalog.ORN_DOTS) != 0) drawDots(c, w, h, bg.ornamentColor);
-        if ((bg.ornaments & CardCatalog.ORN_STARS) != 0) {
-            drawStars(c, w, hasMoon ? topY + zoneH : h * 0.95f, bg.ornamentColor);
+        if ((orn & CardCatalog.ORN_RAYS) != 0) drawRays(c, w, h, w / 2f, topY + zoneH * 0.5f, pal.ornamentColor);
+        if ((orn & CardCatalog.ORN_GEO) != 0) drawGeometric(c, w, h, pal.ornamentColor);
+        if ((orn & CardCatalog.ORN_DOTS) != 0) drawDots(c, w, h, pal.ornamentColor);
+        if ((orn & CardCatalog.ORN_STARS) != 0) {
+            drawStars(c, w, hasMoon ? topY + zoneH : h * 0.95f, pal.ornamentColor);
         }
-        drawFrame(c, w, h, bg.frameColor);
-        if (hasMosque) drawMosque(c, w, h, mosqueH, bg.ornamentColor);
-        if (hasMoon) drawMoon(c, w / 2f, topY + zoneH * 0.5f, zoneH * 0.34f, bg.ornamentColor);
-        if ((bg.ornaments & CardCatalog.ORN_LANTERNS) != 0) drawLanterns(c, w, h, zoneH, bg.ornamentColor);
+        drawFrame(c, w, h, pal.frameColor);
+        if (hasArch) drawArch(c, w, h, pal.ornamentColor);
+        if (hasMosque) drawMosque(c, w, h, mosqueH, pal.ornamentColor);
+        if (hasMoon) drawMoon(c, w / 2f, topY + zoneH * 0.5f, zoneH * 0.34f, pal.ornamentColor);
+        if ((orn & CardCatalog.ORN_LANTERNS) != 0) drawLanterns(c, w, h, zoneH, pal.ornamentColor);
 
         if (withText) {
             float reservedBottom = hasMosque ? mosqueH * 1.1f : 0f;
-            drawTexts(ctx, c, s, w, h, topY + zoneH + w * 0.01f, reservedBottom);
+            drawTexts(ctx, c, s, w, h, topY + zoneH + w * 0.01f, reservedBottom, hasArch);
         }
     }
 
@@ -125,6 +131,42 @@ public final class CardRenderer {
         }
         path.close();
         c.drawPath(path, paint);
+    }
+
+    private static void drawArch(Canvas c, int w, int h, int color) {
+        Paint ap = new Paint(Paint.ANTI_ALIAS_FLAG);
+        ap.setStyle(Paint.Style.STROKE);
+        ap.setColor(color);
+        float left = w * 0.14f;
+        float right = w * 0.86f;
+        float r = (right - left) / 2f;
+        float topArch = w * 0.08f;
+        float bottom = h - w * 0.09f;
+        for (int i = 0; i < 2; i++) {
+            float inset = i * w * 0.018f;
+            Path path = new Path();
+            path.moveTo(left + inset, bottom - inset);
+            path.lineTo(left + inset, topArch + r);
+            path.arcTo(new RectF(left + inset, topArch + inset, right - inset, topArch + 2 * r - inset),
+                    180f, 180f);
+            path.lineTo(right - inset, bottom - inset);
+            ap.setStrokeWidth(Math.max(i == 0 ? 2f : 1f, w * (i == 0 ? 0.004f : 0.002f)));
+            ap.setAlpha(i == 0 ? 160 : 90);
+            c.drawPath(path, ap);
+        }
+    }
+
+    private static void drawRays(Canvas c, int w, int h, float cx, float cy, int color) {
+        Paint rp = new Paint(Paint.ANTI_ALIAS_FLAG);
+        rp.setStyle(Paint.Style.STROKE);
+        rp.setColor(color);
+        rp.setAlpha(34);
+        rp.setStrokeWidth(Math.max(1f, w * 0.003f));
+        float len = h * 1.3f;
+        for (int i = 0; i < 28; i++) {
+            double a = i * (2 * Math.PI / 28);
+            c.drawLine(cx, cy, (float) (cx + len * Math.cos(a)), (float) (cy + len * Math.sin(a)), rp);
+        }
     }
 
     private static void drawMoon(Canvas c, float cx, float cy, float r, int color) {
@@ -313,10 +355,11 @@ public final class CardRenderer {
     }
 
     private static void drawTexts(Context ctx, Canvas c, CardState s, int w, int h,
-                                  float textTop, float reservedBottom) {
+                                  float textTop, float reservedBottom, boolean hasArch) {
         Typeface tf = typeface(ctx, s.fontIndex);
         String headline = s.headline == null ? "" : s.headline.trim();
         String body = s.body == null ? "" : s.body.trim();
+        String details = s.details == null ? "" : s.details.trim();
         String sender = s.sender == null ? "" : s.sender.trim();
 
         TextPaint hp = new TextPaint(Paint.ANTI_ALIAS_FLAG);
@@ -334,25 +377,34 @@ public final class CardRenderer {
         float senderCenterY = h - w * 0.11f - reservedBottom;
         float textBottom = senderCenterY - w * 0.06f;
         float avail = textBottom - textTop;
-        int textWidth = Math.round(w * 0.78f);
+        int textWidth = Math.round(w * (hasArch ? 0.66f : 0.78f));
         float gap = w * 0.05f;
 
         boolean hasHead = headline.length() > 0;
         boolean hasBody = body.length() > 0;
+        boolean hasDetails = details.length() > 0;
 
         float headSize = w * 0.11f * s.sizeScale;
         float bodySize = w * 0.05f * s.sizeScale;
+        TextPaint dp2 = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        dp2.setTypeface(tf);
+        dp2.setColor(s.textColor);
         StaticLayout hl = null;
         StaticLayout bl = null;
+        StaticLayout dl = null;
         float total = 0f;
         for (int i = 0; i < 16; i++) {
             hp.setTextSize(headSize);
             bp.setTextSize(bodySize);
+            dp2.setTextSize(bodySize * 0.88f);
             hl = hasHead ? layout(headline, hp, textWidth) : null;
             bl = hasBody ? layout(body, bp, textWidth) : null;
+            dl = hasDetails ? layout(details, dp2, textWidth) : null;
             total = (hl != null ? hl.getHeight() : 0)
-                    + ((hl != null && bl != null) ? gap : 0)
-                    + (bl != null ? bl.getHeight() : 0);
+                    + ((hl != null && (bl != null || dl != null)) ? gap : 0)
+                    + (bl != null ? bl.getHeight() : 0)
+                    + ((bl != null && dl != null) ? gap * 0.6f : 0)
+                    + (dl != null ? dl.getHeight() : 0);
             if (total <= avail || headSize < w * 0.035f) break;
             headSize *= 0.92f;
             bodySize *= 0.92f;
@@ -368,7 +420,7 @@ public final class CardRenderer {
             c.restore();
             y += hl.getHeight();
         }
-        if (hl != null && bl != null) {
+        if (hl != null && (bl != null || dl != null)) {
             // فاصل صغير بين العنوان والنص
             Paint dp = new Paint(Paint.ANTI_ALIAS_FLAG);
             dp.setColor(s.textColor);
@@ -384,6 +436,14 @@ public final class CardRenderer {
             c.save();
             c.translate(x, y);
             bl.draw(c);
+            c.restore();
+            y += bl.getHeight();
+        }
+        if (dl != null) {
+            if (bl != null) y += gap * 0.6f;
+            c.save();
+            c.translate(x, y);
+            dl.draw(c);
             c.restore();
         }
 

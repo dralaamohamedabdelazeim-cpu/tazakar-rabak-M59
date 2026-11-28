@@ -12,8 +12,10 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
@@ -29,47 +31,78 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-/** شاشة بطاقات التهنئة: كارت اليوم + المناسبات + شبكة القوالب. */
+/** شاشة بطاقات التهنئة: كارت اليوم + المناسبات + شبكة القوالب + "كروتي". */
 public class GreetingCardsActivity extends AppCompatActivity {
+
+    private static final String MINE = "__mine__";
+
+    /** عنصر في الشبكة: قالب جاهز أو كارت محفوظ. */
+    private static final class Item {
+        final CardState state;
+        final String templateId;   // لو قالب
+        final String savedId;      // لو كارت محفوظ
+
+        Item(CardState state, String templateId, String savedId) {
+            this.state = state;
+            this.templateId = templateId;
+            this.savedId = savedId;
+        }
+    }
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler main = new Handler(Looper.getMainLooper());
-    private final LruCache<String, Bitmap> thumbs = new LruCache<String, Bitmap>(48);
-    private final List<CardCatalog.Template> shown = new ArrayList<CardCatalog.Template>();
+    private final LruCache<String, Bitmap> thumbs = new LruCache<String, Bitmap>(60);
+    private final List<Item> shown = new ArrayList<Item>();
 
     private TemplateAdapter adapter;
     private LinearLayout chipsContainer;
-    private String selectedOccasion = null;   // null = الكل
+    private TextView emptyMine;
+    private String selectedOccasion = null;   // null = الكل ، MINE = كروتي
     private boolean destroyed = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_greeting_cards);
+        try {
+            setContentView(R.layout.activity_greeting_cards);
 
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setTitle("بطاقات التهنئة");
-            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            if (getSupportActionBar() != null) {
+                getSupportActionBar().setTitle("بطاقات التهنئة");
+                getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            }
+
+            final View root = findViewById(R.id.cards_root);
+            final int baseBottom = root.getPaddingBottom();
+            ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+                Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+                v.setPadding(v.getPaddingLeft(), v.getPaddingTop(), v.getPaddingRight(), baseBottom + bars.bottom);
+                return insets;
+            });
+
+            emptyMine = findViewById(R.id.empty_mine);
+            setupCardOfTheDay();
+
+            chipsContainer = findViewById(R.id.chips_container);
+            buildChips();
+
+            RecyclerView recycler = findViewById(R.id.recycler_templates);
+            recycler.setLayoutManager(new GridLayoutManager(this, 2));
+            adapter = new TemplateAdapter();
+            recycler.setAdapter(adapter);
+            refreshItems();
+        } catch (Throwable t) {
+            // لو حصل أي خطأ نبيّنه بدل ما التطبيق يقفل بصمت
+            Toast.makeText(this, "تعذّر فتح بطاقات التهنئة: " + t.getClass().getSimpleName()
+                    + " - " + t.getMessage(), Toast.LENGTH_LONG).show();
+            finish();
         }
+    }
 
-        final View root = findViewById(R.id.cards_root);
-        final int baseBottom = root.getPaddingBottom();
-        ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
-            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(v.getPaddingLeft(), v.getPaddingTop(), v.getPaddingRight(), baseBottom + bars.bottom);
-            return insets;
-        });
-
-        setupCardOfTheDay();
-
-        chipsContainer = findViewById(R.id.chips_container);
-        buildChips();
-
-        RecyclerView recycler = findViewById(R.id.recycler_templates);
-        recycler.setLayoutManager(new GridLayoutManager(this, 2));
-        adapter = new TemplateAdapter();
-        recycler.setAdapter(adapter);
-        refreshTemplates();
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // رجّعنا من شاشة التعديل: ممكن يكون في كروت اتحفظت
+        if (adapter != null && MINE.equals(selectedOccasion)) refreshItems();
     }
 
     @Override
@@ -105,7 +138,7 @@ public class GreetingCardsActivity extends AppCompatActivity {
             } catch (Throwable ignored) { }
         });
         View container = findViewById(R.id.card_of_day_container);
-        container.setOnClickListener(v -> openEditor(today));
+        container.setOnClickListener(v -> openTemplate(today.id));
     }
 
     // ------------------------------------------------------------------
@@ -115,6 +148,7 @@ public class GreetingCardsActivity extends AppCompatActivity {
     private void buildChips() {
         chipsContainer.removeAllViews();
         addChip("🎴 الكل", null);
+        addChip("⭐ كروتي", MINE);
         for (CardCatalog.Occasion o : CardCatalog.OCCASIONS) {
             addChip(o.emoji + " " + o.title, o.id);
         }
@@ -137,7 +171,7 @@ public class GreetingCardsActivity extends AppCompatActivity {
         chip.setOnClickListener(v -> {
             selectedOccasion = occasionId;
             updateChipStates();
-            refreshTemplates();
+            refreshItems();
         });
         chipsContainer.addView(chip);
     }
@@ -152,21 +186,54 @@ public class GreetingCardsActivity extends AppCompatActivity {
         }
     }
 
-    private void refreshTemplates() {
+    private void refreshItems() {
         shown.clear();
-        if (selectedOccasion == null) {
-            shown.addAll(CardCatalog.allTemplates());
+        boolean mine = MINE.equals(selectedOccasion);
+        if (mine) {
+            for (MyCardsStore.Saved s : MyCardsStore.loadAll(this)) {
+                shown.add(new Item(s.state, null, s.id));
+            }
+        } else if (selectedOccasion == null) {
+            for (CardCatalog.Template t : CardCatalog.allTemplates()) {
+                shown.add(new Item(CardState.fromTemplate(t, ""), t.id, null));
+            }
         } else {
             CardCatalog.Occasion o = CardCatalog.findOccasion(selectedOccasion);
-            if (o != null) shown.addAll(o.templates);
+            if (o != null) {
+                for (CardCatalog.Template t : o.templates) {
+                    shown.add(new Item(CardState.fromTemplate(t, ""), t.id, null));
+                }
+            }
         }
+        emptyMine.setVisibility(mine && shown.isEmpty() ? View.VISIBLE : View.GONE);
         adapter.notifyDataSetChanged();
     }
 
-    private void openEditor(CardCatalog.Template t) {
+    // ------------------------------------------------------------------
+    // فتح المحرر / الحذف
+    // ------------------------------------------------------------------
+
+    private void openTemplate(String templateId) {
         Intent i = new Intent(this, CardEditorActivity.class);
-        i.putExtra(CardEditorActivity.EXTRA_TEMPLATE_ID, t.id);
+        i.putExtra(CardEditorActivity.EXTRA_TEMPLATE_ID, templateId);
         startActivity(i);
+    }
+
+    private void openSaved(String savedId) {
+        Intent i = new Intent(this, CardEditorActivity.class);
+        i.putExtra(CardEditorActivity.EXTRA_SAVED_ID, savedId);
+        startActivity(i);
+    }
+
+    private void confirmDelete(final String savedId) {
+        new AlertDialog.Builder(this)
+                .setMessage("حذف هذا الكارت من كروتي؟")
+                .setPositiveButton("حذف", (d, w) -> {
+                    MyCardsStore.delete(this, savedId);
+                    refreshItems();
+                })
+                .setNegativeButton("إلغاء", null)
+                .show();
     }
 
     private int dp(int v) {
@@ -197,9 +264,12 @@ public class GreetingCardsActivity extends AppCompatActivity {
 
         @Override
         public void onBindViewHolder(@NonNull final VH holder, int position) {
-            final CardCatalog.Template t = shown.get(position);
-            holder.image.setTag(t.id);
-            Bitmap cached = thumbs.get(t.id);
+            final Item item = shown.get(position);
+            final String key = item.state.signature();
+            holder.image.setTag(key);
+            holder.image.setScaleType(item.state.portrait ? ImageView.ScaleType.FIT_CENTER
+                    : ImageView.ScaleType.CENTER_CROP);
+            Bitmap cached = thumbs.get(key);
             if (cached != null) {
                 holder.image.setImageBitmap(cached);
             } else {
@@ -207,11 +277,10 @@ public class GreetingCardsActivity extends AppCompatActivity {
                 try {
                     executor.execute(() -> {
                         try {
-                            final Bitmap b = CardRenderer.render(GreetingCardsActivity.this,
-                                    CardState.fromTemplate(t, ""), 420);
-                            thumbs.put(t.id, b);
+                            final Bitmap b = CardRenderer.render(GreetingCardsActivity.this, item.state, 420);
+                            thumbs.put(key, b);
                             main.post(() -> {
-                                if (!destroyed && t.id.equals(holder.image.getTag())) {
+                                if (!destroyed && key.equals(holder.image.getTag())) {
                                     holder.image.setImageBitmap(b);
                                 }
                             });
@@ -219,7 +288,19 @@ public class GreetingCardsActivity extends AppCompatActivity {
                     });
                 } catch (Exception ignored) { }
             }
-            holder.itemView.setOnClickListener(v -> openEditor(t));
+            holder.itemView.setOnClickListener(v -> {
+                if (item.savedId != null) openSaved(item.savedId);
+                else openTemplate(item.templateId);
+            });
+            if (item.savedId != null) {
+                holder.itemView.setOnLongClickListener(v -> {
+                    confirmDelete(item.savedId);
+                    return true;
+                });
+            } else {
+                holder.itemView.setOnLongClickListener(null);
+                holder.itemView.setLongClickable(false);
+            }
         }
 
         @Override
