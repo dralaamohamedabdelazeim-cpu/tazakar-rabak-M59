@@ -79,5 +79,16 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:nestedScrollingEnabled="false" />
+
+        <TextView
+            android:id="@+id/empty_mine"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:gravity="center"
+            android:text="لسه ما حفظتش أي كروت.\nعدّل أي كارت واضغط (⭐ حفظ في كروتي) وهيظهر هنا."
+            android:textColor="@color/text_secondary"
+            android:textSize="15sp"
+            android:visibility="gone" />
     </LinearLayout>
 </ScrollView>
