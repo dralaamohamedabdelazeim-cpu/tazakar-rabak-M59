@@ -627,7 +627,18 @@ if (hijriOffset != 0) {
                 case 3: soundRes = R.raw.iqama_3; break;
                 default: soundRes = R.raw.iqama_1; break;
             }
-            iqamaPreviewPlayer = android.media.MediaPlayer.create(getActivity(), soundRes);
+            // المعاينة بنفس قناة وصوت الإقامة الحقيقية
+            android.media.AudioManager am = (android.media.AudioManager)
+                    getActivity().getSystemService(android.content.Context.AUDIO_SERVICE);
+            iqamaPreviewPlayer = android.media.MediaPlayer.create(getActivity(), soundRes,
+                    new android.media.AudioAttributes.Builder()
+                            .setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION)
+                            .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                            .build(),
+                    am.generateAudioSessionId());
+            if (iqamaPreviewPlayer == null) return;
+            float previewVolume = Math.max(0f, Math.min(1f, mPrefs.getInt("athan_volume", 100) / 100f));
+            iqamaPreviewPlayer.setVolume(previewVolume, previewVolume);
             iqamaPreviewPlayer.setOnCompletionListener(mp -> {
                 mp.release();
                 iqamaPreviewPlayer = null;
