@@ -482,6 +482,20 @@
                     android:gravity="center"
                     android:padding="10dp" />
 
+                <Button
+                    android:id="@+id/button_cards"
+                    android:layout_width="0dp"
+                    android:layout_height="130dp"
+                    android:layout_weight="1"
+                    android:layout_margin="8dp"
+                    android:background="@drawable/card_bg"
+                    android:drawableTop="@drawable/photo_cards"
+                    android:text="بطاقات التهنئة"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    android:gravity="center"
+                    android:padding="10dp" />
+
             </LinearLayout>
 
             <Button
