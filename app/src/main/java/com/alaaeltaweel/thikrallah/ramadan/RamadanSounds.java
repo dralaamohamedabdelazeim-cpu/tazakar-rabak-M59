@@ -35,8 +35,8 @@ public final class RamadanSounds {
 
     private static final Option[] CANNON = {
             new Option("1", "المدفع الأصلي", "cannon.mp3", 6),
-            new Option("2", "مدفع الإفطار (مونتاج)", "ramadan_sounds/cannon_2.mp3", 23),
-            new Option("3", "مدفع الإفطار (النسخة الأصلية)", "ramadan_sounds/cannon_3.mp3", 12),
+            new Option("2", "2 مدفع الإفطار ", "ramadan_sounds/cannon_2.mp3", 23),
+            new Option("3", "مدفع الإفطار 3", "ramadan_sounds/cannon_3.mp3", 12),
     };
 
     // مقاطع سيد مكاوي مقطوعة من التسجيل الكامل، وأسماؤها حسب ترتيب الأغاني في صورة المرجع (راجعها بالسماع)
@@ -44,9 +44,9 @@ public final class RamadanSounds {
             new Option("1", "المسحراتي الأصلي", "mesaharaty.mp3", 42),
             new Option("2", "تحت القمر - سيد مكاوي", "ramadan_sounds/mesaharaty_2.mp3", 31),
             new Option("3", "اصحى يا نايم - سيد مكاوي", "ramadan_sounds/mesaharaty_3.mp3", 35),
-            new Option("4", "منقراتي خال عوض - سيد مكاوي", "ramadan_sounds/mesaharaty_4.mp3", 35),
-            new Option("5", "وحد الرزاق - سيد مكاوي", "ramadan_sounds/mesaharaty_5.mp3", 43),
-            new Option("6", "اسعى للصوم - سيد مكاوي", "ramadan_sounds/mesaharaty_6.mp3", 32),
+            new Option("4", "اصحى يا نايم 2 - سيد مكاوي", "ramadan_sounds/mesaharaty_4.mp3", 35),
+            new Option("5", "اصحى يا نايم 3 - سيد مكاوي", "ramadan_sounds/mesaharaty_5.mp3", 43),
+            new Option("6", "اصحى يا نايم 4 - سيد مكاوي", "ramadan_sounds/mesaharaty_6.mp3", 32),
             new Option("7", "ليلة القدر - حمزة نمرة", "ramadan_sounds/mesaharaty_7.mp3", 117),
             new Option("8", "منيش درويش - حمزة نمرة", "ramadan_sounds/mesaharaty_8.mp3", 111),
             new Option("9", "هلال - حمزة نمرة", "ramadan_sounds/mesaharaty_9.mp3", 97),
