@@ -42,11 +42,11 @@ public final class RamadanSounds {
     // مقاطع سيد مكاوي مقطوعة من التسجيل الكامل، وأسماؤها حسب ترتيب الأغاني في صورة المرجع (راجعها بالسماع)
     private static final Option[] MESAHARATY = {
             new Option("1", "المسحراتي الأصلي", "mesaharaty.mp3", 42),
-            new Option("2", "تحت القمر - سيد مكاوي", "ramadan_sounds/mesaharaty_2.mp3", 31),
-            new Option("3", "اصحى يا نايم - سيد مكاوي", "ramadan_sounds/mesaharaty_3.mp3", 35),
-            new Option("4", "اصحى يا نايم 2 - سيد مكاوي", "ramadan_sounds/mesaharaty_4.mp3", 35),
-            new Option("5", "اصحى يا نايم 3 - سيد مكاوي", "ramadan_sounds/mesaharaty_5.mp3", 43),
-            new Option("6", "اصحى يا نايم 4 - سيد مكاوي", "ramadan_sounds/mesaharaty_6.mp3", 32),
+            new Option("2", "اصحى يا نايم - سيد مكاوي", "ramadan_sounds/mesaharaty_2.mp3", 31),
+            new Option("3", "مسحراتى  - سيد مكاوي", "ramadan_sounds/mesaharaty_3.mp3", 35),
+            new Option("4", "اهدينى رحمة - سيد مكاوي", "ramadan_sounds/mesaharaty_4.mp3", 35),
+            new Option("5", "الرجل تدب - سيد مكاوي", "ramadan_sounds/mesaharaty_5.mp3", 43),
+            new Option("6", "يارب ياهادى - سيد مكاوي", "ramadan_sounds/mesaharaty_6.mp3", 32),
             new Option("7", "ليلة القدر - حمزة نمرة", "ramadan_sounds/mesaharaty_7.mp3", 117),
             new Option("8", "منيش درويش - حمزة نمرة", "ramadan_sounds/mesaharaty_8.mp3", 111),
             new Option("9", "هلال - حمزة نمرة", "ramadan_sounds/mesaharaty_9.mp3", 97),
