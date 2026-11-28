@@ -92,6 +92,7 @@ public class MainFragment extends Fragment {
         Button button_athan = (Button) view.findViewById(R.id.button_athan);
         Button button_qibla = (Button) view.findViewById(R.id.button_qibla);
         Button button_prayer_tracker = (Button) view.findViewById(R.id.button_prayer_tracker);
+        Button button_cards = (Button) view.findViewById(R.id.button_cards);
         Button button_radio = (Button) view.findViewById(R.id.button_radio);
         Button button_library = (Button) view.findViewById(R.id.button_library);
         
@@ -163,6 +164,11 @@ public class MainFragment extends Fragment {
        Intent intent = new Intent();
        intent.setClass(v.getContext(), PrayerTrackerActivity.class);
        startActivityForResult(intent, 0);
+       });
+       button_cards.setOnClickListener(v -> {
+       Intent intent = new Intent();
+       intent.setClass(v.getContext(), com.alaaeltaweel.thikrallah.cards.GreetingCardsActivity.class);
+       startActivity(intent);
        });
     button_radio.setOnClickListener(v -> {
             Intent intent = new Intent();
